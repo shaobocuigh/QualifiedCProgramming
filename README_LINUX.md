@@ -80,11 +80,18 @@ uv venv .venv
 uv sync
 ```
 
-Set `mcp/qcp-mcp/CONFIGURE` to:
+Tell `qcp-mcp` where the backend binary is. The MCP-client examples in this
+guide do this by pointing `QCP_MCP_CONFIG` at a `CONFIGURE` file, so create
+`mcp/qcp-mcp/CONFIGURE` (the file does not exist yet) containing:
 
 ```ini
 QCP_MCP_BIN=/absolute/path/to/qcp-binary-democases/linux-binary/mcp
 ```
+
+That `QCP_MCP_CONFIG` line in the VS Code and Codex examples below is what makes
+this path take effect. Without `QCP_MCP_CONFIG`, `qcp-mcp` instead looks for the
+file at its default location `mcp/qcp-mcp/src/qcp_mcp/CONFIGURE`. Alternatively,
+skip the file entirely and set the `QCP_MCP_BIN` environment variable directly.
 
 ### Configure `rocq-mcp`
 

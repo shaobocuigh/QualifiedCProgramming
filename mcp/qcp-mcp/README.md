@@ -13,26 +13,33 @@ underlying `mcp` executable, keeps a session alive, and exposes tools such as
 
 ## Configuration
 
-`qcp-mcp` resolves the backend binary in this order:
+`qcp-mcp` finds the backend `mcp` binary in two tiers:
 
-1. `QCP_MCP_BIN`
-2. `QCP_MCP_CONFIG`
-3. local `CONFIGURE`
+1. **`QCP_MCP_BIN`** (environment variable) — if set, its value is used directly
+   as the binary path. This is the recommended approach and is what every
+   MCP-client example below uses.
+2. **A `CONFIGURE` file** — only consulted when `QCP_MCP_BIN` is unset. The path
+   to this file comes from `QCP_MCP_CONFIG`; if that is also unset, it defaults to
+   the bundled location `src/qcp_mcp/CONFIGURE` (next to `session.py`).
 
-The config file may contain either:
+`QCP_MCP_CONFIG` and `CONFIGURE` are therefore *not* two separate sources —
+`QCP_MCP_CONFIG` only says *where* the `CONFIGURE` file lives.
+
+The `CONFIGURE` file is not shipped with the repo; you create it. It needs a
+single `QCP_MCP_BIN=` line, for example:
 
 ```ini
 QCP_MCP_BIN=/absolute/path/to/qcp-binary-democases/linux-binary/mcp
 ```
 
-or:
+or, on Windows:
 
 ```ini
 QCP_MCP_BIN=D:/absolute/path/to/qcp-binary-democases/win-binary/mcp.exe
 ```
 
-If `QCP_MCP_BIN` is already set in the environment, you do not need to modify
-`CONFIGURE`.
+If `QCP_MCP_BIN` is set in the environment, you do not need a `CONFIGURE` file at
+all.
 
 ## Linux / WSL Setup
 
@@ -42,7 +49,9 @@ uv venv .venv
 uv sync
 ```
 
-Optional `CONFIGURE`:
+Optional fallback, only if you are *not* setting `QCP_MCP_BIN` — create a
+`CONFIGURE` file at the default `src/qcp_mcp/CONFIGURE`, or anywhere you like and
+point `QCP_MCP_CONFIG` at it, containing:
 
 ```ini
 QCP_MCP_BIN=/absolute/path/to/qcp-binary-democases/linux-binary/mcp
@@ -68,7 +77,8 @@ The PowerShell setup script exports:
 
 Recommended Windows usage:
 
-- Keep `qcp-mcp/CONFIGURE` available for Linux / WSL if needed.
+- Keep a `CONFIGURE` file available for Linux / WSL if needed (default location
+  `src/qcp_mcp/CONFIGURE`, or wherever `QCP_MCP_CONFIG` points).
 - Use `QCP_MCP_BIN` from `setup-windows-mcp-env.ps1` for PowerShell.
 
 ## Smoke Test
