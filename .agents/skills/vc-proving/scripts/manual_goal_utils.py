@@ -36,6 +36,20 @@ REQUIRE_IMPORT_LINE_RE = re.compile(
 )
 SIMPLEC_EE_PREFIX = "SimpleC.EE"
 ROCQ_MEMORY_LIMIT_BYTES = 4 * 1024 * 1024 * 1024
+# Transient-`coqc`-failure retry policy used by check_rocq_file_in_project().
+# These two names were referenced (~lines 605/618) but never defined, so every
+# per-.v compile raised NameError before coqc ran. COQC_TRANSIENT_RETRIES=0
+# restores single-attempt behaviour.
+COQC_TRANSIENT_RETRIES = int(os.environ.get("COQC_TRANSIENT_RETRIES", "2"))
+# Returncodes worth a retry. subprocess reports -N for a process killed by signal N,
+# so -SIGKILL is the kernel/cgroup OOM-killer (or container memory-limit) hard-kill --
+# genuinely transient under concurrent memory pressure. NOTE: the 4 GiB RLIMIT_AS cap
+# in _set_rocq_memory_limit does NOT produce SIGKILL; it makes allocation fail (ENOMEM
+# -> OCaml Out_of_memory -> positive exit), which is deterministic and correctly NOT
+# retried. SIGSEGV/SIGBUS/SIGABRT are real crashes, also excluded. (A wrapper that
+# re-encodes a signal as 128+N would also need 128+signal.SIGKILL=137; coqc is exec'd
+# directly here, so 137 cannot occur.)
+TRANSIENT_COQC_SIGNALS = frozenset({-signal.SIGKILL})
 DEFAULT_HELPER_IMPORT_ROOTS = (
     "Coq",
     "AUXLib",
