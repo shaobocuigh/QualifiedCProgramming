@@ -22,7 +22,7 @@ A **verification condition (VC)** is an entailment `P |-- Q` that `symexec` emit
 
 ## Exit code 0 does not prove success
 
-The most general tool-behavior trap — true of *all* input, not only the unsupported features — is this: **an exit code of `0` does not prove `symexec` succeeded.** Re-measured live at the snapshot baseline, most fatal errors *do* return EXIT=1 (no arguments, a missing or nonexistent input file, a missing `--program-path`). But two cases slip through with **EXIT=0**: a **malformed/truncated parse**, and — the dangerous one — a **float program**, which exits `0` reporting `Successfully finished` while emitting obligations no shipped Rocq symbol can discharge (the float half-stub below). So the return code is an unreliable signal in exactly the cases that matter. (There is no `--version` flag on any binary, either.)
+The most general tool-behavior trap — true of *all* input, not only the unsupported features — is this: **an exit code of `0` does not prove `symexec` succeeded.** Re-measured live at the snapshot baseline, most fatal errors *do* return EXIT=1 (no arguments, a missing or nonexistent input file, a missing `--program-path`). But two cases slip through with **EXIT=0**: a **malformed/truncated parse**, and — the dangerous one — a **float program**, which exits `0` reporting `Successfully finished` while emitting obligations no shipped Rocq (formerly Coq) symbol can discharge (the float half-stub below). So the return code is an unreliable signal in exactly the cases that matter. (There is no `--version` flag on any binary, either.)
 
 > **Warning:** scripts and CI must scan `symexec` *output* for `Successfully finished` and for `fatal error`, never only test `$?`. An exit code of 0 is not proof of success. The float silent half-stub below is the dangerous worked instance: a feature that exits 0 *and* emits real-looking obligations, yet cannot be discharged.
 
@@ -33,7 +33,7 @@ The most general tool-behavior trap — true of *all* input, not only the unsupp
 | Unsupported feature | How it fails | What you see |
 |---|---|---|
 | **`goto`** | Unsupported in the open model — there is no construct for it. | Rejected / errors. |
-| **Function pointers / indirect calls** | Errors out in verification mode. | An `Error: FindFuncInfo: func_info not found` message, **EXIT=1**. A safe hard limit. |
+| **Function pointers / indirect calls** | Errors out in verification mode. | A `fatal error: FindFuncInfo: func_info not found` message, **EXIT=1**. A safe hard limit. |
 | **Shared-memory concurrency** | Not wired in. Concurrent separation logic is proven sound in `unifysl` but never connected to the C frontend. | No path to attempt it. |
 | **Floats / doubles** | **Silent half-stub.** | *Apparent success* — see below. |
 

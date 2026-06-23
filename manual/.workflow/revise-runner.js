@@ -26,7 +26,7 @@ CROSS-CUTTING RULES — apply to this chapter regardless of whether a finding na
 1. **Strip every reference to an internal source doc.** Remove all links AND citations to
    \`docs/*\` (e.g. \`docs/verification-pipeline.md\`, \`docs/coq-backend.md\`, \`docs/agent-workflow.md\`,
    \`docs/mcp-servers.md\`, \`docs/annotation-language.md\`, \`docs/project-overview.md\`,
-   \`docs/qua-codes-tutorial-fixes.md\`) and to \`reference/ENGINE_INTERNALS.md\`. \`docs/\` is internal/
+   \`docs/qua-codes-tutorial-fixes.md\`) and to \`internal/ENGINE_INTERNALS.md\`. \`docs/\` is internal/
    gitignored — a user cloning the distribution does not have it. For each: either state the fact
    plainly inline, OR link a SHIPPED \`tutorial/Tn-*.md\` page or a \`manual/reference/*\` page if the
    content is genuinely there. **DELETE bare "(Source: docs/…)" provenance entirely** — a user

@@ -35,11 +35,11 @@ the tool. See [ch 6](../ch06-annotations-as-specs.md).
 
 **`@pre` (`x@pre`)** — inside `Ensure`, the value of `x` as it was at function entry. Lets a
 postcondition relate the result to the original inputs. See
-[R1 §7](BESTIARY.md) and [ch 5](../ch05-your-first-spec.md).
+[R1 §7](BESTIARY.md#7-spec--in-body-annotation-keywords) and [ch 5](../ch05-your-first-spec.md).
 
 **`Assert`** — an in-body annotation that **fixes the symbolic state** at a program point
 (emitting a [VC](#v) that the state so far implies it). Use it to pin down what you believe is
-true mid-function. Not a runtime check. See [R1 §7](BESTIARY.md).
+true mid-function. Not a runtime check. See [R1 §7](BESTIARY.md#7-spec--in-body-annotation-keywords).
 
 **auto / manual (fraction)** {#auto-manual} — the two pools every [VC](#v) falls into. **Auto** = VCs
 `symexec`'s [strategy solver](#strategy) discharges on its own (land in `*_proof_auto.v`, end in
@@ -63,7 +63,7 @@ spec definitions, and helper lemmas. Like a manual proof file, it is meant to be
 several shapes: typed 3-arg `data_at(p, int, v)`, basic 2-arg `data_at(&x, v)`, and concise
 value-omitted `data_at(&(node->next), struct list*)`. In the example corpus the equivalent
 storage is usually written with `store(...)` or `undef_data_at(...)` instead; bare `data_at(` is
-rare in corpus C. See [`store(...)`](#store) below and [R1 §3](BESTIARY.md) for the full shape
+rare in corpus C. See [`store(...)`](#store) below and [R1 §3](BESTIARY.md#3-storage-primitives--data_at-store-and-the-crocq-map) for the full shape
 table.
 
 ## E
@@ -80,13 +80,13 @@ the entailment, not necessarily of the function). See [ch 9](../ch09-goals-symex
 generated files — most commonly `Import Coq Require Import <Module>`, but also `Import …`,
 `From … Require Import …`, or `Local Open Scope …`. (The keyword stays spelled `Coq` even though
 the prover is now Rocq — it is a literal token.) See
-[ch 6](../ch06-annotations-as-specs.md) and [R1 §8](BESTIARY.md).
+[ch 6](../ch06-annotations-as-specs.md) and [R1 §8](BESTIARY.md#8-directives--shared-headers).
 
 ## G
 
 **ghost / logical variable** — a variable that exists only in annotations (e.g. the abstract
 `list Z` a linked list represents), never in the compiled C. The `With` clause introduces
-ghost variables. See [`With`](#with) and [R1 §2](BESTIARY.md).
+ghost variables. See [`With`](#with) and [R1 §2](BESTIARY.md#2-the-quantifier-triad--with---forall---exists-).
 
 **`goal_check` (`*_goal_check.v`)** — the **completeness** gate: a generated module that checks
 every emitted VC has **exactly one** entry (none dropped, none double-counted). A green
@@ -99,13 +99,13 @@ every emitted VC has **exactly one** entry (none dropped, none double-counted). 
 **`Inv` (loop invariant)** — an assertion that holds before every test of a loop condition. You
 (or the LLM) supply it; `symexec` does **not** infer it — it *checks* the one you give it. The
 canonical surface spelling is `/*@ Inv Assert ... @*/`; bare `Inv` is also valid. See
-[ch 7](../ch07-invariants-and-the-ai-dial.md) and [R1 §7](BESTIARY.md).
+[ch 7](../ch07-invariants-and-the-ai-dial.md) and [R1 §7](BESTIARY.md#7-spec--in-body-annotation-keywords).
 
 ## O
 
 **ordinary conjunction (`&&`)** — joins two **pure**, heap-independent facts ("both hold"); it
 makes no claim about memory. Contrast with [separating conjunction (`*`)](#separating-conjunction). See
-[R1 §1](BESTIARY.md).
+[R1 §1](BESTIARY.md#1-operators--connectives--read-this-box-first).
 
 **ownership predicate** — see [representation predicate](#representation-predicate).
 
@@ -125,27 +125,27 @@ does; the **WHY** (loop invariants and proofs) is largely delegated. See
 structure is laid out in memory, e.g. `sll(p, l)` = "a singly-linked list at `p` holding the
 abstract list `l`." Also called an **ownership** predicate: holding it means owning that memory.
 The corpus ships many (`store_tree`, `store_string`, the array families, …). See
-[R1 §4–§6](BESTIARY.md) and [ch 8](../ch08-separation-logic-memory-model.md).
+[R1 §4–§6](BESTIARY.md#4-representation-predicates--the-data-shape-inventory) and [ch 8](../ch08-separation-logic-memory-model.md).
 
 **`Require` / `Ensure`** {#require-ensure} — the precondition / postcondition pair that, with `With`, forms a
 function's spec triple. `Require P` states what must hold on entry; `Ensure Q` states what the
 function guarantees on return. The spec is the **irreducible human-review point** — QCP proves
 the spec you wrote, not the behavior you meant. See [ch 5](../ch05-your-first-spec.md) and
-[R1 §7](BESTIARY.md).
+[R1 §7](BESTIARY.md#7-spec--in-body-annotation-keywords).
 
 **Rocq (formerly Coq)** — the proof assistant the VCs are discharged in (required version
 **8.20.1**). Coq was renamed Rocq; this manual says "Rocq" in prose but keeps the literal tokens
 spelled `Coq` (`coqc`, `Extern Coq`, `Import Coq`, `_CoqProject`). See
 [ch 9](../ch09-goals-symexec-and-proof.md).
 
-**`__return`** — inside `Ensure`, the function's return value. See [R1 §7](BESTIARY.md).
+**`__return`** — inside `Ensure`, the function's return value. See [R1 §7](BESTIARY.md#7-spec--in-body-annotation-keywords).
 
 ## S
 
 **separating conjunction (`*`)** {#separating-conjunction} — **THE #1 false friend.** In an annotation, `*` joins two
 **disjoint** memory regions ("the heap splits into a part for `P` and a separate part for `Q`").
 It is **not** C multiplication and **not** logical "and." Pure facts join with `&&`; spatial
-facts join with `*`. The Rocq form is `**`. See [R1 §1](BESTIARY.md) and
+facts join with `*`. The Rocq form is `**`. See [R1 §1](BESTIARY.md#1-operators--connectives--read-this-box-first) and
 [ch 8](../ch08-separation-logic-memory-model.md).
 
 **separation logic (SL)** — the logic QCP reasons in: a logic for heap and pointer programs whose
@@ -162,7 +162,7 @@ for the theory, follow the [tutorials](../../tutorial/). See
 cell, e.g. `store(&(q -> tail), ...)`. It is the dominant storage form in the worked examples
 (count it for a given snapshot with `rg -c -- 'store\(' -g'*.c' QCP_examples`), alongside
 `undef_data_at(...)` for uninitialized cells. Conceptually the same job as
-[`data_at`](#data-at). See [R1 §3](BESTIARY.md).
+[`data_at`](#data-at). See [R1 §3](BESTIARY.md#3-storage-primitives--data_at-store-and-the-crocq-map).
 
 **strategy / `.strategies` / `StrategyCheck`** {#strategy} — the automation extension point. A **strategy**
 is a user-authored rewrite/cancellation rule (in a `.strategies` file) the solver uses to
@@ -211,16 +211,16 @@ See [ch 9](../ch09-goals-symexec-and-proof.md).
 ## W
 
 **`where`** — a call-site annotation that manually instantiates a callee's logical/type variables
-when the solver can't infer them. See [R1 §7](BESTIARY.md).
+when the solver can't infer them. See [R1 §7](BESTIARY.md#7-spec--in-body-annotation-keywords).
 
 **`which implies`** — an in-body **forward hint**: it states that the current symbolic state
 implies a stronger or unfolded state, which then becomes the new state (e.g. opening up one node
-of a linked list). It emits its own VC. See [R1 §7](BESTIARY.md).
+of a linked list). It emits its own VC. See [R1 §7](BESTIARY.md#7-spec--in-body-annotation-keywords).
 
 **`With (x:T)`** {#with} — the spec-head clause that introduces a **ghost / logical variable**: a ∀ over
 the **whole triple** {Pre} f {Post}, chosen by the **caller** and shared across both `Require`
 and `Ensure`. Distinct from a `forall` (trapped in one assertion) and `exists` (a value the
-**callee** produces). The motion is **∀-in / ∃-out**. See [R1 §2](BESTIARY.md).
+**callee** produces). The motion is **∀-in / ∃-out**. See [R1 §2](BESTIARY.md#2-the-quantifier-triad--with---forall---exists-).
 
 **witness** — an individual VC, or the lemma that discharges it. In the generated files the VC
 definition is named `<fn>_<kind>_wit_N` and the lemma proving it is `proof_of_<fn>_<kind>_wit_N`.

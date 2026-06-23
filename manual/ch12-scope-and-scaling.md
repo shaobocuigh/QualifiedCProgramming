@@ -4,7 +4,7 @@
 
 The frame to carry through: **scope is two axes, not one.**
 
-- **Feature coverage is binary.** A C construct is either in the model or it isn't. Floats, `goto`, function pointers, and shared-memory concurrency are out; everything else in the [matrix](reference/SUPPORT_MATRIX.md) is in. No amount of effort moves a feature across this line — it's a property of the Rocq value/AST/memory model, not of how hard you try.
+- **Feature coverage is binary.** A C construct is either in the model or it isn't. Floats, `goto`, function pointers, and shared-memory concurrency are out; everything else in the [matrix](reference/SUPPORT_MATRIX.md) is in. No amount of effort moves a feature across this line — it's a property of the Rocq (formerly Coq) value/AST/memory model, not of how hard you try.
 - **Effort cost is continuous.** *Inside* the supported set, the cost of verifying a function ranges from nearly free (the strategy solver discharges everything) to substantial (you write a stack of manual `Qed` proofs). This axis is where your budget actually goes, and it's the one ch 3 doesn't quantify.
 
 Read this chapter for the second axis. For the first — the yes/no verdicts and their evidence — stay with [ch 3](ch03-scope-at-a-glance.md) and the full [support matrix (R2)](reference/SUPPORT_MATRIX.md).
@@ -139,7 +139,7 @@ Run this per checkout: an `Admitted`-free manual file is a **convention, not a g
 
 ## The corpus, as a sense of reach
 
-The shipped corpus is the concrete evidence of what QCP scales to. Five subtrees (`.c` counts per FACTS §F7, re-verified live — snapshot):
+The shipped corpus is the concrete evidence of what QCP scales to. Five subtrees (`.c` counts re-verified live — snapshot):
 
 | Subtree | `.c` | What it shows about scale |
 |---|---:|---|

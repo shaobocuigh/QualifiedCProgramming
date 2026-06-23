@@ -2,7 +2,7 @@
 
 You have a green `goal_check` for a shipped example ([ch 4](ch04-quickstart-stage-a.md)). Now you write the spec yourself. A spec is the part QCP can never guess: **what your function promises.** This chapter walks you from a blank function to a checked `Require`/`Ensure` pair, using real functions from `QCP_examples/QCP_demos_human/simple_arith/` — and it stops at exactly the things that trip up a C programmer on day one: why an integer spec needs an overflow bound, and what the `__return` and `@pre` markers mean.
 
-No Rocq knowledge is assumed. Everything here is C with a few annotations in `/*@ ... @*/` comments. The deeper annotation surface — every keyword, every predicate shape — is [ch 6](ch06-annotations-as-specs.md); the quantifier reference is the [bestiary](reference/BESTIARY.md). This chapter is the on-ramp.
+No Rocq (formerly Coq) knowledge is assumed. Everything here is C with a few annotations in `/*@ ... @*/` comments. The deeper annotation surface — every keyword, every predicate shape — is [ch 6](ch06-annotations-as-specs.md); the quantifier reference is the [bestiary](reference/BESTIARY.md). This chapter is the on-ramp.
 
 ## The spec triple
 
@@ -93,7 +93,7 @@ void add1_3(int * * x)
 
 `v` is the **ghost variable**: the caller picks it, it never appears in the C signature, and it is the one name shared across both clauses — `Require` says `**x` starts at `v`, `Ensure` says it ends at `v + 1`. Without `With`, you'd have no way to relate the after-value to the before-value. (This one touches memory through `**x`, so it steps slightly past the pure-arithmetic examples above; the storage side is [ch 6](ch06-annotations-as-specs.md)'s subject — it appears here only to show the `With` keyword in real source.)
 
-You reach for `exists` in the other direction — when the output is "some value with a property" rather than a closed formula. The full triad — with real predicate examples, and why `With` is a distinct keyword from an in-assertion `forall` — is [§2 of the bestiary](reference/BESTIARY.md).
+You reach for `exists` in the other direction — when the output is "some value with a property" rather than a closed formula. The full triad — with real predicate examples, and why `With` is a distinct keyword from an in-assertion `forall` — is [§2 of the bestiary](reference/BESTIARY.md#2-the-quantifier-triad--with---forall---exists-).
 
 ## Your first loop invariant
 
@@ -151,4 +151,4 @@ You can now write and check a spec for a simple function:
 - The **∀-in / ∃-out** motion: `With` for caller-given values shared across the triple; `exists` for function-produced witnesses.
 - The **loop invariant**: you write the `Inv`, `symexec` checks it (P → I and I → I); the tool never infers it. Recursion is checked by contract instead.
 
-Where to go next: the **full annotation surface** — `Assert`, `which implies`, the `data_at`/`store` storage predicates, multiple specs — is [ch 6](ch06-annotations-as-specs.md). The **quantifier triad** in depth, including `forall` and the CPS form, is the [bestiary §2](reference/BESTIARY.md). When a spec you wrote goes red, [ch 11](ch11-stuck-goal-differential.md) tells you whose fault it is; what a green check actually certifies is [ch 10](ch10-trust-and-soundness.md).
+Where to go next: the **full annotation surface** — `Assert`, `which implies`, the `data_at`/`store` storage predicates, multiple specs — is [ch 6](ch06-annotations-as-specs.md). The **quantifier triad** in depth, including `forall` and the CPS form, is the [bestiary §2](reference/BESTIARY.md#2-the-quantifier-triad--with---forall---exists-). When a spec you wrote goes red, [ch 11](ch11-stuck-goal-differential.md) tells you whose fault it is; what a green check actually certifies is [ch 10](ch10-trust-and-soundness.md).

@@ -64,7 +64,7 @@ USER-MANUAL DISCIPLINE (STYLE §4 — non-negotiable):
 - This is a USER manual: include a technical/internal detail ONLY if it changes how the reader
   *uses or trusts* the tool. CUT engine internals (SMT/CDCL/proof-terms/parser/IR), methodology/
   provenance ("reverse-engineered from the binary"), and WIP/dormant features.
-- The repo sources above (incl. \`docs/*\` and \`reference/ENGINE_INTERNALS.md\`) are DRAFTING
+- The repo sources above (incl. \`docs/*\` and \`internal/ENGINE_INTERNALS.md\`) are DRAFTING
   SOURCES you mine — **never link or cite them in the output, and never write "(Source: docs/…)"**.
   State the resulting fact plainly. Link only SHIPPED \`tutorial/Tn-*.md\` pages, other manual
   chapters, or manual/reference/* pages (canonical slugs).

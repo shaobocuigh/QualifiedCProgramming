@@ -4,7 +4,7 @@ This chapter gets one shipped example from C source to a green `goal_check` buil
 
 You will: install the prerequisites, run `symexec` on a shipped arithmetic example, read the four files it emits, then **compile to green** with one `make` target. The whole loop takes minutes. Every command below was run as written before it shipped — paths and flags are real.
 
-> **What you do NOT need for Stage A:** any Rocq knowledge, any LLM, `uv`, `coq-lsp`, or an MCP client. The example we use ships with its proof artifacts already filled and a green `goal_check`, so you are reproducing a green build, not authoring proofs. Writing your own spec is [ch 5](ch05-your-first-spec.md); delegating proofs to an LLM is [ch 7](ch07-invariants-and-the-ai-dial.md).
+> **What you do NOT need for Stage A:** any Rocq (formerly Coq) knowledge, any LLM, `uv`, `coq-lsp`, or an MCP client. The example we use ships with its proof artifacts already filled and a green `goal_check`, so you are reproducing a green build, not authoring proofs. Writing your own spec is [ch 5](ch05-your-first-spec.md); delegating proofs to an LLM is [ch 7](ch07-invariants-and-the-ai-dial.md).
 
 ## Step 0 — install the prerequisites
 
@@ -45,7 +45,7 @@ This is the slow step (it is the whole logic library, not your example) and it i
 
 ## Step 1 — run `symexec` on a shipped example
 
-We use `abs` — the simplest example on the ladder ([FACTS §F7](FACTS.md)): a one-function file that returns the absolute value of an `int`. Look at the source, `QCP_examples/QCP_demos_human/simple_arith/abs.c`:
+We use `abs` — the simplest example on the ladder ([ch 12](ch12-scope-and-scaling.md)): a one-function file that returns the absolute value of an `int`. Look at the source, `QCP_examples/QCP_demos_human/simple_arith/abs.c`:
 
 ```c
 /*@ Extern Coq (Zabs: Z -> Z) */
@@ -63,9 +63,9 @@ int abs(int x)
 }
 ```
 
-The `/*@ ... @*/` block is the **spec**: a **precondition** (`Require`) and a **postcondition** (`Ensure`). The precondition `INT_MIN < x && x <= INT_MAX` is there because Rocq integers are **unbounded mathematical integers** (`Z`), so you re-impose C's `int` range by hand — the overflow tax, which [ch 5](ch05-your-first-spec.md) and [FACTS §F4.4](FACTS.md) cover in full.
+The `/*@ ... @*/` block is the **spec**: a **precondition** (`Require`) and a **postcondition** (`Ensure`). The precondition `INT_MIN < x && x <= INT_MAX` is there because Rocq integers are **unbounded mathematical integers** (`Z`), so you re-impose C's `int` range by hand — the overflow tax, which [ch 5](ch05-your-first-spec.md) covers in full.
 
-Run the **canonical command** ([FACTS §F3.1](FACTS.md)) on it:
+Run the **canonical command** ([R3 — Invocation](reference/INVOCATION.md)) on it:
 
 ```bash
 linux-binary/symexec \
@@ -89,7 +89,7 @@ End of symbolic execution of function abs
 Successfully finished symbolic execution
 ```
 
-> **Warning: exit 0 ≠ success.** `symexec` returning `0` does **not** prove the run did what you wanted. A truncated or malformed C file can still exit `0`, and a `float` program exits `0` "Successfully finished" while emitting obligations the shipped Rocq layer cannot even compile ([FACTS §F9](FACTS.md); the float "silent half-stub" is [ch 13](ch13-honest-limits.md)). The trustworthy signal is not the exit code — it is the **green `goal_check` compile** in Step 3, plus reading the output. Scan the output; don't rely on `$?` alone.
+> **Warning: exit 0 ≠ success.** `symexec` returning `0` does **not** prove the run did what you wanted. A truncated or malformed C file can still exit `0`, and a `float` program exits `0` "Successfully finished" while emitting obligations the shipped Rocq layer cannot even compile (the float "silent half-stub" is [ch 13](ch13-honest-limits.md)). The trustworthy signal is not the exit code — it is the **green `goal_check` compile** in Step 3, plus reading the output. Scan the output; don't rely on `$?` alone.
 
 ### One regeneration gotcha
 
@@ -97,7 +97,7 @@ Successfully finished symbolic execution
 
 ## Step 2 — read the four files
 
-`symexec` writes four `.v` files into the parallel `SeparationLogic/examples/<sub>/` tree (a *different* directory from the `QCP_examples/` C source). Know what each one is ([FACTS §F3](FACTS.md)):
+`symexec` writes four `.v` files into the parallel `SeparationLogic/examples/<sub>/` tree (a *different* directory from the `QCP_examples/` C source). Know what each one is ([ch 9](ch09-goals-symexec-and-proof.md)):
 
 | File | What it holds | Yours to edit? |
 |---|---|---|

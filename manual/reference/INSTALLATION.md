@@ -128,13 +128,18 @@ To install:
    - Linux/WSL: `linux-binary/lsp`
    - macOS: `mac-arm64-binary/lsp` or `mac-x86-64-binary/lsp`
    - Windows: `win-binary/lsp.exe`
-3. Leave `qide.lspArg` empty unless you need specific QCP options.
+3. Leave `qide.lspArg` empty unless you need specific QCP options (it passes through to the `lsp` binary; the flags are in [R3](INVOCATION.md)).
+4. `qide.assertionType` chooses which **surface form** QIDE shows for the symbolic state: `user assertion` (the default, most readable), `inner assertion` (the raw `PROP / LOCAL / SEP` form), or `basic assertion` (every memory cell spelled out). These mirror the `--user-assertion` / `--inner-assertion` / `--basic-assertion` flags ([R3](INVOCATION.md)); the basic-vs-concise trade-off is covered in [ch 6](../ch06-annotations-as-specs.md). Leave it at `user assertion` unless you want a more explicit view.
+
+> The stepping key `Alt+→` (`qide.interpretToPoint`) is rebindable in VS Code's *Keyboard Shortcuts* if it clashes with another binding.
 
 ### 6. Reading the proofs in VS Code (optional, tier 2+)
 
 This is a separate extension from QIDE, and you only need it when you open the generated `.v` files to read or step through a proof — never required to *annotate* C or to take an example to green.
 
 > 🔵 **Tier 2** — When you read or fix the manual `Qed` proofs, install a Coq 8.20 proof extension: `vsrocq` (or `coq-lsp`) on Linux/macOS. On Windows the verified working setup is the repository-local `vscoq-2.2.3.vsix` with the Coq Platform's `vscoqtop.exe` — install it the same way (Install from VSIX), and disable any other Coq extensions in the workspace first.
+
+Two `vscoq` settings matter for QCP: **`vscoq.path`** — the path to `vscoqtop` (`vscoqtop.exe` on Windows) if it is not on your `PATH` — and **`vscoq.memory.limit`** (default `4`, in GB) — raise it if large proofs get their state discarded mid-step. The rest are upstream VsCoq defaults (see the VsCoq docs). Its stepping keys are the tier-2 analogue of QIDE's: `Alt+↓` / `Alt+↑` step forward / back, `Alt+→` interprets to the cursor, `Alt+End` to the end of the file.
 
 ## Stage B: the MCP servers (optional, for the AI workflow)
 
@@ -156,7 +161,7 @@ uv sync
 
 > On **Windows**, install `uv` with its PowerShell one-liner (`irm https://astral.sh/uv/install.ps1 | iex`), then run the same `uv venv .venv` / `uv sync` from `mcp/qcp-mcp`.
 
-`qcp-mcp` then needs to know where the engine `mcp` binary is, and your MCP client (VS Code, Claude Code, Codex) needs its own server entry. Those configuration steps — the `CONFIGURE`/`QCP_MCP_BIN` wiring and the per-client server blocks — live in [R3](INVOCATION.md), so they stay in one place. `rocq-mcp` additionally requires `opam` + `coq-lsp`; see [ch 7](../ch07-invariants-and-the-ai-dial.md) for when it is worth setting up.
+`qcp-mcp` then needs to know where the engine `mcp` binary is, and your MCP client (VS Code, Claude Code, Codex) needs its own server entry. The `QCP_MCP_BIN`/`CONFIGURE` wiring and the full env-var contract are documented in [R3](INVOCATION.md); the ready-to-paste per-client server blocks (VS Code Copilot, Claude Code, Codex) live in `README_LINUX.md`'s *MCP Setup* section. `rocq-mcp` additionally requires `opam` + `coq-lsp`; see [ch 7](../ch07-invariants-and-the-ai-dial.md) for when it is worth setting up.
 
 ## Per-OS notes
 

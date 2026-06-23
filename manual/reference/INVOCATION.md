@@ -36,7 +36,7 @@ itself never runs `coqc` (see [ch 4](../ch04-quickstart-stage-a.md)).
 | `--goal-file <file>` | write the generated VC goals (`<name>_goal.v`) |
 | `--proof-auto-file <file>` | write the auto-solved proofs (`<name>_proof_auto.v`) |
 | `--proof-manual-file <file>` | write the manual-proof stubs (`<name>_proof_manual.v`; not overwritten if present) |
-| `--coq-output-dir <dir>` | derive all generated Rocq file paths from one output folder (instead of naming each) |
+| `--coq-output-dir <dir>` | derive all generated Rocq (formerly Coq) file paths from one output folder (instead of naming each) |
 | `--gen-and-backup` | back up existing generated files before overwriting (otherwise only the manual file is preserved) |
 | `--no-coq-gen` | disable all Rocq file generation (parse/check only) |
 
@@ -73,14 +73,15 @@ distinction in [ch 6](../ch06-annotations-as-specs.md)):
 | `--primary-assertion` | the primary form |
 | `--inner-assertion` | the internal `PROP / LOCAL / SEP` form |
 
+In QIDE, the same choice is the `qide.assertionType` setting (`user` / `inner` / `basic assertion`) — see [R6 — Installation](INSTALLATION.md).
+
 ### Output & diagnostics
 | Flag | Meaning |
 |---|---|
 | `--no-exec-info` | suppress intermediate symbolic-execution output (use in scripts/CI) |
 | `--disable-solver-info` | suppress solver-related output |
-| `--dump-smt-vc-file <file>` | dump the generated SMT verification conditions (advanced/diagnostic) |
+| `--dump-smt-vc-file <file>` | dump the generated low-level verification conditions to a file (advanced/diagnostic) |
 | `--program-path <file>` | write the generated Rocq *program* to a file |
-| `--soundness-proof` | generate soundness-proof artifacts — **currently dormant** (emits empty output in the shipped build); not usable today |
 
 ## `StrategyCheck` flags
 
@@ -95,7 +96,7 @@ plus one of its own:
 |---|---|
 | `--strategy-proof-logic-path <path>` | the Rocq logical path for the generated strategy proofs |
 
-It does **not** have the symexec-only `--program-path`, `--soundness-proof`, or `--dump-smt-vc-file`.
+It does **not** have the symexec-only `--program-path` or `--dump-smt-vc-file`.
 
 Typical use (validates a `.strategies` file):
 
@@ -140,11 +141,29 @@ The two MCP servers (`qcp`, `rocq-mcp`) are declared in an `.mcp.json` entry —
 }
 ```
 
-`QCP_MCP_BIN` points the server at the platform `mcp` binary it drives; the server also reads
-`QCP_MCP_CONFIG`, `QCP_MCP_LOG`, and `QCP_MCP_USE` from the environment. If your MCP client uses a
-different config format (VS Code JSON, a CLI's own config), translate the same
-`command` / `args` / `env` contract into it. See [ch 7](../ch07-invariants-and-the-ai-dial.md) for
-the Stage-B workflow and its maturity caveats.
+`QCP_MCP_BIN` points the server at the platform `mcp` binary it drives. The server resolves that
+binary in precedence order: the `QCP_MCP_BIN` env var, then a `CONFIGURE` file named by
+`QCP_MCP_CONFIG`, then the `CONFIGURE` packaged beside the server. The remaining `qcp-mcp` env vars
+are diagnostics knobs, all optional:
+
+| Env var | Default | Effect |
+|---|---|---|
+| `QCP_MCP_BIN` | — | absolute path to the platform `mcp` binary (highest precedence) |
+| `QCP_MCP_CONFIG` | packaged `CONFIGURE` | path to a `CONFIGURE` file giving `QCP_MCP_BIN` |
+| `QCP_MCP_LOG_LEVEL` | `INFO` | server log level |
+| `QCP_MCP_LOG_FILE` | _(unset)_ | write the server log to this file |
+| `QCP_MCP_USE_STDBUF` | `0` | wrap the engine in `stdbuf` for line-buffered output (set `1` to debug streaming) |
+
+The companion **`rocq-mcp`** server (interactive Rocq proof, Stage B) reads its own knobs —
+`ROCQ_WORKSPACE` (the proof working dir, usually your editor's `${workspaceFolder}`),
+`ROCQ_COQC_BINARY` (default `coqc`; point it at a non-`PATH` `coqc`), and timeout/memory caps
+(`ROCQ_COQC_TIMEOUT`, `ROCQ_VERIFY_TIMEOUT`, `ROCQ_PET_TIMEOUT`, `ROCQ_MAX_PET_RSS_MB`, `ROCQ_MAX_STATES`).
+The full list with defaults is in `mcp/rocq-mcp/README.md`.
+
+If your MCP client uses a different config format (VS Code JSON, a CLI's own config), translate the
+same `command` / `args` / `env` contract into it — the ready-to-paste per-client blocks (VS Code
+Copilot, Claude Code, Codex) are in `README_LINUX.md`'s *MCP Setup* section. See
+[ch 7](../ch07-invariants-and-the-ai-dial.md) for the Stage-B workflow and its maturity caveats.
 
 ## Build targets (`SeparationLogic/`)
 

@@ -143,7 +143,7 @@ not a technical report; readers came to *use* QCP, not to learn its construction
   binary", "per the DWARF symbols") — never put methodology/provenance in a chapter; **WIP or
   dormant features** (e.g. an unwired `--soundness-proof` certificate) — a user can't use them, so
   they don't belong in *this* version.
-- **Internal source docs are for drafting only.** `reference/ENGINE_INTERNALS.md`, the
+- **Internal source docs are for drafting only.** `internal/ENGINE_INTERNALS.md`, the
   reverse-engineering notes, and `docs/` are *sources you mine* — **never link to them from a
   chapter or a distributed reference page**, and never cite "we reverse-engineered…" State the
   resulting fact plainly, at the altitude a user needs.

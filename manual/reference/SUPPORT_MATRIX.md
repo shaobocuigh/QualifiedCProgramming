@@ -20,9 +20,9 @@
 | Unions | ⚠️ limited | tagged-union only; overlapping write-one/read-another NOT modeled |
 | malloc / free | ⚠️ limited | no built-in allocator; you declare contracted wrappers |
 | OS sync (locks/events/interrupts) | ⚠️ limited | via **STS** state-machine abstractions (LiteOS) — not shared-memory parallelism |
-| **Floats / doubles** | ❌ **silent half-stub** | the closed engine accepts floats and **exits 0**, but the shipped Rocq layer can't discharge the VCs — *apparent success, uncompilable obligation*. The dangerous case. |
+| **Floats / doubles** | ❌ **silent half-stub** | the closed engine accepts floats and **exits 0**, but the shipped Rocq (formerly Coq) layer can't discharge the VCs — *apparent success, uncompilable obligation*. The dangerous case. |
 | **goto** | ❌ unsupported | no `Sgoto` node in the open model; rejected |
-| **Function pointers / indirect calls** | ❌ unsupported | verification mode **errors loudly** (`fatal error: FindFuncInfo`, EXIT=1) — a safe hard limit |
+| **Function pointers / indirect calls** | ❌ unsupported | verification mode **errors loudly** (`fatal error: FindFuncInfo: func_info not found`, EXIT=1) — a safe hard limit |
 | **Shared-memory concurrency** | ❌ unsupported | CSL is proven sound in `unifysl` but **never wired into the C frontend** |
 
 **Evidence provenance differs by row (don't blanket it):** the hard ❌ rows cite open-model

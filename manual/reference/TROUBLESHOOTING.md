@@ -7,8 +7,8 @@
 
 | Symptom | Kind | Where to go |
 |---|---|---|
-| Python traceback / `NameError` / "before worker launch" / a non-Rocq tool error | **infrastructure failure** (the tool crashed) | this page + [ch 13](../ch13-honest-limits.md) |
-| `symexec` says "Successfully finished" / exits 0, but the proof won't compile | **silent success** (e.g. floats) | [ch 13](../ch13-honest-limits.md), FACTS §F2.1a |
+| Python traceback / `NameError` / "before worker launch" / a non-Rocq (formerly Coq) tool error | **infrastructure failure** (the tool crashed) | this page + [ch 13](../ch13-honest-limits.md) |
+| `symexec` says "Successfully finished" / exits 0, but the proof won't compile | **silent success** (e.g. floats) | [ch 13](../ch13-honest-limits.md) |
 | A Rocq VC is red / you can't close a goal | **proof failure** | [ch 11 — Stuck-Goal Differential](../ch11-stuck-goal-differential.md) |
 | A green build you're not sure you can trust | **trust question** | [ch 10 — Trust & soundness](../ch10-trust-and-soundness.md) |
 
@@ -25,7 +25,7 @@ python3 -m pyflakes .agents/skills/*/scripts/*.py      # (or: ruff check --selec
 # 2. After any tool failure, audit for obligations left admitted:
 grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"
 
-# 3. Per-VC trust audit (fully-qualified import; see FACTS §F1.1):
+# 3. Per-VC trust audit (fully-qualified import; see [ch 10](../ch10-trust-and-soundness.md)):
 #    From SimpleC.EE.<dotted.path> Require Import <name>_goal_check.
 #    Print Assumptions VC_Correctness.proof_of_<witness>.
 ```
