@@ -208,8 +208,10 @@ story (ch 2's teaser links to it).
   battle-tested (global ratio HIGH; category splits medium — say so). **Deps:** ch 3.
   **Length:** ~1800–2400. **Wave 1.**
 
-### Ch 13 — Honest limits & roadmap
-- **Goal:** the rough edges, stated plainly — the credibility chapter.
+### Ch 13 — Honest limits & maturity
+- **Goal:** the rough edges, stated plainly — the credibility chapter. (Title is **"Honest
+  limits & maturity"**, not "& roadmap": the brief bans a speculative roadmap, so "maturity" —
+  the chapter's actual spine — is the honest title. Deliberate, recorded rename.)
 - **In:** the honesty ledger (F6); the hard boundaries (F2.1) restated as limits; maturity
   labels (battle-tested core vs intended-workflow agent pipeline); MCP/AI friction; Windows
   packaging gaps; the unaudited annotation→VC faithfulness (F1.2); **pipeline infrastructure

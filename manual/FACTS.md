@@ -28,24 +28,25 @@ this manual's authoring). Re-measure before a release.
 
 ```bash
 grep -rh "Admitted" SeparationLogic/examples --include="*_proof_auto.v"    | wc -l  # ≈ 4350 (auto)
-grep -rh "Qed"      SeparationLogic/examples --include="*_proof_manual*.v" | wc -l  # ≈ 1744 (manual Qed, shard-aware)
-grep -rh "Qed"      SeparationLogic/examples --include="*_proof_manual.v"  | wc -l  # ≈ 1464 (umbrella files only)
+grep -rh "Qed"      SeparationLogic/examples --include="*_proof_manual*.v" | wc -l  # ≈ 1770 (manual Qed, shard-aware)
+grep -rh "Qed"      SeparationLogic/examples --include="*_proof_manual.v"  | wc -l  # ≈ 1490 (umbrella files only)
 grep -rl "Admitted" SeparationLogic/examples --include="*_proof_manual*.v"          # ⚠ manual files that contain Admitted
 ```
 
 - **Auto:** ≈ 4350 `Admitted` lemmas (one per auto VC) across ≈ 120 `*_proof_auto.v` files; all
   but one contain `Admitted` (the exception is a zero-VC file).
-- **Manual:** predominantly `Qed` (≈ 1744 shard-aware / ≈ 1464 umbrella-only — pair the number
+- **Manual:** predominantly `Qed` (≈ 1770 shard-aware / ≈ 1490 umbrella-only — pair the number
   with its scope, see F3 sharding). **Caveat:** raw `Qed` ≠ "manual VCs" — it also counts helper
   lemmas (per-VC stubs `proof_of_*` are ≈ 1700; ≈ 90 `Qed`s are helper lemmas/theorems). It is a
-  proof-*effort* proxy, not a VC count. And it is **NOT exclusively `Qed`** — ⚠ The no-`Admitted` rule on
-  manual files is a **convention, not enforced** — the shipped corpus currently contains **≈ 30
-  admitted manual stubs**, all in `QCP_demos_LLM/array_cases_noinv_proof_manual.v` (a
-  deliberately *no-invariant* benchmark case whose VCs can't be discharged). **So the precise,
-  honest claim is: a manual VC is kernel-checked _only when it ends in `Qed`_.** Never assume a
-  manual file is `Admitted`-free — audit it (the `grep -rl` command above, or `Print
-  Assumptions`, F1.1). This *reinforces* the two-tier message: "manual = checked" holds per-`Qed`,
-  not per-file.
+  proof-*effort* proxy, not a VC count. And it is **NOT guaranteed to be all `Qed`** — ⚠ the
+  no-`Admitted` rule on manual files is a **convention, not enforced**, and it *can* be violated:
+  during this manual's authoring a crashed `vc-proving` run (the F9 `NameError`) left
+  `QCP_demos_LLM/array_cases_noinv_proof_manual.v` full of admitted stubs; a later re-run filled
+  them. The example tree **regenerates**, so the `grep -rl` audit above may return nothing now and
+  a hit tomorrow — that's the point. **The precise, honest claim is: a manual VC is kernel-checked
+  _only when it ends in `Qed`_.** Never assume a manual file is `Admitted`-free — audit it (the
+  `grep -rl` above, or `Print Assumptions`, F1.1). This *reinforces* the two-tier message: "manual
+  = checked" holds per-`Qed`, not per-file.
 
 **Why `goal_check` still goes green with auto `Admitted`:** the per-case
 `<name>_goal_check.v` builds `Module VC_Correctness : VC_Correct` by `Include`-ing the auto and
@@ -196,21 +197,21 @@ count and over what scope**, so always pair a number with how it was counted:
 
 | Counting method | Auto : Manual | ≈ % manual |
 |---|---|---|
-| Lemma count, **shard-aware**: ≈ 4350 auto `Admitted` / ≈ 1744 manual `Qed` | **≈ 2.5 : 1** | **≈ 29%** |
-| Lemma count, **umbrella manual files only**: ≈ 4350 / ≈ 1464 | **≈ 3.0 : 1** | **≈ 25%** |
+| Lemma count, **shard-aware**: ≈ 4350 auto `Admitted` / ≈ 1770 manual `Qed` | **≈ 2.5 : 1** | **≈ 29%** |
+| Lemma count, **umbrella manual files only**: ≈ 4350 / ≈ 1490 | **≈ 3.0 : 1** | **≈ 25%** |
 | `scripts/collect_and_analyze.py` paired methodology (**re-run in a writable dir** — it writes its output, and counts lemma *stubs* including any `Admitted`, not `Qed`s) | ≈ 3 : 1 | ≈ 24–25% |
 
 (Commands for rows 1–2 are in F1; all numbers are snapshots — re-run.) **Headline phrasing for
 prose: "roughly a quarter to a third of proof effort is manual on average."** Do **not** quote a
-frozen `collect_and_analyze.py` number as fact. Note the manual `Qed` count **excludes** the ≈ 30
-admitted manual stubs in `array_cases_noinv` (F1) — those VCs are neither auto-discharged nor
+frozen `collect_and_analyze.py` number as fact. Note the manual `Qed` count **excludes** any
+admitted manual stubs a crashed run leaves behind (F1) — those VCs are neither auto-discharged nor
 proven, so they don't count as "manual effort done."
 
 **Skew (qualitative, medium confidence — category estimates, NOT reproduced by one command;
 label as such or cut):** more manual for arithmetic/number-theory & OS/STS code; much less for
 array/string/list/algorithmic code that reuses shipped predicates; a shard-aware count finds
 **roughly 1 in 9** measured cases hits **zero** manual `Qed` lemmas (state the denominator and
-whether you count `Qed`s or stubs — `array_cases_noinv` has stubs, not `Qed`s). **Recurring cost
+whether you count `Qed`s or stubs). **Recurring cost
 (solid):** every `Z` arithmetic result is an unbounded mathematical integer → **a manual
 range/overflow bound per VC** (no overflow automation). This tax *is* the `Z` leak (F4.4),
 billed per VC.
@@ -369,10 +370,11 @@ The surrounding material shipped these errors; the manual must not repeat them:
 - **"every VC is machine-checked" / "no `Admitted`" / "strategy soundness is machine-checked"**
   — false for the auto fraction and the 6 admitted strategy rules (F1, F1.2). The internal
   `docs/` were corrected on 2026-06-23; older copies/tutorials may still over-claim.
-- **"manual proof files never contain `Admitted`"** — also false: the shipped corpus has ≈ 30
-  admitted manual stubs in `QCP_demos_LLM/array_cases_noinv_proof_manual.v` (F1). The
-  no-`Admitted` rule is a convention, not a guarantee; the trustworthy unit is a `Qed`, not a
-  file.
+- **"manual proof files never contain `Admitted`"** — also false: a crashed proving run can leave
+  admitted stubs in a manual file (observed during this manual's authoring in
+  `QCP_demos_LLM/array_cases_noinv_proof_manual.v`, later filled — the tree regenerates, so audit
+  with `grep -rl Admitted …_proof_manual*.v`, F1/F9). The no-`Admitted` rule is a convention, not
+  a guarantee; the trustworthy unit is a `Qed`, not a file.
 - **qua.codes `store_int` bug** — `exists v, store_int(p,v)*store_int(q,v)` was labeled
   "non-negative" while missing `v >= 0`. Correct form adds `v >= 0 &&` (F4.1).
 - **qua.codes `add1_ptr` bug** — body `* x ++` parses as `*(x++)` (increments the pointer); the
@@ -446,9 +448,10 @@ it gets there). Document this honestly; it's a credibility win, not a weakness.
   §9.1 must be applied locally. This is the documentation gap made concrete: a known,
   reproducible, *shipped-everywhere* tool crash that no official doc mentions.
 - **Why this matters for trust:** when vc-proving dies, the manual proofs are never filled, so
-  the case's `*_proof_manual.v` is left with **`Admitted` stubs** — exactly how
-  `array_cases_noinv` shipped with ≈30 admitted manual stubs (F1). A pipeline *crash* can thus
-  masquerade as "30 unproven obligations" rather than an infrastructure fault.
+  the case's `*_proof_manual.v` is left with **`Admitted` stubs** — exactly what happened to
+  `array_cases_noinv` during this manual's authoring (dozens of admitted stubs; a later re-run
+  filled them, F1). A pipeline *crash* can thus masquerade as "N unproven obligations" rather than
+  an infrastructure fault — always check whether the tool actually finished.
 - **Self-diagnosis recipe for the manual (give readers this):**
   1. Distinguish **infrastructure failure** (Python traceback / `NameError` / "before worker
      launch" / non-Coq error) from a **proof failure** (a Coq goal you can't close → F5
@@ -469,9 +472,13 @@ it gets there). Document this honestly; it's a credibility win, not a weakness.
     float program, exits 0 "Successfully finished", and emits real IEEE VCs — but the shipped Coq
     layer can't discharge them, so you get *apparent success* with an uncompilable obligation
     (F2.1a). Unlike `goto`/funcptr (which are rejected/error loudly), floats fail **silently**.
-  - **`symexec` returns exit code 0 even on `fatal error`** (e.g. a missing `--program-path` or a
-    bad annotation parse); only an in-verification-mode funcptr call returns EXIT=1. **So an exit
-    code of 0 is not proof of success** — scripts/CI must scan output, not just `$?`. (No
+  - **Exit code is unreliable — `0` is not proof of success.** Re-measured live at `9804a85`:
+    no-args, a missing/nonexistent `--input-file`, and a missing `--program-path` all return
+    **EXIT=1** (so the earlier blanket "fatal errors exit 0" is *wrong*). BUT a **malformed/
+    truncated parse returns EXIT=0**, and a **float program returns EXIT=0 "Successfully finished"**
+    while emitting undischargeable VCs (F2.1a). So `$? == 0` does **not** mean the run succeeded —
+    scripts/CI must scan the output, not just the exit code. (Commands:
+    `linux-binary/symexec --input-file=/tmp/bad.c … ; echo $?` → 0 on a truncated `.c`. No
     `--version` flag on any binary, either.)
   - **A dormant `--soundness-proof` certificate pathway exists** (F1.3) — latent, unwired, emits
     empty output today; note it as a *future* trust lever, don't present it as a feature.

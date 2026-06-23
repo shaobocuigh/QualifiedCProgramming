@@ -217,7 +217,7 @@ will reject violations.
 2. **Effort tax travels with every capability claim.** Manual proof is a **minority but real**
    share — **roughly a quarter to a third** of proof effort on average. The example proofs are
    **regenerated artifacts**, so quote counts as approximate snapshots (lead with the command):
-   a **shard-aware** lemma count is ≈ **4350 auto / ≈ 1744 manual `Qed` ≈ 2.5 : 1 (≈ 29%
+   a **shard-aware** lemma count is ≈ **4350 auto / ≈ 1770 manual `Qed` ≈ 2.5 : 1 (≈ 29%
    manual)**; umbrella-only ≈ **3.0 : 1 (≈ 25%)**; the benchmark script reports ≈ **24%**.
    FACTS.md §F2.2 carries the commands — cite a counted number, don't invent one. Skew is
    qualitative/medium-confidence (more manual for arithmetic/OS; less for array/string/list
