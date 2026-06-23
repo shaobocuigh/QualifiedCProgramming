@@ -1,8 +1,8 @@
 # The Stuck-Goal Differential
 
-A red goal is a question, not a verdict. The question is **whose fault** — and the answer is almost never "QCP is broken." It is one of four things, and the first one to rule out — because it is the cheapest to check and the most actionable when it hits — is that QCP told you the truth: your code or your spec is wrong, and the tool refused to prove a false statement.
+A red goal is a question, not a verdict. The question is **whose fault** — and a stuck goal rarely means "QCP is broken." It is one of four things, and the first one to rule out — because it is the cheapest to check and the most actionable when it hits — is that QCP told you the truth: your code or your spec is wrong, and the tool refused to prove a false statement.
 
-This chapter is a differential diagnosis. You will learn to route a red result to its actual cause in a fixed order — cheapest, most likely, and most actionable first — and to know what to *do* about each. It is the deliberate **mirror** of [ch 10 — Trust & soundness](ch10-trust-and-soundness.md): that chapter asks *"green — why believe it?"*; this one asks *"red — whose fault?"*
+This chapter is a differential diagnosis. You will learn to route a red result to its actual cause in a fixed order — cheapest and most actionable first, truth before provability — and to know what to *do* about each. It is the deliberate **mirror** of [ch 10 — Trust & soundness](ch10-trust-and-soundness.md): that chapter asks *"green — why believe it?"*; this one asks *"red — whose fault?"*
 
 > **The one habit to carry out of this chapter:** ask *"is it even true?"* before *"why won't it prove?"* A stuck goal may be a statement that *cannot* be proved because it is false — a wrong spec or a real bug — and not a proof problem at all. Triage that possibility first; it is the cheapest to check and the most actionable when it hits.
 
@@ -12,7 +12,12 @@ Before the differential, one gate. **A crash in the tooling is not a red goal.**
 
 QCP's **CLI core** — `symexec`, `StrategyCheck`, `coqc` — is battle-tested. The **LLM agent-workflow scripts** that orchestrate annotation and proving are intended-workflow Python and can fail *as software*. That is an infrastructure failure, not a stuck goal.
 
-How to recognize it: a real stuck goal is a **Rocq error about an entailment** — a tactic that fails, a goal left open, `entailer!` that won't close. An infrastructure failure is a **Python traceback or a non-Rocq error**, often with the phrase "before worker launch" or "Script infrastructure failure." And the exit code is an **unreliable** signal in both directions: re-measured live at `9804a85`, no-args, a missing `--input-file`, and a missing `--program-path` all return **exit 1**, but a malformed/truncated parse and a float program both return **exit 0** ("Successfully finished") while leaving an undischargeable obligation — so `$? == 0` does *not* prove the tool succeeded. Scan the output; don't trust `$?`. The shipped scripts carry at least one infrastructure defect (the `vc-proving` skill aborts before any worker launches) — its full root cause and fix live in [ch 13 — Honest limits & roadmap](ch13-honest-limits.md) and [R5 — Troubleshooting](reference/TROUBLESHOOTING.md), not here.
+How to recognize it: a real stuck goal is a **Rocq error about an entailment** — a tactic that fails, a goal left open, `entailer!` that won't close. An infrastructure failure is a **Python traceback or a non-Rocq error**, often with the phrase "before worker launch" or "Script infrastructure failure." And the exit code is an **unreliable** signal: `$? == 0` does *not* prove the tool succeeded. Two distinct "success-looking" failures hide behind exit 0:
+
+- **A malformed or truncated `.c`** can parse partway and still report success — but emit **no usable goals** (an empty or near-empty VC set). Nothing is wrong with a proof; there is nothing to prove, because the input never fully parsed.
+- **A float program** reports `Successfully finished` and emits *real* IEEE VCs, but those goals reference float symbols the shipped Rocq layer doesn't define, so they **can't compile or be discharged** (see cause 3 below — floats are unsupported, not a lemma gap).
+
+So scan the output; don't trust `$?`. The shipped agent-workflow scripts carry at least one infrastructure defect (the `vc-proving` skill aborts before any worker launches) — its full root cause and fix live in [ch 13 — Honest limits & maturity](ch13-honest-limits.md) and [R5 — Troubleshooting](reference/TROUBLESHOOTING.md), not here.
 
 You can confirm this class of bug statically, before you trust any shipped script:
 
@@ -26,11 +31,11 @@ python3 -m pyflakes .agents/skills/*/scripts/*.py     # or: ruff check --select 
 > grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"
 > ```
 
-If the pre-check fires — Python error, abort before worker launch, or "Successfully finished" / exit 0 on a program the Rocq layer can't actually discharge (a bad parse or a float) — **stop here.** This is not a differential case. Route it to [ch 13 — Honest limits & roadmap](ch13-honest-limits.md) for the maturity context and to [R5 — Troubleshooting](reference/TROUBLESHOOTING.md) for the fix. Only once you have a genuine **Rocq goal you cannot close** do you enter the differential.
+If the pre-check fires — Python error, abort before worker launch, or "Successfully finished" / exit 0 with no usable goals (a bad parse) or with goals the Rocq layer can't compile (a float) — **stop here.** This is not a differential case. Route it to [ch 13 — Honest limits & maturity](ch13-honest-limits.md) for the maturity context and to [R5 — Troubleshooting](reference/TROUBLESHOOTING.md) for the fix. Only once you have a genuine **Rocq goal you cannot close** do you enter the differential.
 
 ## The four causes
 
-A red goal that survives the pre-check has exactly four causes. They are not equally likely and not equally your fault, so the order you check them in matters.
+A red goal that survives the pre-check has exactly four causes. They are not equally your fault, and they are not equally cheap to check, so the order you check them in matters.
 
 | # | Cause | Whose fault | First move |
 |---|---|---|---|
@@ -47,8 +52,8 @@ Walk the tree top-down. Each branch is a question you can answer before the one 
 
 ```mermaid
 flowchart TD
-    A[Red goal] --> P{Pre-check:<br/>Python traceback / NameError /<br/>abort before worker launch /<br/>'Successfully finished' but the<br/>goal won't compile bad parse or float?}
-    P -->|Yes| INFRA[INFRASTRUCTURE FAILURE<br/>Not a stuck goal.<br/>Route to ch 13 / R5.<br/>Audit for leftover Admitted.]
+    A[Red goal] --> P{Pre-check:<br/>Python traceback / NameError /<br/>abort before worker launch /<br/>'Successfully finished' but no usable<br/>goals bad parse or uncompilable<br/>goals float?}
+    P -->|Yes| INFRA[NOT A STUCK GOAL<br/>Infrastructure failure or<br/>unsupported feature.<br/>Route to ch 13 / R5.<br/>Audit for leftover Admitted.]
     P -->|"No — a real Rocq goal"| T{Is the statement<br/>even TRUE?}
     T -->|"No — spec is wrong"| C1[CAUSE 1: Wrong spec<br/>You wrote Require/Ensure that<br/>doesn't mean what you meant.<br/>Fix the annotation.]
     T -->|"No — code is wrong"| C2[CAUSE 2: Real program bug<br/>The tool is SUCCEEDING by<br/>refusing a false thing.<br/>Fix the C.]
@@ -62,7 +67,7 @@ If you can't render the diagram, the prose carries it: **pre-check → "is it tr
 **Localize by who wrote the failing part.** A second axis cuts across the same four causes and is often the fastest way in. QCP's promise splits responsibility: *you* own the WHAT — the `Require`/`Ensure` spec — while the WHY — loop invariants and proofs — is largely delegated to the strategy solver and (with the AI dial up) to the LLM. That split is also a diagnostic map:
 
 - **You wrote the spec.** If the red goal traces to a `Require`/`Ensure` mismatch, suspect **cause 1** first. The spec is the one artifact QCP can never check against your intent (it is item 6 of the Trusted Computing Base in [ch 10](ch10-trust-and-soundness.md)) — so a spec bug is *invisible* until a proof refuses to close around it.
-- **The LLM (or you) wrote the invariant.** A loop invariant is an annotation *someone wrote*, not something `symexec` invents. If the stuck goal is at a loop boundary — the invariant doesn't hold on entry, isn't preserved by the body, or is too weak to imply the postcondition — suspect **cause 4** and reach for the dial. A wrong invariant produces a *false* VC (cause 1/2 in disguise); a too-weak invariant produces a *true but unprovable-as-stated* VC (cause 4).
+- **The LLM (or you) wrote the invariant.** A loop invariant is an annotation *someone wrote*, not something `symexec` invents. If the stuck goal is at a loop boundary — the invariant doesn't hold on entry (`P -> I`), isn't preserved by the body (`I -> I`), or is too weak to imply the postcondition — the repair is to the *invariant*, not the proof. Treat this as **cause 4**'s invariant-repair branch and reach for the dial. Be precise about why: a too-weak or wrong invariant usually makes the *emitted entailment itself false* (the boundary check it feeds can't close), even when a stronger invariant would let the program and spec go through — so the fix is to strengthen or correct the invariant, not to search harder for a proof of the current one.
 - **The solver discharged it — or didn't.** If a VC you expected the strategy solver to auto-close instead landed in `*_proof_manual.v` as a stub, the automation came up short on a routine VC: **cause 4**, and a `.strategies` rule is often the durable fix.
 
 For how `symexec` builds these goals statement-by-statement so you can read them as claims, see [ch 9 — Goals, symbolic execution & proof](ch09-goals-symexec-and-proof.md).
@@ -102,23 +107,23 @@ The test that separates cause 3 from cause 4: would the proof go through if you 
 
 First, confirm it is genuinely in scope and not a hard boundary masquerading as a missing lemma. **Floats and doubles, `goto`, function pointers / indirect calls, and shared-memory concurrency are unsupported** — and they fail in revealingly different ways. A function-pointer call fails *loudly* in verification mode (`fatal error: FindFuncInfo`, exit 1) — a tool-level failure to handle like the pre-check, not a stuck goal. Floats are the dangerous case: the engine *accepts* a float program, reports success at **exit 0**, and emits real IEEE VCs — but the shipped Rocq layer defines none of the float symbols, so the generated goal references undefined symbols and **can't compile or be discharged at all**. (This is exactly why the exit code is unreliable both ways — a hard funcptr boundary exits 1, while an unsupported float "succeeds" at exit 0. Scan the output, not `$?`.) A "stuck" float goal is not a cause-3 lemma gap; it is an unsupported feature ([ch 13](ch13-honest-limits.md) and [ch 12 — Scope & scaling](ch12-scope-and-scaling.md) treat these boundaries).
 
-If it *is* in scope, the fix is to supply the missing logic: prove a helper lemma in the case's Rocq library and `sep_apply` it; unfold a representation predicate so the solver can see through it; or, for a recurring shape, define a new predicate and a `.strategies` rule so the obligation discharges automatically forever after ([ch 14 — Extension](ch14-extension.md)).
+If it *is* in scope, the fix is to supply the missing logic: prove a helper lemma in the case's Rocq library and `sep_apply` it; unfold a representation predicate so the solver can see through it; or, for a recurring shape, define a new predicate and a `.strategies` rule so the obligation discharges automatically for matching future cases, subject to regeneration and the rule's applicability ([ch 14 — Extension](ch14-extension.md)).
 
 > 🟢 **Tier 1** — You won't write Rocq here. Hand the stuck goal to the LLM with the AI dial up; if it can't close it either, this may be a real library gap — escalate or pick a different approach. Don't grind on it by hand.
 
-> 🔵 **Tier 2** — Open `*_proof_manual.v` and read the failing `entailer!`. The missing fact is often a range bound or a length equality you can add with one `Intros`/`lia` step, or a `sep_apply` of an existing list/array lemma. Re-read the current `_goal.v` first — names like `H3` may now be `PreH5` after regeneration; prefer `match goal with … end` over hard-coded hypothesis numbers (`Version_Log/V2-0-3.md`).
+> 🔵 **Tier 2** — Open `*_proof_manual.v` and read the failing `entailer!`. The missing fact is often a range bound or a length equality you can add with one `Intros`/`lia` step, or a `sep_apply` of an existing list/array lemma. Re-read the current `_goal.v` first — names like `H3` may now be `PreH5` after regeneration; prefer `match goal with … end` over hard-coded hypothesis numbers.
 
-> 🟣 **Tier 3** — Write a new representation predicate or a `.strategies` rule so this VC class discharges automatically for every future call ([ch 14](ch14-extension.md)). This converts a recurring cause-3 into a permanent cause-4 win.
+> 🟣 **Tier 3** — Write a new representation predicate or a `.strategies` rule so this VC class discharges automatically for matching future calls ([ch 14](ch14-extension.md)). This converts a recurring cause-3 into a cause-4 win for that shape, as long as the rule keeps applying after regeneration.
 
 ### Cause 4 — automation or LLM came up short
 
 The goal is provable and in scope; the solver or the LLM didn't find the proof. This is the only cause where the obstacle is purely a matter of *search*, and it is where the **AI dial** is your lever.
 
-Three moves, cheapest first. **Dial the AI up:** ask the LLM to draft or repair the proof, or to strengthen a loop invariant that was too weak to be preserved. **Add a `.strategies` rule:** if the same routine VC keeps landing in the manual file, a strategy rule teaches the solver to discharge it automatically — and the rule itself is kernel-checked by `StrategyCheck` (mostly `Qed`, a small named residue trusted; [ch 10](ch10-trust-and-soundness.md), [ch 14](ch14-extension.md)). **Prove it by hand:** the standard pattern is `Intros` the pure facts, `Exists`/instantiate the witnesses, `sep_apply` a representation-predicate lemma, then `entailer!`; reach for `destruct` on an inductive predicate when a list or tree needs case analysis ([`../docs/coq-backend.md#tactics`](../docs/coq-backend.md#tactics); tutorial [T5](../tutorial/T5-prove-vc.md)).
+Three moves, cheapest first. **Dial the AI up:** ask the LLM to draft or repair the proof, or to strengthen a loop invariant that was too weak to be preserved. **Add a `.strategies` rule:** if the same routine VC keeps landing in the manual file, a strategy rule teaches the solver to discharge that shape automatically — covering matching future obligations, subject to regeneration and the rule's applicability. The strategy rule's own soundness obligation lands in a `*_strategy_proof.v` file, and most of those (about 43 of ~45) close with `Qed` and are re-checked by the Rocq kernel; a small named residue (6 admitted lemmas across 2 files) is trusted ([ch 10](ch10-trust-and-soundness.md), [ch 14](ch14-extension.md)). **Prove it by hand:** the standard pattern is `Intros` the pure facts, `Exists`/instantiate the witnesses, `sep_apply` a representation-predicate lemma, then `entailer!`; reach for `destruct` on an inductive predicate when a list or tree needs case analysis (the tactic walkthrough is [tutorial T5](../tutorial/T5-prove-vc.md)).
 
 > 🟢 **Tier 1** — Dial the AI up and hand it over: ask the LLM to draft or repair the proof, then re-read the spec it touched. You don't open the Rocq.
 
-> 🟣 **Tier 3** — Dial down and prove it by hand for the parts you want to control, or promote the recurring VC into a `.strategies` rule so it discharges automatically thereafter.
+> 🟣 **Tier 3** — Dial down and prove it by hand for the parts you want to control, or promote the recurring VC into a `.strategies` rule so matching obligations discharge automatically afterward (subject to regeneration and the rule's applicability).
 
 A caution that keeps cause 4 honest: when the LLM closes a goal, you have an LLM-drafted proof that ends in `Qed` — which **is** kernel-checked. The kernel re-checks that `Qed` proof against the **emitted VC** and the **imported axioms**, so no one can produce a `Qed` for a VC that is false — not provable from those axioms — short of the axioms themselves being unsound ([ch 10](ch10-trust-and-soundness.md)). That guards the *proof*, not the VC's *faithfulness* to your C. The LLM can still "fix" a stuck goal by *weakening the spec* until the goal becomes trivially true. That is a regression to cause 1 wearing a green check. When you dial the AI up to escape cause 4, re-read what it changed in your `Require`/`Ensure` — the kernel will not catch a spec the LLM quietly watered down.
 

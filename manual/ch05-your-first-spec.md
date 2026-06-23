@@ -36,7 +36,7 @@ Read it as a contract. **`Require`**: the caller guarantees `x` and `y` are each
 Two pieces of vocabulary, used everywhere:
 
 - **`__return`** is the function's return value, usable only in `Ensure`. `__return == x + y` is how you say "the value handed back equals `x + y`."
-- **`emp`** means "this function touches no heap memory." The `&& emp` on a pure-arithmetic function says it owns and modifies no memory cells. (For functions that *do* read or write memory, `emp` is replaced by storage predicates like `store(...)` — that is [ch 6](ch06-annotations-as-specs.md)'s subject.)
+- **`emp`** is the empty heap. The `&& emp` on a pure-arithmetic function says its contract requires and returns no heap resources — no caller-owned memory crosses the call. (For functions that *do* read or write memory, `emp` is replaced by storage predicates like `store(...)` — that is [ch 6](ch06-annotations-as-specs.md)'s subject.)
 
 > **Note:** `&&` is **ordinary conjunction** — it joins **pure facts** (`0 <= x`, `__return == x + y`), heap-independent propositions, and on a pure-arithmetic spec it is the only connective you see. The heap operator `*` (**separating conjunction**, covered in [ch 6](ch06-annotations-as-specs.md) / the [bestiary](reference/BESTIARY.md)) is the one you meet the moment you touch memory.
 
@@ -44,7 +44,7 @@ Two pieces of vocabulary, used everywhere:
 
 Look at `add` again: `0 <= x && x <= 100`. Why fence the inputs at all? The answer is the single most important thing to internalize about specs in QCP, and it surprises every newcomer.
 
-**Inside a spec, `int` is not C's 32-bit `int`. It is `Z` — the unbounded mathematical integer.** Rocq's `Z` has no `INT_MAX`, no overflow, no wraparound; it stretches to infinity in both directions. So when `symexec` reasons about `x + y`, it reasons over `Z`, where the sum is always exactly `x + y` — *but a real 32-bit signed `int` has no such guarantee: exceeding its range is **undefined behavior** in C.* The bound `x <= 100 && y <= 100` is how you promise the caller will never hand `add` values whose true sum leaves the representable `int` range. Without it, the spec would claim something false about the machine. This hand-written re-imposition of C's bounds is the **`Z` leak**, and it is the recurring tax of verifying arithmetic in QCP: **there is no overflow automation.** Every integer result you specify needs its own range or overflow reasoning, written by you (or drafted by the LLM and reviewed by you). It is a minority of total proof effort, but it never goes to zero — budget for it whenever a function does arithmetic. (The effort calibration across the whole corpus is [ch 12](ch12-scope-and-scaling.md).)
+**Inside a spec, `int` is not C's 32-bit `int`. It is `Z` — the unbounded mathematical integer.** Rocq's `Z` has no `INT_MAX`, no overflow, no wraparound; it stretches to infinity in both directions. So when `symexec` reasons about `x + y`, it reasons over `Z`, where the sum is always exactly `x + y` — *but a real 32-bit signed `int` has no such guarantee: exceeding its range is **undefined behavior** in C.* The full ranges `0 <= x && x <= 100` and `0 <= y && y <= 100` are how you promise the caller will never hand `add` values whose true sum leaves the representable `int` range. Both ends pull weight: the upper bounds (`<= 100`) keep the sum from overflowing past `INT_MAX`, and the lower bounds (`0 <=`) keep it from underflowing past `INT_MIN` — drop either and the spec would claim something false about the machine. This hand-written re-imposition of C's bounds is the **`Z` leak**, and it is the recurring tax of verifying arithmetic in QCP: **there is no overflow automation.** Every integer result you specify needs its own range or overflow reasoning, written by you (or drafted by the LLM and reviewed by you). It is a minority of total proof effort, but it never goes to zero — budget for it whenever a function does arithmetic. (The effort calibration across the whole corpus is [ch 12](ch12-scope-and-scaling.md).)
 
 This shows up most cleanly in `abs` (`QCP_examples/QCP_demos_human/simple_arith/abs.c`):
 
@@ -70,7 +70,7 @@ int abs(int x)
 
 The precondition opens with `INT_MIN < x && x <= INT_MAX`. That is not redundant decoration — it is **load-bearing**, and the `<` (strict) on the low end is deliberate. `abs` returns `-x`; the one value a 32-bit `int` cannot negate is `INT_MIN` (because `-INT_MIN` overflows). By requiring `INT_MIN < x` you exclude exactly that case, so `-x` is always representable. The bound re-imposes, by hand, the C reality that `Z` has thrown away — the **`Z` leak** at work again.
 
-The `Zabs` in `__return == Zabs(x)` is a Rocq function — the *mathematical* absolute value over `Z` — pulled in by the `/*@ Extern Coq (Zabs: Z -> Z) */` line at the top (the directive keyword is literally `Extern Coq`; QCP's proof assistant is Rocq, formerly named Coq, so prose says "Rocq" while the syntax keeps `Coq`). The spec says the return value equals the true `|x|`, and the in-range precondition is what makes that promise honest for a 32-bit machine.
+The `Zabs` in `__return == Zabs(x)` is a Rocq function — the *mathematical* absolute value over `Z`. The `/*@ Extern Coq (Zabs: Z -> Z) */` line at the top *declares that name to QCP*: it tells the annotation language "`Zabs` exists, with this type, and lives in Rocq." It does not define `Zabs` or import a definition — it only makes the name usable in a spec. (QCP's proof assistant is Rocq, formerly named Coq, so prose says "Rocq" while the syntax keeps the literal token `Coq`.) When you need to bring in your *own* Rocq definitions rather than declare an already-existing name, that is `Import Coq`, covered in [ch 6](ch06-annotations-as-specs.md). The spec says the return value equals the true `|x|`, and the in-range precondition is what makes that promise honest for a 32-bit machine.
 
 > 🟢 **Tier 1** — You don't need to know Rocq's `Z` theory to write these bounds. The rule of thumb is mechanical: any `int` parameter that feeds arithmetic gets a `INT_MIN ... INT_MAX` (or tighter, like `0 <= x && x <= 100`) bound in `Require`, chosen so the operations can't overflow. When you forget one, the goal goes red on an overflow obligation — fix it by adding the bound.
 
@@ -78,13 +78,28 @@ The `Zabs` in `__return == Zabs(x)` is a Rocq function — the *mathematical* ab
 
 Specs quantify over values, and the *motion* is one a C programmer already owns from math: **some values the caller supplies going in (for-any, ∀); some the function produces coming out (there-is, ∃).** `With` is the ∀ direction — a **ghost variable** the caller picks, shared across both `Require` and `Ensure`; `exists` in an `Ensure` (or invariant) is the ∃ direction — a value the function produces that the caller didn't supply.
 
-`add` and `abs` need neither — their `Ensure` is pinned entirely by the parameters and `__return`, so there is no ghost to share and no witness to produce. You first reach for `With` when `Require` and `Ensure` must name the same abstract value (a list, a tree, an array's contents), and for `exists` when the output is "some value with a property" rather than a closed formula. The full triad — with real predicate examples, and why `With` is a distinct keyword from an in-assertion `forall` — is [§2 of the bestiary](reference/BESTIARY.md).
+`add` and `abs` need neither — their `Ensure` is pinned entirely by the parameters and `__return`, so there is no ghost to share and no witness to produce. You first reach for `With` when `Require` and `Ensure` must name the same value that isn't a parameter. The same `add.c` ships the smallest case — `add1_3`, which increments the integer reached through a double pointer:
+
+```c
+void add1_3(int * * x)
+/*@ With (v: Z)
+    Require (INT_MIN <= v) && (v < INT_MAX) &&
+            * * x == v
+    Ensure * * x == v + 1 */
+{
+  * * x = * * x + 1;
+}
+```
+
+`v` is the **ghost variable**: the caller picks it, it never appears in the C signature, and it is the one name shared across both clauses — `Require` says `**x` starts at `v`, `Ensure` says it ends at `v + 1`. Without `With`, you'd have no way to relate the after-value to the before-value. (This one touches memory through `**x`, so it steps slightly past the pure-arithmetic examples above; the storage side is [ch 6](ch06-annotations-as-specs.md)'s subject — it appears here only to show the `With` keyword in real source.)
+
+You reach for `exists` in the other direction — when the output is "some value with a property" rather than a closed formula. The full triad — with real predicate examples, and why `With` is a distinct keyword from an in-assertion `forall` — is [§2 of the bestiary](reference/BESTIARY.md).
 
 ## Your first loop invariant
 
 A straight-line function like `add` needs only `Require`/`Ensure`. The moment you add a loop, you owe one more annotation: the **loop invariant** (`Inv`) — an assertion true *every* time execution reaches the top of the loop.
 
-Here is the critical point, and it is central to how QCP works: **you (or the LLM you direct) supply the invariant; the tool only checks it.** `symexec` does **not** figure the invariant out for you — it won't study the loop and guess the right one. It expects an invariant to be written, then verifies that it holds; if a loop has no `Inv`, `symexec` simply tells you it expected one.
+Here is the critical point, and it is central to how QCP works: **you (or the LLM you direct) supply the invariant; the tool only checks it.** `symexec` does **not** figure the invariant out for you — it won't study the loop and guess the right one. It expects an invariant to be written, then verifies that it holds; if a loop has no `Inv`, `symexec` tells you it expected one.
 
 The same `add.c` ships `slow_add`, which computes `x + y` by counting down — a real loop with a real invariant:
 
@@ -110,7 +125,7 @@ int slow_add(int x, int y)
 }
 ```
 
-The invariant's heart is `x + y == x@pre + y@pre`. Each iteration moves one unit from `x` to `y`, so their *sum* never changes — it always equals the sum the function was called with. The marker **`@pre`** means "the value of this variable at function entry," so `x@pre` and `y@pre` are the original arguments, frozen. (Note also the widened range `y <= 200`: `y` grows as the loop runs, so the invariant must admit values the *precondition* never did — `0 <= x && x <= 100` plus `0 <= y` from entry can drive `y` as high as 200.)
+The invariant's heart is `x + y == x@pre + y@pre`. Each iteration moves one unit from `x` to `y`, so their *sum* never changes — it always equals the sum the function was called with. The marker **`@pre`** means "the value of this variable at function entry," so `x@pre` and `y@pre` are the original arguments, frozen. (Note also the widened range `y <= 200`: `y` grows as the loop runs, so the invariant must admit values the *precondition* never did. The precondition caps `x <= 100` and `y <= 100` at entry; since the loop moves at most 100 units from `x` into `y`, the final `y` reaches at most `100 + 100 == 200`. That entry cap on `y` is what makes `200` the right ceiling — without it, `y` would be unbounded above.)
 
 The tool checks a supplied invariant two ways — classic Hoare-style inductive checking:
 

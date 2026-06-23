@@ -84,7 +84,7 @@ linux-binary/symexec \
   --no-exec-info
 ```
 
-Three flags carry the load. The input `.c` goes to `--input-file`; the three output `.v` files have their own flags; `--coq-logic-path` is the Rocq namespace for the generated files (derived from the directory: `SimpleC.EE.` + the path, segment by segment). `-slp <dir> <Rocq.Path>` (**s**trategy/**l**ogic **p**ath) tells `symexec` where to find `.strategies` files and Rocq dependencies — it is **not** the same as `-I<dir>`, which resolves C `#include`s. `abs` needs neither extra includes nor extra `-slp` pairs; richer cases stack several of each (full flag reference: [ch 9](ch09-goals-symexec-and-proof.md) and `docs/verification-pipeline.md` §3–§4).
+Three flags carry the load. The input `.c` goes to `--input-file`; the three output `.v` files have their own flags; `--coq-logic-path` is the Rocq namespace for the generated files (derived from the directory: `SimpleC.EE.` + the path, segment by segment). `-slp <dir> <Rocq.Path>` (**s**trategy/**l**ogic **p**ath) tells `symexec` where to find `.strategies` files and Rocq dependencies — it is **not** the same as `-I<dir>`, which resolves C `#include`s. `abs` needs neither extra includes nor extra `-slp` pairs; richer cases stack several of each (the complete flag reference is [R3 — Invocation](reference/INVOCATION.md)).
 
 A successful run prints:
 
@@ -143,7 +143,7 @@ COQC examples/QCP_demos_human/simple_arith/abs_proof_manual.v
 COQC examples/QCP_demos_human/simple_arith/abs_goal_check.v
 ```
 
-No error, and an `abs_goal_check.vo` on disk, is your **green check**. (Equivalent without `make`: invoke `coqc` on the four files in that order with the library `-R` flags — but let `make` handle the flags and ordering.) If you want to build a whole subtree instead of one case, the corpus is split into `make` groups — `make examples-qcp-democases` builds the `QCP_demos_human/` goal-checks (and their strategy proofs), `make examples-llm-friendly-cases` builds the `QCP_demos_LLM/` goal-checks, and `make examples` builds all groups; `make core` (re)builds only the library. (Source: `docs/verification-pipeline.md` §6, §8; `SeparationLogic/Makefile`.)
+No error, and an `abs_goal_check.vo` on disk, is your **green check**. (Equivalent without `make`: invoke `coqc` on the four files in that order with the library `-R` flags — but let `make` handle the flags and ordering.) If you want to build a whole subtree instead of one case, the corpus is split into `make` groups — `make examples-qcp-democases` builds the `QCP_demos_human/` goal-checks (and their strategy proofs), `make examples-llm-friendly-cases` builds the `QCP_demos_LLM/` goal-checks, and `make examples` builds all groups; `make core` (re)builds only the library. (The full target list is in [R3 — Invocation](reference/INVOCATION.md).)
 
 ## What "green" actually means here
 

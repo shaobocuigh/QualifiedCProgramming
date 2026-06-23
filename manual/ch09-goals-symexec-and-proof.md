@@ -2,13 +2,13 @@
 
 This chapter tells you **what `symexec` actually does** to your annotated C — how it walks the code, what it emits, and the shape of the **verification conditions (VCs)** you (or the LLM) end up proving. The point is *legibility*: when a goal goes red, you should be able to read it and know what step of your program it came from. The diagnosis itself — *whose fault is a red goal?* — is [ch 11](ch11-stuck-goal-differential.md)'s job, and ch 11 leans on the mental model you build here.
 
-This is not a symbolic-execution course. For the step-by-step derivations and a hands-on proving walkthrough, follow [tutorial T4 (symbolic execution)](../tutorial/T4-symbolic-execution.md) and [tutorial T5 (proving a VC)](../tutorial/T5-prove-vc.md); for the proof assistant — **Rocq** (formerly Coq; the command is still `coqc`) — and the full tactic reference, [`docs/coq-backend.md`](../docs/coq-backend.md#tactics). Here you get the judgment layer: the architecture, the file map, and the gotchas.
+This is not a symbolic-execution course. For the step-by-step derivations, a hands-on proving walkthrough, and the tactics you use — on the proof assistant **Rocq** (formerly Coq; the command is still `coqc`) — follow [tutorial T4 (symbolic execution)](../tutorial/T4-symbolic-execution.md) and [tutorial T5 (proving a VC)](../tutorial/T5-prove-vc.md). Here you get the judgment layer: the architecture, the file map, and the gotchas.
 
 ## Symbolic execution: the symbolic state, statement by statement
 
 `symexec` runs your function **symbolically**. It carries a **symbolic state** — a separation-logic assertion describing memory at the current program point — and updates it as it walks each statement. It never executes concrete values; it tracks *what is known* about the heap and the program variables.
 
-Here is how the state evolves (source: [`docs/verification-pipeline.md`](../docs/verification-pipeline.md) §1):
+Here is how the state evolves:
 
 | C construct | Effect on the symbolic state |
 |---|---|
@@ -22,13 +22,13 @@ Here is how the state evolves (source: [`docs/verification-pipeline.md`](../docs
 
 Two of these rows carry the weight. An **`Assert` or `Inv` is the one place you take over the state**: instead of letting `symexec` carry the inferred assertion forward, you *declare* what holds here, and `symexec` records a VC obligating the previous state to imply your declaration. A **function call** is where the frame rule does its work: `symexec` carves off `pre_mem` for the callee's contract and threads the rest (the frame) past untouched (the call mechanics, including the `where` clause that supplies un-inferable ghosts, are [ch 6](ch06-annotations-as-specs.md) and [T8](../tutorial/T8-function-call.md)).
 
-The net effect is the whole reason the rest of the manual works: **program correctness is reduced to a finite set of separation-logic entailments `P |-- Q`** — the VCs. `symexec` produces them; the solver, the LLM, and you discharge them. Nothing about this step proves anything yet — it *generates the obligations*.
+The net effect is the whole reason the rest of the manual works: **program correctness is reduced to a finite set of separation-logic entailments `P |-- Q`** — the VCs. This walk *generates the obligations*; it doesn't decide them. From there, `symexec`'s strategy solver discharges the routine VCs and records them as trusted `Admitted` lemmas; the rest fall to the LLM or you to prove, and only those manual proofs — the ones that end in `Qed` — are re-checked by the Rocq kernel (ch 10).
 
 > 🟢 **Tier 1** — You never read the symbolic state by hand. In QIDE, `Alt+→` ("interpret to point") shows you the live state at the cursor while you annotate — that's the practical way to see this table in action without touching Rocq.
 
 ## The four files `symexec` emits
 
-For each input `<name>.c`, `symexec` writes four files into the parallel `SeparationLogic/examples/<sub>/` tree (source: [`docs/verification-pipeline.md`](../docs/verification-pipeline.md) §2; FACTS §F3):
+For each input `<name>.c`, `symexec` writes four files into the parallel `SeparationLogic/examples/<sub>/` tree:
 
 | File | Contents | Edit it? |
 |---|---|---|
@@ -41,7 +41,14 @@ The split between `_proof_auto.v` and `_proof_manual.v` is the **two-tier trust 
 
 ## The shape of a VC: witnesses and the five kinds
 
-Each VC is a named **witness** — a `Definition <name>_<kind>_wit_<n>` in `_goal.v`, with a matching `proof_of_<...>` in one of the proof files. The witness *name encodes which program step produced it*, and that is what makes a red goal legible. Five kinds cover the corpus (re-run `grep -rhoE '_(entail|return|safety|partial_solve|which_implies)_wit' SeparationLogic/examples/QCP_demos_human --include="*_goal.v"` to see which kinds appear in your corpus):
+Each VC is a named **witness** — a `Definition <name>_<kind>_wit_<n>` in `_goal.v`, with a matching `proof_of_<...>` in one of the proof files. The witness *name encodes which program step produced it*, and that is what makes a red goal legible. Five kinds recur across the generated tree — to count them in your snapshot, run:
+
+```bash
+grep -rhoE '_(entail|return|safety|partial_solve|which_implies)_wit' \
+  SeparationLogic/examples --include="*_goal.v" | sort | uniq -c
+```
+
+The kinds and what each obligates:
 
 | Witness kind | Comes from | What it obligates |
 |---|---|---|
@@ -81,7 +88,7 @@ The practical upshot: **"the tool writes invariants" is false.** It checks and p
 
 ## The proof loop and the division of labor
 
-A manual VC stub in `<name>_proof_manual.v` is an ordinary Rocq lemma whose statement is the witness. The routine motion is `Intros` → `Exists` → `sep_apply`/`prop_apply` → `entailer!`, then ordinary Rocq for the residual math; [tutorial T5](../tutorial/T5-prove-vc.md) walks each of those tactics step by step, and [`docs/coq-backend.md`](../docs/coq-backend.md#tactics) is the full reference. (`pre_process` is the usual combined entry tactic — it does the `Intros` step and a bit more.)
+A manual VC stub in `<name>_proof_manual.v` is an ordinary Rocq lemma whose statement is the witness. The routine motion is `Intros` → `Exists` → `sep_apply`/`prop_apply` → `entailer!`, then ordinary Rocq for the residual math; [tutorial T5](../tutorial/T5-prove-vc.md) walks each of those tactics step by step and is the reference for them. (`pre_process` is the usual combined entry tactic — it does the `Intros` step and a bit more.)
 
 The Ch-9-level point is *where the line falls*, not how each tactic works. A real manual proof — `gcd_return_wit_1` (`SeparationLogic/examples/QCP_demos_human/simple_arith/gcd_proof_manual.v`):
 
@@ -103,7 +110,7 @@ Note the residue: after `entailer!` discharges the separation-logic structure, w
 
 ## Regeneration gotchas
 
-`symexec` is designed to be re-run as your code and annotations evolve, and three behaviors trip people up (source: [`docs/verification-pipeline.md`](../docs/verification-pipeline.md) §2; FACTS §F3):
+`symexec` is designed to be re-run as your code and annotations evolve, and three behaviors trip people up:
 
 - **`symexec` never overwrites an existing `*_proof_manual.v`.** The warning `manual proof file not updated` is **normal and intended** — it protects the proofs you've written when you regenerate `_goal.v` and `_proof_auto.v`. To force a backup-then-overwrite, pass `--gen-and-backup`.
 - **Witness numbering and hypothesis names shift on regeneration.** `safety_wit_3` may become `safety_wit_4`; `H3` may become `PreH5`; disjunction branches may reorder (the v2.0.3 `AggressivePreProcess` change is the usual culprit). **Never hard-code a witness number or a hypothesis name** in a manual proof — re-read the current `_goal.v`, and prefer `match goal with … end` over a literal `H3`.
@@ -113,7 +120,7 @@ Note the residue: after `entailer!` discharges the separation-logic structure, w
 
 ## What to take away
 
-- `symexec` walks your annotated C and maintains a **symbolic state**, reducing correctness to a finite set of entailments `P |-- Q` — the VCs. It *generates* obligations; it proves nothing on its own.
+- `symexec` walks your annotated C and maintains a **symbolic state**, reducing correctness to a finite set of entailments `P |-- Q` — the VCs. The walk *generates* the obligations; its strategy solver then discharges the routine ones as trusted `Admitted`, and only the manual `Qed` proofs are re-checked by the Rocq kernel (ch 10).
 - Four files come out: `_goal.v` (the VCs), `_proof_auto.v` (`Admitted`, solver-discharged), `_proof_manual.v` (the file you edit — `Qed` when proved; audit for stray `Admitted`), `_goal_check.v` (the completeness gate).
 - A VC is a named **witness** in one of five kinds — `safety` / `entail` / `return` / `partial_solve` / `which_implies` — and the name tells you which program step it came from. `safety_wit`s carry the `Z` overflow tax.
 - **You supply loop invariants; `symexec` checks them** (P → I and I → I) and partial-solves the frame. It does not infer them — with the dial up, the LLM drafts them.

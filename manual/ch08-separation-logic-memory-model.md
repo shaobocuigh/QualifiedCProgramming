@@ -1,8 +1,8 @@
 # Separation logic & the memory model
 
-You do not need to learn separation logic to use QCP. You need to *read* it — enough to look at a `Require sll(p, l)` line and know what it claims about memory, and enough to recognize when a predicate says "these two things don't overlap." This chapter gives you exactly that reading fluency and stops there. It is not a course: for *why* the rules hold, or how to derive them, follow the [tutorials](../tutorial/) and [qua.codes](https://qua.codes) — they teach the mechanics from first principles. Here you get the practitioner's mental model: what the heap is, what a predicate is a picture of, and the handful of memory-model facts that quietly bound what QCP can prove about your C.
+You do not need to learn separation logic to use QCP. You need to *read* it — enough to look at a `Require sll(p, l)` line and know what it claims about memory, and enough to recognize when a predicate says "these two things don't overlap." This chapter gives you exactly that reading fluency and stops there. It is not a course: for *why* the rules hold, or how to derive them, follow the tutorials — [T1 (representation predicates)](../tutorial/T1-representation-predicates.md), [T3 (assertions & invariants)](../tutorial/T3-assertion-and-invariant.md) — and [qua.codes](https://qua.codes), which teach the mechanics from first principles. Here you get the practitioner's mental model: what the heap is, what a predicate is a picture of, and the handful of memory-model facts that quietly bound what QCP can prove about your C.
 
-A tier-1 C programmer can work in QCP at autopilot without any of this — write specs, let the solver and the LLM close proofs. Read this chapter when a predicate's shape stops being obvious, or when you want to know *why* a particular kind of C (floats, shared memory) is off the table. The body stays at the C / annotation level; Rocq detail is folded into 🟣 `<details>` blocks you can skip.
+A tier-1 C programmer can work in QCP at autopilot without any of this — write specs, let the strategy solver discharge the routine VCs, and let the LLM draft the remaining manual proofs. Read this chapter when a predicate's shape stops being obvious, or when you want to know *why* a particular kind of C (floats, shared memory) is off the table. The body stays at the C / annotation level; Rocq detail is folded into 🟣 `<details>` blocks you can skip.
 
 ## The one idea: assertions describe *memory*, not values
 
@@ -78,7 +78,7 @@ Fixpoint sll (x: addr) (l: list Z): Assertion :=
   end.
 ```
 
-Read the C↔Rocq map ([R1 §3](reference/BESTIARY.md#3-storage-primitives--data_at-store-and-the-crocq-map)): `*`↔`**`, `exists`↔`EX`, `emp`↔`emp`, and a pure proposition `P` is written `[| P |]` in tutorials or `“ P ”` (smart quotes) in the generated `*_goal.v` files. The empty list is the *empty heap* (`emp`) with a pure null-pointer fact; the cons case owns a `data` cell `**` (separately) a `next` cell `**` (separately) the rest of the list. The `**` chain is the disjointness made literal. `Assertion` describes only *memory* — globals and struct fields down to bytes; a C local enters an assertion through its **address/cell** (`data_at(&x, x_v)` — the cell at `&x`), never as a bare program-variable name.
+Read the C↔Rocq map ([R1 §3](reference/BESTIARY.md#3-storage-primitives--data_at-store-and-the-crocq-map)): `*`↔`**`, `exists`↔`EX`, `emp`↔`emp`, and a pure proposition `P` is written `[| P |]` in tutorials or `“ P ”` (smart quotes) in the generated `*_goal.v` files. The empty list is the *empty heap* (`emp`) with a pure null-pointer fact; the cons case owns a `data` cell `**` (separately) a `next` cell `**` (separately) the rest of the list. The `**` chain is the disjointness made literal. `Assertion` describes only *memory* — globals and struct fields down to bytes. In the **basic** assertion form a C local enters an assertion through its **address/cell** (`data_at(&x, x_v)` — the cell at `&x`), not as a bare program-variable name. The **concise** form lets you skip that: you can write `sll(v, l2)` with the program variable `v` directly, and QCP desugars it to the basic `exists v_v, data_at(&v, v_v) * sll(v_v, l2)` for you ([T3](../tutorial/T3-assertion-and-invariant.md)). The reverse-loop invariant above uses exactly this concise form.
 
 </details>
 
@@ -103,19 +103,7 @@ Inductive mem_var :=
 Definition mem : Type := addr -> mem_var.
 ```
 
-The join relation (`mem_join`, `Mem.v:104`) is what makes ownership exclusive. It enumerates exactly the ways two heaps combine into one, and **every case requires at least one side to be `Noperm`** at each address:
-
-```coq
-Definition mem_join (m1 m2 m: mem) : Prop :=
-  forall p,
-  (m1 p = Noperm /\ m2 p = Noperm  /\ m p = Noperm) \/
-  (m1 p = Noperm /\ m2 p = Noninit /\ m p = Noninit) \/
-  (m1 p = Noninit /\ m2 p = Noperm /\ m p = Noninit) \/
-  (exists n, m1 p = Noperm  /\ m2 p = value n /\ m p = value n) \/
-  (exists n, m1 p = value n /\ m2 p = Noperm  /\ m p = value n).
-```
-
-There is no case where both `m1 p` and `m2 p` hold a `value`. A *fractional* permission model would add exactly such a case (two readers each owning a share). QCP's `Mem.v` has none — a cell is owned by one piece or the other, never split. This is the formal shape of "full-or-no permission": separating conjunction `**` corresponds to this disjoint `mem_join`, so `P * Q` literally means "`P` and `Q` own non-overlapping cells." (Concurrent separation logic *is* proven sound elsewhere in `unifysl`, but fractional permissions are never wired into this C frontend — see the concurrency note below, and FACTS §F2.1c.)
+The relation that combines two heaps into one (`mem_join`, `Mem.v:104`) is what makes ownership exclusive: at every address, at least one of the two sides must hold *no permission*. There is no case where both sides hold a live `value`. A *fractional* permission model would add exactly such a case — two readers each owning a share of one cell — and this model has none. So a cell is owned by one piece or the other, never split. This is the formal shape of "full-or-no permission": separating conjunction `**` corresponds to this disjoint join, so `P * Q` literally means "`P` and `Q` own non-overlapping cells." With no way to split a cell, two threads can't each hold a partial claim on shared state — which is the direct reason shared-memory concurrency is unsupported (see the concurrency note below).
 
 </details>
 
@@ -153,8 +141,8 @@ These four facts — flat byte heap, full-or-no permission, ~32-bit pointers, pa
 
 The memory model isn't only background; two hard scope lines follow directly from what you've now read:
 
-- **Full-or-no permission is *why* shared-memory concurrency can't be expressed.** Two threads writing shared state would need *fractional* (splittable) permissions so each could hold a partial claim on the same cell — and `mem_join` has no such case. So shared-memory concurrency is unsupported. (See [ch 13](ch13-honest-limits.md) for the full verdict and the OS-synchronization distinction; FACTS §F2.1c.)
-- **No float in the byte/value model is part of *why* floats are off-limits — but the failure is silent, not clean.** The core type model has no float case and the shipped Rocq layer defines no `fp32` symbols, so a float can't be stored or its obligations discharged. Yet the closed `symexec` *accepts* float code and **exits 0**, emitting IEEE VCs that nothing downstream can compile — so a clean `symexec` run on float code is **not** success. This silent half-stub is the dangerous case (Ch 13 / FACTS §F2.1a).
+- **Full-or-no permission is *why* shared-memory concurrency can't be expressed.** Two threads writing shared state would need *fractional* (splittable) permissions so each could hold a partial claim on the same cell — and `mem_join` has no such case. So shared-memory concurrency is unsupported. (See [ch 13](ch13-honest-limits.md) for the full verdict and the OS-synchronization distinction.)
+- **No float in the byte/value model is part of *why* floats are off-limits — but the failure is silent, not clean.** The core type model has no float case and the shipped Rocq layer defines no `fp32` symbols, so a float can't be stored or its obligations discharged. Yet the closed `symexec` *accepts* float code and **exits 0**, emitting IEEE VCs that nothing downstream can compile — so a clean `symexec` run on float code is **not** success. This silent half-stub is the dangerous case ([ch 13](ch13-honest-limits.md)).
 
 `goto` and function pointers are also unsupported, but for a different reason — no construct in the open library, not a memory-model limit. The full matrix and its evidence live in [ch 3](ch03-scope-at-a-glance.md) and [R2](reference/SUPPORT_MATRIX.md).
 
@@ -162,7 +150,7 @@ The memory model isn't only background; two hard scope lines follow directly fro
 
 Annotation integers are `Z` — **unbounded mathematical integers**, not fixed-width C `int`s — and that shapes every spec you write. This is a value-, not memory-fact: the heap stores bytes, but the *logical* contents you reason about are arbitrary-precision.
 
-This is why `abs.c` opens with `INT_MIN < x && x <= INT_MAX`: you are *manually* re-imposing C's bounds on Rocq's unbounded `Z`. There is no automatic overflow checking — every integer result you care about needs a manual range bound. This is the recurring effort tax ([ch 12](ch12-scope-and-scaling.md)); the memory model doesn't pay it for you. ([R4 glossary](reference/GLOSSARY.md) has the "Rocq types in C terms" cheat — forward link; R4 ships in a later wave; FACTS §F4.4.)
+This is why `abs.c` opens with `INT_MIN < x && x <= INT_MAX`: you are *manually* re-imposing C's bounds on Rocq's unbounded `Z`. There is no automatic overflow checking — every integer result you care about needs a manual range bound. This is the recurring effort tax ([ch 12](ch12-scope-and-scaling.md)); the memory model doesn't pay it for you. ([R4 glossary](reference/GLOSSARY.md) has the "Rocq types in C terms" cheat — forward link; R4 ships in a later wave.)
 
 ## What to take away
 
@@ -173,4 +161,4 @@ This is why `abs.c` opens with `INT_MIN < x && x <= INT_MAX`: you are *manually*
 - Full-or-no permission is *why* **shared-memory concurrency is unsupported**. Floats are off-limits too, but **silently**: `symexec` accepts float code and exits 0, leaving an obligation nothing can discharge — never trust a clean float exit.
 - Annotation integers are **`Z`**, unbounded — so every C overflow bound is yours to write by hand.
 
-For deriving the separation-logic rules themselves, the [tutorials](../tutorial/) (T1–T6, T8) and [qua.codes](https://qua.codes) are the course. For what a green check over these VCs actually guarantees, see [ch 10 — Trust & soundness](ch10-trust-and-soundness.md). For the annotation syntax that puts these predicates to work, see [ch 6 — Annotations as specs](ch06-annotations-as-specs.md).
+For deriving the separation-logic rules themselves, the tutorials — [T1 (representation predicates)](../tutorial/T1-representation-predicates.md) through [T4 (symbolic execution)](../tutorial/T4-symbolic-execution.md), and [T8 (function calls)](../tutorial/T8-function-call.md) — and [qua.codes](https://qua.codes) are the course. For what a green check over these VCs actually guarantees, see [ch 10 — Trust & soundness](ch10-trust-and-soundness.md). For the annotation syntax that puts these predicates to work, see [ch 6 — Annotations as specs](ch06-annotations-as-specs.md).

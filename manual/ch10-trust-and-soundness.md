@@ -4,7 +4,7 @@ A QCP "✔" is not one thing. It is **two** things, and the difference decides h
 
 Read this chapter before you decide that a verified function is "done." Everything else in the manual — when to adopt QCP ([ch 2](ch02-should-you-use-qcp.md)), why a goal is stuck ([ch 11](ch11-stuck-goal-differential.md)), what the limits are ([ch 13](ch13-honest-limits.md)) — leans on the model you learn here.
 
-> **The one rule to carry out of this chapter:** a QCP green check is **genuinely strong** — most obligations are independently re-checked by the Rocq kernel, and the rest are settled by `symexec`'s automated **strategy solver**. You do not need to distrust a green build. The single thing worth actively inspecting is an **`Admitted` or `Axiom` in a *manual* proof or case lib** — a real, usually-unwanted hole that a person left (or a crashed run left behind). The auto fraction is *also* marked `Admitted`, but that just records the solver's own result — the tool's automated reasoning, which the kernel doesn't independently re-check. That's trust-the-tool, not a gap in the proof.
+> **The one rule to carry out of this chapter:** a QCP green check is **genuinely strong** — most obligations are independently re-checked by the Rocq kernel, and the rest are settled by `symexec`'s automated **strategy solver**. You do not need to distrust a green build. The single thing worth actively inspecting is an **`Admitted` or `Axiom` in a *manual* proof or case lib** — a real, usually-unwanted hole that a person left (or a crashed run left behind). The auto fraction is *also* marked `Admitted`, but that only records the solver's own result — the tool's automated reasoning, which the kernel doesn't independently re-check. That's trust-the-tool, not a gap in the proof.
 
 ## The two-tier trust model
 
@@ -15,7 +15,7 @@ QCP splits every **verification condition** (VC — an entailment `P |-- Q` that
 | **Auto** | VCs `symexec`'s strategy solver discharges | `*_proof_auto.v` | `Lemma … Proof. Admitted.` | **trusted** — accepted as an axiom, **not** re-checked |
 | **Manual** | VCs a human or the LLM proves | `*_proof_manual.v` | `… Qed.` | **kernel-checked** — fully re-elaborated by the Rocq kernel |
 
-The **auto** pool is the larger one — roughly two-and-a-half to three auto VCs for every manual one (i.e. roughly a quarter to a third of proof effort is manual; see [ch 12](ch12-scope-and-scaling.md)). Those VCs close with `Admitted` — but don't misread that. They were **settled by `symexec`'s strategy solver**, the engine's automated reasoning; `Admitted` simply records that the solver discharged the entailment and the Rocq kernel does not independently re-check that result. So relying on the auto fraction is **trusting the tool's automation** — the same trust you place in the core of any verifier — **not** accepting an unproven guess. What you give up versus the manual path is the *independent kernel re-check*, not the reasoning itself; there is nothing unproven there for you to audit.
+The **auto** pool is the larger one — roughly two-and-a-half to three auto VCs for every manual one (i.e. roughly a quarter to a third of proof effort is manual; see [ch 12](ch12-scope-and-scaling.md)). Those VCs close with `Admitted` — but don't misread that. They were **settled by `symexec`'s strategy solver**, the engine's automated reasoning; `Admitted` here records that the solver discharged the entailment and the Rocq kernel does not independently re-check that result. So relying on the auto fraction is **trusting the tool's automation** — the same trust you place in the core of any verifier — **not** accepting an unproven guess. What you give up versus the manual path is the *independent kernel re-check*, not the reasoning itself; there is nothing unproven there for you to audit.
 
 The **manual** pool is the minority, and it is where the kernel does its own re-elaboration. A manual proof that ends in `Qed` has been re-checked, term by term, against the emitted VC. If the proof is wrong, `Qed` fails and the build goes red. That is the strongest guarantee in the system — and it is also where the **one real watch-item** lives: a manual proof (or a case lib) is supposed to end every obligation in `Qed`, but nothing *forces* it to, so a stray `Admitted`/`Axiom` here is a genuine unproven hole (§"the one real watch-item" below).
 
@@ -40,7 +40,13 @@ A clean result here is the assurance that matters in practice. (The deeper, per-
 
 ## Why a green build doesn't mean "every VC was proved"
 
-A green `goal_check.vo` means every VC is *present*, not that every VC was kernel-checked. Here is why. The acceptance gate is a per-case file, `<name>_goal_check.v`. It builds a Rocq module that bundles both proof files together. You annotate the C under `QCP_examples/`, but `symexec` writes the generated `*_proof_*.v` and `*_goal_check.v` files into the parallel `SeparationLogic/examples/` tree — two different directories, not one (the generated-file taxonomy is [ch 9](ch09-goals-symexec-and-proof.md)'s subject). For the shipped `swap` example (`QCP_examples/QCP_demos_human/swap.c`), `symexec` writes the proof files into `SeparationLogic/examples/QCP_demos_human/`, where `swap_goal_check.v` reads in full:
+A green `goal_check.vo` means every VC is *present*, not that every VC was kernel-checked. The acceptance gate is a per-case file, `<name>_goal_check.v`, that **checks every VC has an entry** — exactly one entry per VC `symexec` emitted, none silently dropped, none counted twice. That **completeness** check is genuinely useful: it guarantees the VC set is fully accounted for.
+
+But here is the catch the word "completeness" hides: **an `Admitted` entry counts as an entry.** The gate is satisfied by an admitted member as readily as by a `Qed`-proved one. So `goal_check` compiles green even when the auto VCs are all admitted — and the blindness cuts both ways: a member left `Admitted` in the **manual** file would satisfy the gate equally well, **so `goal_check` will not flag a manual-proof admit either.** That is exactly why the manual-admit audit (above) is a separate step you run yourself, not something the green build does for you.
+
+<details><summary>🟣 Rocq detail: how the <code>goal_check</code> gate is built</summary>
+
+The gate bundles both proof files into one module sealed against a module type. For the shipped `swap` example, `swap_goal_check.v` reads in full:
 
 ```coq
 From SimpleC.EE.QCP_demos_human Require Import swap_goal swap_proof_auto swap_proof_manual.
@@ -51,13 +57,13 @@ Module VC_Correctness : VC_Correct.
 End VC_Correctness.
 ```
 
-That `: VC_Correct` annotation is a **completeness** check: it forces the module to provide a proof member for *every* VC `symexec` emitted, exactly once — none silently dropped, none proved twice. That is genuinely useful: it guarantees the VC set is fully accounted for.
+The `: VC_Correct` ascription is what forces one member per emitted VC. But Rocq's module-type matching only checks that names and types line up — an `Admitted` body passes the same as a `Qed` one — which is why a green `goal_check.vo` is a completeness gate, not a re-check. (The generated-file taxonomy is [ch 9](ch09-goals-symexec-and-proof.md)'s subject.)
 
-But here is the catch that the word "completeness" hides. Rocq's module-type matching is satisfied by an `Admitted` member as readily as by a `Qed` one. So `swap_goal_check.vo` compiles **green even though all of its auto VCs (13 in this checkout) are admitted.** The gate proves the VCs are all *present*; it does not prove they are all *kernel-checked*. And the blindness cuts both ways: a member left `Admitted` in the **manual** file would satisfy the module type just as readily — **so `goal_check` will not flag a manual-proof admit either.** That is exactly why the manual-admit audit (above) is a separate step you run yourself, not something the green build does for you.
+</details>
 
 > **Warning:** `goal_check` is a completeness gate, not a proof. A green `goal_check.vo` means *"every VC has a member"* — not *"every VC was re-checked by the kernel."* The auto members are trusted on the way through.
 
-And nothing in the shipped build forces the issue. No Makefile or script runs `Print Assumptions` or `coqchk` to forbid `Admitted`. The batch driver `run-example-linux.sh` runs only `symexec` and `StrategyCheck` — it never even invokes `coqc` on a `goal_check` file. (Source: `docs/verification-pipeline.md` §2, §6, §7; `docs/project-overview.md`.)
+And nothing in the shipped build forces the issue. No Makefile or script runs `Print Assumptions` or `coqchk` to forbid `Admitted`. The batch driver `run-example-linux.sh` runs only `symexec` and `StrategyCheck` — it never even invokes `coqc` on a `goal_check` file.
 
 This is the single most important thing to internalize: **do not read a green build as kernel-checked end to end.** It is *complete*, with the manual fraction kernel-checked and the auto fraction trusted.
 
@@ -96,7 +102,7 @@ Then always audit the manual file for leftover `Admitted` — the convention is 
 grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"
 ```
 
-In this checkout this command prints one path; re-run it before you rely on the result, since the example tree regenerates. If your case appears here after a proving run, some manual VCs were left unproved (often a crashed pipeline — see [ch 13](ch13-honest-limits.md) and [R5](reference/TROUBLESHOOTING.md)).
+This command may print zero or more paths; re-run it for your checkout, since the example tree regenerates. A clean (empty) result is the all-clear. If your case appears here after a proving run, some manual VCs were left unproved (often a crashed pipeline — see [ch 13](ch13-honest-limits.md) and [R5](reference/TROUBLESHOOTING.md)).
 
 **Recipe 2 — `Print Assumptions` (authoritative, per VC).** This asks the kernel itself what a specific result depends on. From the `SeparationLogic/` directory, in a Rocq session — use the **fully-qualified** import (an unqualified `Require Import swap_goal_check` is ambiguous, since both `QCP_demos_human` and `QCP_demos_LLM` ship a `swap_goal_check`):
 
@@ -128,7 +134,7 @@ Every "✔" rests on a set of things you are trusting without re-checking. Know 
 | 5 | The **6 admitted strategy rules** | `SeparationLogic/stdlib/string_strategy_proof.v` (×2) and `Applications_human/minigmp/gmp_strategy_proof.v` (×4) ship as `Admitted`; all but these 2 of the ~45 `*_strategy_proof.v` files (~43) close with `Qed` and are re-checked. So even the strategy layer is mostly kernel-checked, with a small named trusted residue. |
 | 6 | The **user's annotations** | A wrong `Require`/`Ensure` is faithfully "verified" — QCP proves your spec, not your intent. |
 
-Item 3 is the subtle one and the one most people miss. `symexec` emits **both** the VC goals **and** the `goal_check` gate that accepts them — a small circularity. The kernel guarantees the proofs are valid *for the goals as emitted*; it cannot tell you the goals are the *right* goals for your C source. If `symexec` translates a `*p` dereference into the wrong entailment, a perfectly kernel-checked `Qed` certifies the wrong thing. This faithfulness is the largest unaudited assumption in the stack — flagged here, treated at length in [ch 13](ch13-honest-limits.md). (Source: `docs/verification-pipeline.md` §1–§2; `docs/coq-backend.md`.)
+Item 3 is the subtle one and the one most people miss. `symexec` emits **both** the VC goals **and** the `goal_check` gate that accepts them — a small circularity. The kernel guarantees the proofs are valid *for the goals as emitted*; it cannot tell you the goals are the *right* goals for your C source. If `symexec` translates a `*p` dereference into the wrong entailment, a perfectly kernel-checked `Qed` certifies the wrong thing. This faithfulness is the largest unaudited assumption in the stack — flagged here, treated at length in [ch 13](ch13-honest-limits.md).
 
 Item 6 is the one *you* control. QCP proves that your code satisfies the spec you wrote. If the spec is too weak, or says the wrong thing, the proof is still valid — and useless. A green check is only as meaningful as the `Require`/`Ensure` behind it.
 
