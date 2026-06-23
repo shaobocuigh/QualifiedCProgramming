@@ -97,7 +97,10 @@ What you trust when you trust a QCP "✔":
 2. `SeparationLogic/` + `unifysl` and their foundational axioms.
 3. **`symexec`'s annotation→VC translation** — `coqc` checks proofs *match* the emitted VCs,
    never that the VCs *faithfully model the C source*. This faithfulness is **unaudited**.
-4. **`symexec`'s strategy solver** for every auto-`Admitted` VC.
+4. **`symexec`'s strategy solver + in-house CDCL(T) SMT solver** for every auto-`Admitted` VC — a
+   real decision procedure, but run as a **non-certifying** one (its proof-emitting pipeline is dead
+   code, so the result is trusted, not re-checked — F1.3) — plus the **statically-vendored mini-gmp**
+   it uses as a bignum-arithmetic oracle.
 5. Residual **`Admitted` strategy rules**: of the **~45** `*_strategy_proof.v` files, only **2**
    carry `Admitted` — `SeparationLogic/stdlib/string_strategy_proof.v` (×2) and
    `SeparationLogic/examples/Applications_human/minigmp/gmp_strategy_proof.v` (×4); the other
@@ -106,21 +109,45 @@ What you trust when you trust a QCP "✔":
 6. The **user's annotations** (a wrong spec is faithfully "verified").
 
 **TCB circularity:** `symexec` emits *both* the VC goals and the `goal_check` gate that accepts
-them. (Source: `docs/verification-pipeline.md` §1–§2 (the annotation→VC translation + the four
+them — and the gate is a **Coq module-type ascription, not a proof**: `_goal.v` declares
+`Module Type VC_Correct` listing every VC as an `Axiom`, and `_goal_check.v` writes
+`Module VC_Correctness : VC_Correct.` (a *sealed* ascription) that `Include`s the `_proof_auto`
+(Admitted) + `_proof_manual` (Qed) modules. The kernel checks only that **names/types line up**;
+`Admitted` bodies pass freely. The binaries themselves **never invoke `coqc`** — they are pure Coq
+*source* emitters and contain zero `Qed` strings (the Qed/Admitted split is a file convention).
+(Source: `docs/verification-pipeline.md` §1–§2 (the annotation→VC translation + the four
 generated files) and §5 (StrategyCheck); `docs/coq-backend.md`; scope-matrix + trust-model
-investigations.)
+investigations; binary RE — [reference/ENGINE_INTERNALS.md](reference/ENGINE_INTERNALS.md) §8.)
 
 ### F1.3 What the auto solver actually is (binary RE — sharpens "Admitted = trusted")
 
 Reverse-engineering the closed `symexec` binary (unstripped, `debug_info`) refines the trust
 story — use this precise framing:
 
-- **The auto solver is in-house and proof-PRODUCING, not an SMT call.** It is a separation-logic
-  **entailment checker with witness generation** (`CheckEntailment`, `EntailmentCheckerWit…`),
-  plus EUF/congruence closure and linear-arith simplification, building explicit `ProofTerm`
-  objects. There is **no external SMT solver and no subprocess** (links only libc/libm). So an
-  auto VC is discharged *by a derivation the engine constructs* — not asserted blind.
-- **…but the certificate is not emitted or checked.** That derivation stays inside the engine;
+- **The auto solver is in-house and proof-PRODUCING, not an SMT call.** It is **two layers**: a
+  separation-logic **entailment checker with witness generation** (`CheckEntailment`,
+  `EntailmentCheckerWit…`, driven by the programmable strategy DSL), whose pure-proposition side
+  calls a **complete, from-scratch CDCL(T) SMT solver** — a CDCL SAT core
+  (`cdcl_solver`/`bcp`/`clause_learning`) under **Nelson-Oppen** theory combination
+  (`nelson_oppen_convex`) over **EUF/congruence + linear integer arithmetic** (decided by
+  **Fourier-Motzkin** elimination over a **statically-vendored mini-gmp** bignum) **+ fp32/fp64
+  interval theories**. (Nonlinear arithmetic is only *detected and abstracted*, never decided.)
+  ⚠ **It is proof-producing-*capable*, not certifying-in-practice (RE call-graph trace).** The
+  binary also ships a full parallel proof subsystem — a `_proof` function family + a `ProofTerm`
+  type emitting **SMT/Alethe-style `:rule` certificates** (`:rule RESOLUTION/CONG/LIA_TRANS/…`) plus
+  an internal proof *checker* `smt_proof_check_high` — but that pipeline is **dead code**: its entry
+  `SingleSmtPropCheck_proof` has **zero callers and its address is never taken**, `smt_proof_check_high`
+  is likewise uncalled, and the live auto path (`PropEntail → SingleSmtPropCheck → smt_solver_with_mode`)
+  runs the **non-proof** `cdcl_solver`. The would-be certificate is SMT-style, **not Coq**. So the
+  auto VC is discharged by a real in-house **decision procedure**, but no checkable certificate is
+  produced. There is
+  **no external SMT solver and no subprocess** (links only libc/libm; the SMT subsystem is even
+  compiled without DWARF). So an auto VC is discharged *by a derivation the engine constructs* — not
+  asserted blind. **Full architecture: [reference/ENGINE_INTERNALS.md](reference/ENGINE_INTERNALS.md)
+  §5–§6.**
+- **…and no certificate is emitted or checked.** Even the in-memory proof-node data the live
+  solver does build (`initProofData`/`newProofNode`/`copy_ProofTerm`, for internal unsat-core /
+  theory-conflict tracking) stays inside the engine and is never serialized;
   what lands on disk is `Lemma proof_of_<wit> : <wit>. Proof. Admitted.` (and `_goal.v` declares
   the matching `Axiom proof_of_<wit>` inside `Module Type VC_Correct`). The Rocq kernel never sees
   it. So the precise claim is **"discharged by an in-house proof-producing oracle whose
@@ -170,7 +197,7 @@ all rest on the same kind of proof.**
 | Recursion | ✅ supported | by-contract self-calls; reasoned via inductive predicates |
 | `for`/`while`/`switch`/`break`/`continue`/`do-while` | ✅ supported | frontend desugars to an if/while/seq core — **you write ordinary C** |
 | Polymorphism / generic predicates | ✅ supported (UNDER-SOLD) | one list spec reused across any struct/field (`super_poly_sll2`) |
-| Multi-file / modular | ✅ supported (UNDER-SOLD) | contracts in shared `_def.h` + `/*@ Import/Extern Rocq @*/` |
+| Multi-file / modular | ✅ supported (UNDER-SOLD) | contracts in shared `_def.h` + `/*@ Import/Extern Coq @*/` |
 | Unions | ⚠️ limited | tagged-union only; write-one/read-another (overlapping storage) NOT modeled |
 | malloc / free | ⚠️ limited | no built-in allocator; you declare contracted wrappers (flexible; but you write the spec) |
 | OS sync (locks/events/interrupts) | ⚠️ limited | via **STS abstractions** (LiteOS RTOS, 17 fns) — state-machine, NOT shared-memory parallelism |
@@ -193,7 +220,13 @@ all rest on the same kind of proof.**
   an unprovable, uncompilable obligation — **more dangerous than a clean rejection.** Manual
   stance: floats are **off-limits in practice**, and the reason is "engine ahead of the shipped
   proof base," not "cleanly rejected." (Also a degenerate `(X)\/(X)` VC artifact suggests the
-  float VC-gen is itself unfinished.)
+  float VC-gen is itself unfinished.) **Binary-RE root cause:** the gap is *structural and
+  bifurcated* — the in-house SMT solver actually *has* real fp32/fp64 **interval theory solvers**
+  (`interval_theory_check`, Nelson-Oppen-registered), yet the core C-type/heap representation
+  **cannot store a float**: `SimpleCtype`'s data union declares `C_float`/`C_double` enum tags but
+  **omits their union cases** (11 members for 13 tags), and float constants are parked as unparsed
+  text. So float *arithmetic reasoning* is wired while float *heap storage* is a half-stub — see
+  [reference/ENGINE_INTERNALS.md](reference/ENGINE_INTERNALS.md) §4, §9.
 - **(b) goto / function pointers — "no construct in the open library," and funcptr ERRORS
   LOUDLY.** No `Sgoto` AST node exists (zero matches in `SeparationLogic/**.v`); no
   call-expression constructor for indirect calls. **Function-pointer calls fail loudly in
@@ -445,7 +478,7 @@ present at `9804a85`):
 | Stage | Example | Path | Teaches |
 |---|---|---|---|
 | 1 | `abs` / `add` | `QCP_examples/QCP_demos_human/simple_arith/abs.c`, `add.c` | simplest spec; the `Z`/overflow bound (`INT_MIN < x && x <= INT_MAX`) |
-| 2 | `gcd` | `QCP_examples/QCP_demos_human/simple_arith/gcd.c` | loops + `Inv`; recursion-by-contract |
+| 2 | `slow_add` / `gcd` | `QCP_examples/QCP_demos_human/simple_arith/add.c`, `gcd.c` | `slow_add` = the loop + `Inv` (P → I / I → I `entail_wit` pair, verified in `add_goal.v`); `gcd` = recursion-by-contract — no loop, no `Inv` |
 | 3 | array | `QCP_examples/QCP_demos_human/array_auto.c` (+ `int_array_def.h`) | `IntArray::full/seg/undef`; `forall`-in-assertion |
 | 4 | `sll` | `QCP_examples/QCP_demos_human/sll.c` | separation logic, pointers, `which implies` unfolding (tutorials T1–T6, T8) |
 | 5 | `bst` | `QCP_examples/QCP_demos_human/bst_*.c` (+ `bst_def.h`) | trees; deeper custom predicates + `.strategies` |

@@ -76,6 +76,12 @@ The manual's lead promise — phrase it this way, and don't contradict it later:
   review) the WHY." Be precise about agency — loop invariants are *annotations someone writes*
   (you, or the LLM you direct), **not** something `symexec` invents; `symexec` turns the
   annotated code into the proof obligations and the solver/LLM/human close them.
+- **"Own," not necessarily "write," the WHAT.** The LLM can *draft* the `Require`/`Ensure` spec
+  too (the annotation skills do). But the spec is the **irreducible human-review point** — QCP
+  proves the spec you gave it, not the behavior you meant, so a wrong spec is faithfully
+  "verified." Whoever drafts it, a human must review it against intent. Frame the spec as
+  *owned/reviewed*, never as something the AI dial removes from the human. (The dial governs the
+  **WHY** delegation; the **WHAT always needs human eyes**.)
 - Don't oversell it into "no effort." The honest counterweight is the **effort tax** (§6):
   **roughly a quarter to a third of proof effort is still manual** on average (FACTS.md gives
   the exact figures + methodology), and *every* integer result costs a manual range/overflow
@@ -150,7 +156,7 @@ as one voice. Use the left column; avoid the "don't say" column.
 | Concept | Say | Don't say | Note |
 |---|---|---|---|
 | The tool | **QCP** | "the verifier", "the system" (vary) | "Qualified C Programming" |
-| Proof assistant | **Rocq** | pick one silently | renamed Rocq; repo uses both — say "Rocq" on first use, then "Rocq" |
+| Proof assistant | **Rocq** | "Coq" in prose | renamed from Coq — say "Rocq (formerly Coq)" on first use, then "Rocq". **Keep literal syntax `coqc`/`coqchk`/`_CoqProject`/`Extern Coq`/`Import Coq` spelled `Coq`** — they're tokens, not the prover's name |
 | `**` / `*` in annotations | **separating conjunction** | "and", "times", "multiply" | THE #1 false friend — see §5.1 |
 | `&&` | **ordinary conjunction** (pure facts) | "separating" | pure, heap-independent |
 | `Z` | **unbounded mathematical integer** | "int", "number" | load-bearing: the overflow-tax source (§6) |

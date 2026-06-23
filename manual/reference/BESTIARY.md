@@ -94,7 +94,7 @@ forms are `store(...)` and `undef_data_at(...)`:
 ## 4. Representation predicates — the data-shape inventory
 
 A **representation predicate** describes how a structure is laid out in memory. It is defined in
-Rocq (type `Assertion`) and *declared* into C with `Extern Rocq`. The common compound predicates
+Rocq (type `Assertion`) and *declared* into C with `Extern Coq`. The common compound predicates
 in the corpus (with surface counts):
 
 | Predicate | Describes | Corpus uses |
@@ -106,11 +106,11 @@ in the corpus (with surface counts):
 | `store_dll(...)` | doubly-linked list | ≈38 |
 | `store_queue` / `store_map` / `store_solution` | queues, maps, SAT solutions | ≈32 / ≈24 / ≈32 |
 
-**Declaring one** (`Extern Rocq` + `Import Rocq` + `include strategies`), typically in a `*_def.h`:
+**Declaring one** (`Extern Coq` + `Import Coq` + `include strategies`), typically in a `*_def.h`:
 
 ```c
-/*@ Extern Rocq (sll : {A} -> (Z -> A -> Assertion) -> Z -> list A -> Assertion) */
-/*@ Import Rocq Require Import poly_sll_lib */
+/*@ Extern Coq (sll : {A} -> (Z -> A -> Assertion) -> Z -> list A -> Assertion) */
+/*@ Import Coq Require Import poly_sll_lib */
 /*@ include strategies "sll.strategies" */
 ```
 
@@ -175,7 +175,7 @@ opened for access) — rarely written by hand.
 
 ## 6. String predicates
 
-`string.h` (`Import Rocq … string_lib`) adds C-string predicates on top of `CharArray`:
+`string.h` (`Import Coq … string_lib`) adds C-string predicates on top of `CharArray`:
 
 | Predicate | For | Definition / note |
 |---|---|---|
@@ -236,8 +236,8 @@ y = insertion_sort(x) /*@ where (high_level_spec) l = l */;
 
 | Directive | Meaning |
 |---|---|
-| `/*@ Extern Rocq (name : type) */` | declare a Rocq function/predicate/type for use in annotations (≈485 uses) |
-| `/*@ Import Rocq Require Import <Module> */` | import a Rocq lib module (definitions + lemmas) (≈184) |
+| `/*@ Extern Coq (name : type) */` | declare a Rocq function/predicate/type for use in annotations (≈485 uses) |
+| `/*@ Import Coq Require Import <Module> */` | import a Rocq lib module (definitions + lemmas) (≈184) |
 | `/*@ include strategies "<file>.strategies" */` | pull in solver strategies for the predicates used (≈63) |
 
 Common shared headers (`*_def.h` collect these): `verification_stdlib.h` (utilities, `option`,

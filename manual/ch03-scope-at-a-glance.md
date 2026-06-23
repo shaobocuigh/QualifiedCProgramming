@@ -23,7 +23,7 @@ What QCP can verify, in one table. ✅ = supported; ⚠️ = supported with a re
 | Recursion | ✅ supported | by-contract self-calls; reasoned via inductive predicates |
 | `for`/`while`/`switch`/`break`/`continue`/`do`-`while` | ✅ supported | frontend desugars to an `if`/`while`/`seq` core — **you write ordinary C** (`continue` is model-supported via the desugaring but has **no** worked corpus case in this checkout — `grep -rn 'continue' QCP_examples --include='*.c'` returns nothing at snapshot) |
 | Polymorphic / generic predicates | ✅ supported (under-sold) | one list spec reused across any struct/field (`super_poly_sll2`) |
-| Multi-file / modular | ✅ supported (under-sold) | shared contracts in a `_def.h` + `/*@ Import/Extern Rocq @*/` |
+| Multi-file / modular | ✅ supported (under-sold) | shared contracts in a `_def.h` + `/*@ Import/Extern Coq @*/` |
 | Unions | ⚠️ limited | tagged-union only; write-one/read-another (overlapping storage) is **not** modeled |
 | `malloc` / `free` | ⚠️ limited | no built-in allocator; you declare contracted wrappers (flexible — but you write the spec) |
 | OS sync (LiteOS, via STS) | ⚠️ limited | via **STS** state-machine abstractions; the shipped corpus is a ~17-function kernel sorted-link/list case set (snapshot — count below), **not** the whole RTOS — and **not** shared-memory parallelism |

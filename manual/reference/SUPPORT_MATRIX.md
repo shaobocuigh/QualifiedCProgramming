@@ -16,7 +16,7 @@
 | Recursion | ✅ supported | by-contract self-calls; inductive predicates |
 | `for`/`while`/`switch`/`break`/`continue`/`do-while` | ✅ supported (model) | frontend desugars to an if/while/seq core — *you write ordinary C*. (`continue` is model-supported; not every keyword has a corpus example in a given snapshot.) |
 | Polymorphism / generic predicates | ✅ supported (under-sold) | one list spec reused across any struct/field |
-| Multi-file / modular | ✅ supported (under-sold) | contracts in shared `_def.h` + `/*@ Import/Extern Rocq @*/` |
+| Multi-file / modular | ✅ supported (under-sold) | contracts in shared `_def.h` + `/*@ Import/Extern Coq @*/` |
 | Unions | ⚠️ limited | tagged-union only; overlapping write-one/read-another NOT modeled |
 | malloc / free | ⚠️ limited | no built-in allocator; you declare contracted wrappers |
 | OS sync (locks/events/interrupts) | ⚠️ limited | via **STS** state-machine abstractions (LiteOS) — not shared-memory parallelism |

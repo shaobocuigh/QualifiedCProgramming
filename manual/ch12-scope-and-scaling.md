@@ -81,7 +81,7 @@ The **global** ≈ 2.5–3 : 1 split is solid: it's a direct count over the whol
 There is a manual tax you pay on **every** integer result, regardless of category: **range and overflow bounding.** In QCP annotations, `Z` is an **unbounded mathematical integer**, not a fixed-width C `int`. There is no overflow automation — so each `Z` arithmetic VC carries a manual range/overflow bound that *you* state. This is exactly why the simplest arithmetic example in the corpus, `QCP_examples/QCP_demos_human/simple_arith/abs.c`, opens by re-imposing C bounds by hand:
 
 ```c
-/*@ Extern Rocq (Zabs: Z -> Z) */
+/*@ Extern Coq (Zabs: Z -> Z) */
 /*@ Require INT_MIN < x && x <= INT_MAX && emp
     Ensure  __return == Zabs(x) && emp */
 ```
@@ -99,7 +99,7 @@ QCP scales the way well-factored C scales — **one function at a time, through 
 Two facilities make this **multi-file modularity** work — the seam that keeps scaling additive:
 
 - **Shared contracts in `_def.h` headers.** A **representation predicate** (the ownership predicate describing a structure's memory layout — see [glossary](reference/GLOSSARY.md)) and the contracts that use it live in a header (e.g. `QCP_examples/QCP_demos_human/bst_def.h`, `int_array_def.h`, `poly_sll_def.h`), included by every `.c` that touches that structure. One definition, many callers — the modular seam is a real, shipped pattern, not an aspiration.
-- **`Import Rocq` / `Extern Rocq` to bind the Rocq side.** These pull the Rocq-level predicate definitions and lemmas into a case so its contracts typecheck (≈ 485 `Extern Rocq` and ≈ 184 `Import Rocq` occurrences across the corpus C/headers). This is the mechanism by which a predicate defined once is reused everywhere.
+- **`Import Coq` / `Extern Coq` to bind the Rocq side.** These pull the Rocq-level predicate definitions and lemmas into a case so its contracts typecheck (≈ 485 `Extern Coq` and ≈ 184 `Import Coq` occurrences across the corpus C/headers). This is the mechanism by which a predicate defined once is reused everywhere.
 
 **Predicate polymorphism** sharpens the leverage. A single generic list spec covers any struct/field shape — `super_poly_sll2` (used in `Applications_human/cnf_trans/` and `alpha_equiv/`) is one list contract reused across unrelated data types. You write the spec once; it scales across the codebase without per-type duplication. This is one of QCP's most **under-sold** capabilities; for the full list of under-sold capabilities, see [ch 3](ch03-scope-at-a-glance.md) and the [support matrix (R2)](reference/SUPPORT_MATRIX.md).
 
