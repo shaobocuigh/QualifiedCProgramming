@@ -34,7 +34,7 @@ grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"
 
 | # | Bug | Symptom | Fix |
 |---|---|---|---|
-| 1 | `vc-proving` undefined globals `COQC_TRANSIENT_RETRIES` / `TRANSIENT_COQC_SIGNALS` in `.agents/skills/vc-proving/scripts/manual_goal_utils.py` (`check_rocq_file_in_project`, a live path) | vc-proving aborts *before worker launch* with "references missing globals…"; the case's `*_proof_manual.v` is left with admitted stubs | define the two constants (see `docs/agent-workflow.md` §9.1); a **script** fix, not an env-var fix. Unfixed upstream and in both known public forks as of 2026-06-23. |
+| 1 | `vc-proving` undefined globals `COQC_TRANSIENT_RETRIES` / `TRANSIENT_COQC_SIGNALS` in `.agents/skills/vc-proving/scripts/manual_goal_utils.py` (`check_rocq_file_in_project`, a live path) | vc-proving aborts *before worker launch* with "references missing globals…"; the case's `*_proof_manual.v` is left with admitted stubs | Define the two missing constants near the other module constants (top of the file; `os`/`signal` are already imported): `COQC_TRANSIENT_RETRIES = int(os.environ.get("COQC_TRANSIENT_RETRIES", "2"))` and `TRANSIENT_COQC_SIGNALS = frozenset({-signal.SIGKILL})`. This is a **script** fix, not an env-var fix — the names are undefined *globals*, so exporting the env var alone does nothing. Ships unfixed in the current build. |
 
 > Detection: at `9804a85`, those two are the only undefined-name (`pyflakes` F821) bugs across the
 > shipped skill scripts. Re-run the static check after editing any pipeline script.

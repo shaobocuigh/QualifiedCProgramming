@@ -59,6 +59,17 @@ flag. Tier callouts ONLY where a tier diverges. A diagram only where it beats pr
 real (cite QCP_examples paths). NO invented syntax/numbers/flags/predicates. Honesty rules are
 load-bearing — model the two-tier trust framing, the float "silent half-stub" nuance, and
 "funcptr errors loudly" exactly as FACTS states them.
+
+USER-MANUAL DISCIPLINE (STYLE §4 — non-negotiable):
+- This is a USER manual: include a technical/internal detail ONLY if it changes how the reader
+  *uses or trusts* the tool. CUT engine internals (SMT/CDCL/proof-terms/parser/IR), methodology/
+  provenance ("reverse-engineered from the binary"), and WIP/dormant features.
+- The repo sources above (incl. \`docs/*\` and \`reference/ENGINE_INTERNALS.md\`) are DRAFTING
+  SOURCES you mine — **never link or cite them in the output, and never write "(Source: docs/…)"**.
+  State the resulting fact plainly. Link only SHIPPED \`tutorial/Tn-*.md\` pages, other manual
+  chapters, or manual/reference/* pages (canonical slugs).
+- Keep \`QCP_demos_human\` example paths. The proof assistant is **Rocq** (formerly Coq) in prose,
+  but the literal annotation keywords are still \`Extern Coq\` / \`Import Coq\` — never "Extern Rocq".
 `
 
 async function draft(c) {

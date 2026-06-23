@@ -8,22 +8,18 @@ You will: install the prerequisites, run `symexec` on a shipped arithmetic examp
 
 ## Step 0 — install the prerequisites
 
-You need two things and two things only:
+For Stage A you need two things and two things only:
 
-- **Rocq 8.20.1** (the proof assistant; its binary and command are still named `coqc` / Rocq 8.20.1), recommended with OCaml 4.14.1.
+- **Rocq 8.20.1** (the proof assistant; its binary and command are still named `coqc`), recommended with OCaml 4.14.1.
 - **`make`**.
 
-The shipped QCP binaries (`symexec`, `StrategyCheck`, `lsp`) are prebuilt — you do not compile them. Install Rocq via `opam` (Linux shown; macOS uses `brew install opam` instead of `apt`):
+The shipped QCP binaries (`symexec`, `StrategyCheck`, `lsp`) are prebuilt — you do not compile them. Install Rocq via `opam`; full per-OS setup (opam blocks, the `CONFIGURE` file, the Windows caveat) is in [reference/INSTALLATION](reference/INSTALLATION.md). The Linux short form:
 
 ```bash
-sudo apt update
-sudo apt install -y opam
-opam init
-eval $(opam env)
+sudo apt install -y opam make
+opam init && eval $(opam env)
 opam install coq.8.20.1
 ```
-
-With Rocq on your `PATH` you usually do **not** need a `SeparationLogic/CONFIGURE` file. If you keep `coqc` somewhere off-`PATH`, create `SeparationLogic/CONFIGURE` **and** `SeparationLogic/unifysl/CONFIGURE`, each with `COQBIN = /absolute/path/to/coq/bin/`. (Source: `README_LINUX.md`, `README_MACOS.md`.)
 
 Pick the binary directory for your platform — every command in this chapter uses `linux-binary/`; substitute yours:
 
@@ -33,8 +29,6 @@ Pick the binary directory for your platform — every command in this chapter us
 | macOS, Apple Silicon | `mac-arm64-binary/` |
 | macOS, Intel | `mac-x86-64-binary/` |
 | Windows | `win-binary/` — **caveated**, see [ch 13](ch13-honest-limits.md) |
-
-> **Note:** Windows ships binaries (`win-binary/symexec.exe`), but the Windows *setup scripts* referenced by `README_WINDOWS.md` are not all packaged in this redistributable. Treat Windows as intended-workflow for now; [ch 13](ch13-honest-limits.md) has the honest detail.
 
 ### Build the proof library once
 
