@@ -1,6 +1,6 @@
 # Reference — Invocation, flags & configuration
 
-> The complete reference for **driving** QCP: every `symexec` / `StrategyCheck` flag, the
+> The complete reference for **driving** QCP: every `symexec` / `StrategyCheck` flag that affects how you use it, the
 > environment and build knobs, and the MCP configuration. For *what the pipeline does* see
 > [ch 9](../ch09-goals-symexec-and-proof.md); for a first run see [ch 4](../ch04-quickstart-stage-a.md).
 > Flag descriptions are the tool's own (`symexec --help`); behaviours marked **advanced** are
@@ -62,7 +62,6 @@ itself never runs `coqc` (see [ch 4](../ch04-quickstart-stage-a.md)).
 |---|---|
 | `--full-auto` | **fully automatic proof mode** — push automation as far as it goes before falling back to manual VCs. The flag behind the "dial it up" autopilot story ([ch 7](../ch07-invariants-and-the-ai-dial.md)). Trust split: VCs it closes automatically land in `*_proof_auto.v` as trusted (`Admitted`) results, *not* kernel-re-checked ([ch 10](../ch10-trust-and-soundness.md)). |
 | `-s <0..5>` | **debug-output verbosity — almost always leave unset.** It changes only what `symexec` prints to stdout; the generated `.v` files are byte-identical at every setting (verified by `diff`), so it never affects verification. `0` (the default, used by every shipped command) runs quietly; `1` dumps the parsed program, `2` the parsed statement list, `3` a GraphViz tree of the parse — all useful only for inspecting how `symexec` read your code. `4` / `5` behave like `0`. |
-| `--conassertion` | an advanced / developer flag — **leave it unset.** It is parsed but drives no behaviour you can observe in normal use, and no shipped command sets it. It is *not* one of the `--*-assertion` format flags below. |
 
 ### Assertion format
 `symexec` can render assertions in several surface forms (relevant to the basic-vs-concise
@@ -90,7 +89,7 @@ same input/path/generation/mode/assertion-format/output flags as `symexec` above
 `--input-file`, `-I`, `--goal-file`, `--proof-auto-file`, `--proof-manual-file`,
 `--coq-output-dir`, `--no-coq-gen`, `-slp`, `--coq-logic-path`, `--no-logic-path`,
 `--CRules`/`--no-CRules`, `--strategy-file`, `--no-strategy-gen`, `--strategy-folder-path`,
-`-s`, `--conassertion`, `--full-auto`, the four `--*-assertion` formats, and `--no-exec-info` —
+`-s`, `--full-auto`, the four `--*-assertion` formats, and `--no-exec-info` —
 plus one of its own:
 | Flag | Meaning |
 |---|---|
