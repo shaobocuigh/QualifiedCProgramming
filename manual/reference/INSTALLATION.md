@@ -25,7 +25,7 @@ Pick your platform and read only its column. **Linux (including WSL) is the prim
 
 ### 1. Pick your platform's engine binary
 
-The repository ships four prebuilt binary directories, one per platform. Each contains the same four executables: `symexec` (runs the verification), `StrategyCheck` (emits the soundness proof goals for `.strategies` rules, re-checked separately by Rocq), `lsp` (powers QIDE), and `mcp` (the Stage-B backend).
+The repository ships four prebuilt binary directories, one per platform. Each contains the same four executables: `symexec` (runs the verification), `StrategyCheck` (emits the soundness-proof goals for `.strategies` rules — most close with `Qed` and are kernel-checked, with a small named `Admitted` residue that is trusted; see [ch 10](../ch10-trust-and-soundness.md)), `lsp` (powers QIDE), and `mcp` (the Stage-B backend).
 
 | Platform | Directory | How to tell |
 |---|---|---|
@@ -61,7 +61,7 @@ eval $(opam env)
 opam install coq.8.20.1
 ```
 
-**Windows** — use a Coq Platform style install that provides Coq 8.20 (`coqc.exe`, `coqtop.exe`), then point QCP at it with a `CONFIGURE` file (next step).
+**Windows** — use a Coq Platform style install that provides Rocq/Coq 8.20.1 (`coqc.exe`, `coqtop.exe`), then point QCP at it with a `CONFIGURE` file (next step).
 
 After `opam install`, confirm the version is what you expect:
 
@@ -142,10 +142,10 @@ Stage B lets an LLM agent drive QCP. You do not need it for Stage A, and it is p
 
 There are two servers: **`qcp-mcp`** (interactive symbolic execution and annotation checking, wrapping the `mcp` engine binary) and **`rocq-mcp`** (interactive Rocq proof development, needing `coq-lsp`).
 
-Install `uv`, then create the `qcp-mcp` Python environment:
+Install `uv`, then create the `qcp-mcp` Python environment. It needs **Python ≥ 3.12** (declared in `mcp/qcp-mcp/pyproject.toml`); `uv` fetches a matching interpreter for you, so you do not have to install Python by hand. The commands below are for **Linux / macOS / WSL**:
 
 ```bash
-# install uv
+# install uv (Linux / macOS / WSL)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # build the qcp-mcp environment
@@ -153,6 +153,8 @@ cd mcp/qcp-mcp
 uv venv .venv
 uv sync
 ```
+
+> On **Windows**, install `uv` with its PowerShell one-liner (`irm https://astral.sh/uv/install.ps1 | iex`), then run the same `uv venv .venv` / `uv sync` from `mcp/qcp-mcp`.
 
 `qcp-mcp` then needs to know where the engine `mcp` binary is, and your MCP client (VS Code, Claude Code, Codex) needs its own server entry. Those configuration steps — the `CONFIGURE`/`QCP_MCP_BIN` wiring and the per-client server blocks — live in [R3](INVOCATION.md), so they stay in one place. `rocq-mcp` additionally requires `opam` + `coq-lsp`; see [ch 7](../ch07-invariants-and-the-ai-dial.md) for when it is worth setting up.
 
@@ -170,9 +172,9 @@ Identical to Linux except for the binary directory. Run `uname -m` and pick `mac
 
 Windows works, with two things to get right.
 
-- **Use a native bash, with MSYS2 as the best choice.** [`run-example-windows.sh`](../../run-example-windows.sh) and the `make`-based proof build expect a Unix-style shell. MSYS2 is recommended because it also provides `make`. Use `win-binary/*.exe` for the engine, and `vscoq-2.2.3.vsix` for proof interaction (above).
+- **You need a shell with `make`; MSYS2 is the best choice** (it provides `bash` *and* `make` in one place). The batch driver [`run-example-windows.sh`](../../run-example-windows.sh) is a bash script, so it strictly needs a Unix-style shell. The proof build itself, though, is just `make` + `coqc` — you can drive it from any environment that has `make` and Rocq on `PATH` (PowerShell works once those are installed), so the PowerShell-incompatible part is only the convenience `.sh` driver, not the build. Use `win-binary/*.exe` for the engine, and `vscoq-2.2.3.vsix` for proof interaction (above).
 
-- **Honest limit — the Windows setup scripts are not shipped.** `README_WINDOWS.md` tells you to run `scripts/setup-windows-env.ps1` (to export `QCP_SYMEXEC_EXE` and friends) and `scripts/setup-windows-mcp-env.ps1` (for the MCP variables). **Neither file is present in this redistributable** — `scripts/` contains only `collect_and_analyze.py`. This is a packaging gap, not a step you can fix by reinstalling. Until the scripts are restored, set the equivalent paths yourself: point your tooling at `win-binary/symexec.exe`, `win-binary/StrategyCheck.exe`, `win-binary/lsp.exe`, and `win-binary/mcp.exe` directly, and set `coqc`/`coqtop` from your `SeparationLogic/CONFIGURE` `COQBIN`. The core CLI and the Rocq build work fine without the scripts; only the convenience environment-variable export is missing.
+- **Honest limit — the Windows setup scripts are not shipped.** `README_WINDOWS.md` tells you to run `scripts/setup-windows-env.ps1` (to export `QCP_SYMEXEC_EXE` and friends) and `scripts/setup-windows-mcp-env.ps1` (for the MCP variables). **Neither file is present in this redistributable** — `scripts/` contains only `collect_and_analyze.py`. This is a packaging gap, not a step you can fix by reinstalling. Until the scripts are restored, you can still drive the binaries and `make` directly with explicit paths: point your tooling at `win-binary/symexec.exe`, `win-binary/StrategyCheck.exe`, `win-binary/lsp.exe`, and `win-binary/mcp.exe`, and set `coqc`/`coqtop` from your `SeparationLogic/CONFIGURE` `COQBIN`. The core CLI and the Rocq build work fine without the scripts; only the convenience environment-variable export is missing. Windows remains the most caveated platform overall ([ch 13](../ch13-honest-limits.md)) — if you have the choice, Linux or WSL is the smoother path.
 
 ## Verify your install
 

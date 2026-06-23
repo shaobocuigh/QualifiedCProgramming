@@ -6,7 +6,7 @@ This is the manual's most advanced chapter, and the one with the biggest caveat 
 
 ## Why extend at all
 
-The reason to do this work is leverage. QCP's automation is **driven by a strategy library** — roughly fifty-plus shipped rules — and that library is *the* reason the auto:manual ratio sits around two-and-a-half to three auto **verification conditions** (VC — an entailment `P |-- Q` that `symexec` emits for one step of your annotated code; see [R4 — Glossary](reference/GLOSSARY.md)) for every manual one (see [ch 12](ch12-scope-and-scaling.md)). A strategy rule encodes "when you see *this* spatial pattern on the left and *that* one on the right, here is how to cancel them." Every rule that matches a recurring obligation turns a VC that *would* have landed in `*_proof_manual.v` — a Rocq proof you or the LLM must write — into one the solver discharges into `*_proof_auto.v` automatically.
+The reason to do this work is leverage. QCP's automation is **driven by a strategy library**, and that library is *the* reason most **verification conditions** (a VC is an entailment `P |-- Q` that `symexec` emits for one step of your annotated code; see [R4 — Glossary](reference/GLOSSARY.md)) land in the automatic file rather than on you — the auto:manual balance the manual keeps citing (for command-first, snapshot-qualified counts see [ch 12](ch12-scope-and-scaling.md)). A strategy rule encodes "when you see *this* spatial pattern on the left and *that* one on the right, here is how to cancel them." Every rule that matches a recurring obligation turns a VC that *would* have landed in `*_proof_manual.v` — a Rocq proof you or the LLM must write — into one the solver discharges into `*_proof_auto.v` automatically.
 
 The payoff compounds. A `.strategies` rule you add for your predicate works **for every future caller**, not only the function in front of you. If your codebase manipulates a custom data structure in dozens of functions, one good fold/unfold rule pair can move that structure's bookkeeping off the manual axis for all of them at once.
 
@@ -30,7 +30,7 @@ Fixpoint sll (x: addr) (l: list Z): Assertion :=
   end.
 ```
 
-If the `**`/`emp`/`“ … ”` notation reads as foreign, stop here: [ch 8](ch08-separation-logic-memory-model.md) and the [tutorials](../tutorial/) cover the memory model, and this chapter assumes it. Read `sll` as a memory shape: `nil` owns no heap; a `cons` owns the `data` and `next` cells plus the recursive sub-list, all separated by `**`.
+If the `**`/`emp`/`“ … ”` notation reads as foreign, a refresher first will help: [ch 8](ch08-separation-logic-memory-model.md) and [T1](../tutorial/T1-representation-predicates.md) / [T4](../tutorial/T4-symbolic-execution.md) cover the memory model this chapter builds on. Read `sll` as a memory shape: `nil` owns no heap; a `cons` owns the `data` and `next` cells plus the recursive sub-list, all separated by `**`.
 
 Once the predicate is defined in Rocq, you make it usable from C annotations with an `Extern Coq` declaration in your shared header. From `QCP_examples/QCP_demos_human/sll_def.h`:
 
@@ -64,7 +64,7 @@ action : left_erase(0);
          right_add(l0 == l1);
 ```
 
-Read it operationally. The `?`-prefixed names are pattern variables the matcher binds (`?p`, `?x0`, …); a bare name (`p` in the `right` line) must match the value already bound on the `left`. When the solver sees a non-empty `sll` on each side at the same head, the action **erases both** spatial facts (`left_erase(0)` / `right_erase(1)` — the indices are the `at N` slots) and **adds** the residual pure obligations to the right: the heads are equal (`x0 == x1`) and the tails are equal (`l0 == l1`). Two spatial predicates collapse into two ordinary equalities the arithmetic solver finishes off.
+Read it operationally. The `?`-prefixed names are pattern variables the matcher binds (`?p`, `?x0`, …); a bare name (`p` in the `right` line) must match the value already bound on the `left`. When the solver sees a non-empty `sll` on each side at the same head, the action **erases both** spatial facts (`left_erase(0)` / `right_erase(1)` — the indices are the `at N` slots) and **adds** the residual pure obligations to the right: the heads are equal (`x0 == x1`) and the tails are equal (`l0 == l1`). Two spatial predicates collapse into two ordinary (non-spatial) equalities — one on integers, one on lists — that the solver's pure-reasoning side discharges.
 
 The other moves you will see in the corpus are variations on the same theme. `int_array.strategies` shows the array idiom — pulling a single cell out of a whole-array predicate so an indexed store can be reasoned about, then folding it back. From `QCP_examples/QCP_demos_human/int_array.strategies`, id 1:
 
@@ -83,9 +83,9 @@ action : right_erase(1);
 
 This one adds a `check` clause: side conditions (`infer(0 <= i)`, `infer(i < n)`) the solver must establish before the rule fires — here, that the index is in bounds. When it fires, it swaps the full-array predicate for the "all but cell `i`" predicate (`IntArray::missing_i`) and records that the stored value is the array's element at `i`. Its companion rule (`int_array.strategies` id 2) folds the cell back — the same shape in reverse. Not every predicate needs this cell-pull idiom: `bst.strategies` reuses the *same primitive family* (`left_erase`/`right_erase`/`right_add`) on its own tree predicates `store_tree` and `store_ptb`, but as plain same-head cancellation rules — structurally the sll rule 6 above, with no `check : infer` guard.
 
-The other moves you'll meet in the corpus are variations on these: `left_add`/`right_add` add pure facts, the `left_exist_add`/`right_exist_add` variants introduce existentials, `check : infer(...)` guards a rule, and `priority` controls when a rule is tried. Treat the shipped `.strategies` files as your pattern catalogue; do not extrapolate forms that don't appear there.
+The other moves you'll meet in the corpus are variations on these: `left_add`/`right_add` add a fact *or a predicate* to the selected side (a pure equality like `x0 == x1`, or a spatial predicate like `IntArray::missing_i` above — pure equalities are just the simplest case), the `left_exist_add`/`right_exist_add` variants introduce existentials, `check : infer(...)` guards a rule, and `priority` controls when a rule is tried. Treat the shipped `.strategies` files as your pattern catalogue; do not extrapolate forms that don't appear there.
 
-> **Warning:** a strategy rule is a rewrite the solver applies *blindly* once it matches — its correctness is not self-evident from the rule text. A wrong rule doesn't make a false proof pass silently; it has to clear Step 3. But an over-broad pattern can make the solver loop or rewrite goals into shapes it can't finish. Keep rules tight, give them sensible `priority`, and lean on the existing rules as templates.
+> **Warning:** a strategy rule is a rewrite the solver applies *blindly* once it matches — its correctness is not self-evident from the rule text. A wrong rule is caught by its soundness obligation (Step 3) **only if you actually close that obligation with `Qed` and compile it**; a rule whose soundness proof you leave `Admitted` is a trusted hole, exactly like any other admit ([ch 10](ch10-trust-and-soundness.md)). Separately, an over-broad pattern can make the solver loop or rewrite goals into shapes it can't finish. Keep rules tight, give them sensible `priority`, discharge their soundness proofs for real, and lean on the existing rules as templates.
 
 ## Step 3 — discharge the strategy-soundness obligation
 
@@ -101,7 +101,7 @@ linux-binary/StrategyCheck \
   --no-exec-info
 ```
 
-It emits the same three-file shape `symexec` uses for VCs, only for strategies:
+It emits three analogous strategy artifacts — mirroring the `symexec` VC files, but with no auto/manual split (a strategy proof is one file you fill):
 
 | File | Contents |
 |---|---|
@@ -120,7 +120,7 @@ Lemma sll_strategy6_correctness : sll_strategy6.
 Qed.
 ```
 
-That `Qed` is the point. **A strategy proof that ends in `Qed` is re-elaborated by the Rocq kernel**, exactly like a manual VC. The re-check is not automatic, though: `StrategyCheck` only *writes* the proof obligation — you (or your Rocq build) must compile the `_strategy_proof.v` with `coqc` for the kernel to actually re-check it. Once that `coqc` compile succeeds, the rewrite your rule performs is kernel-checked sound. This is strong: it means a *buggy* strategy rule fails here, at proof time, rather than silently corrupting every future auto-solve that uses it.
+That `Qed` is the point. **A strategy proof that ends in `Qed` is re-elaborated by the Rocq kernel**, exactly like a manual VC. The re-check is not automatic, though: `StrategyCheck` only *writes* the obligation — you (or your Rocq build) must compile it with `coqc`. Compile the completeness gate `_strategy_goal_check.v`: it `Include`s `_strategy_proof.v`, so a green build confirms both that every proof closed *and* that the module satisfies the full `…_Strategy_Correct` interface (compiling `_strategy_proof.v` alone checks the `Qed`s but not the interface). Once that `coqc` compile succeeds, the rewrite your rule performs is kernel-checked sound. This is strong: it means a *buggy* strategy rule fails here, at proof time, rather than silently corrupting every future auto-solve that uses it.
 
 ### The trusted residue — a few rules ship `Admitted`
 

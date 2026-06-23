@@ -16,6 +16,7 @@ Part III— How it works  : 6 Annotations as specs · 7 Invariants & the AI dial
 Part IV — Diagnose/scale/extend : 11 The Stuck-Goal Differential · 12 Scope & scaling in depth
                           · 13 Honest limits & roadmap · 14 Extension (new predicates)
 Reference backbone      : R1 Bestiary · R2 Support matrix · R3 Invocation anatomy · R4 Glossary
+                          · R5 Troubleshooting · R6 Installation & prerequisites
 ```
 
 ### Canonical filenames (use these EXACT slugs for files and cross-references)
@@ -29,7 +30,7 @@ ch02-should-you-use-qcp.md     ch07-invariants-and-the-ai-dial.md  ch12-scope-an
 ch03-scope-at-a-glance.md      ch08-separation-logic-memory-model.md ch13-honest-limits.md
 ch04-quickstart-stage-a.md     ch09-goals-symexec-and-proof.md     ch14-extension.md
 ch05-your-first-spec.md        ch10-trust-and-soundness.md
-reference/BESTIARY.md  reference/SUPPORT_MATRIX.md  reference/INVOCATION.md  reference/GLOSSARY.md  reference/TROUBLESHOOTING.md
+reference/BESTIARY.md  reference/SUPPORT_MATRIX.md  reference/INVOCATION.md  reference/GLOSSARY.md  reference/TROUBLESHOOTING.md  reference/INSTALLATION.md
 ```
 (ch 10 already exists from the pilot and uses these slugs in its forward-links.)
 
@@ -260,6 +261,12 @@ story (ch 2's teaser links to it).
   `vc-proving` `COQC_TRANSIENT_RETRIES`/`TRANSIENT_COQC_SIGNALS` `NameError`, FACTS §F9 /
   `docs/agent-workflow.md` §9). **Keep it a living list; verify each entry against live source.**
   **Wave 2/3.**
+- **R6 — Installation & prerequisites** (`reference/INSTALLATION.md`, Wave 3): per-OS prerequisites
+  and install — the four prebuilt engine binaries, Rocq/Coq 8.20.1 + `make core`, QIDE/vscoq, and
+  (optional, Stage B) `uv` + the `qcp-mcp` Python env (≥ 3.12). Honest Windows caveat: the
+  `setup-windows-*.ps1` scripts are referenced by `README_WINDOWS.md` but not shipped. Mines
+  `README*` + `docs/environment-setup.md` (state inline; no `docs/` links). Linked from ch 1 and
+  ch 4 (Step 0).
 
 ---
 

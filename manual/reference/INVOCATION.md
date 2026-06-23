@@ -52,17 +52,17 @@ itself never runs `coqc` (see [ch 4](../ch04-quickstart-stage-a.md)).
 | `--CRules <module>` / `--no-CRules` | import (or don't) the given/default CRules module |
 
 > **`-I` ≠ `-slp`.** `-I<dir>` resolves C `#include`s; `-slp <dir> <Rocq.Path>` resolves
-> `.strategies` files and Rocq logical paths. Many cases need several of each, and `-slp` pairs
-> nest (up to three in the deepest corpus case). **Logic-path derivation:** `SimpleC.EE.` + the
+> `.strategies` files and Rocq logical paths. Richer cases stack several of each (count the `-slp`
+> pairs in a given command with `rg -n -- "-slp" run-example-linux.sh`). **Logic-path derivation:** `SimpleC.EE.` + the
 > example directory path, segment by segment (`QCP_examples/QCP_demos_human/simple_arith/` →
 > `SimpleC.EE.QCP_demos_human.simple_arith`).
 
 ### Execution & proof mode
 | Flag | Meaning |
 |---|---|
-| `--full-auto` | **fully automatic proof mode** — push automation as far as it goes before falling back to manual VCs. The flag behind the "dial it up" autopilot story ([ch 7](../ch07-invariants-and-the-ai-dial.md)). |
-| `-s <0..5>` | select execution mode (advanced — controls how aggressively `symexec` runs; see `--help`) |
-| `--conassertion` | use *conassertion* mode (advanced) |
+| `--full-auto` | **fully automatic proof mode** — push automation as far as it goes before falling back to manual VCs. The flag behind the "dial it up" autopilot story ([ch 7](../ch07-invariants-and-the-ai-dial.md)). Trust split: VCs it closes automatically land in `*_proof_auto.v` as trusted (`Admitted`) results, *not* kernel-re-checked ([ch 10](../ch10-trust-and-soundness.md)). |
+| `-s <0..5>` | **execution mode — almost always leave unset.** `0` (the default, and what every shipped command uses) runs the full verify. `1` / `2` / `3` are **inspection modes** that dump the parsed program / statement list / execution tree *instead of* completing the proof pipeline — useful only for debugging how `symexec` reads your code, never for verifying it. `4` / `5` behave like `0`. |
+| `--conassertion` | an advanced / developer flag — **leave it unset.** It is parsed but drives no behaviour you can observe in normal use, and no shipped command sets it. It is *not* one of the `--*-assertion` format flags below. |
 
 ### Assertion format
 `symexec` can render assertions in several surface forms (relevant to the basic-vs-concise
@@ -85,12 +85,18 @@ distinction in [ch 6](../ch06-annotations-as-specs.md)):
 
 ## `StrategyCheck` flags
 
-`StrategyCheck` turns `.strategies` files into Rocq strategy-soundness artifacts. It shares most
-`symexec` flags (inputs, `-I`, `-slp`, `--coq-logic-path`, `--gen-and-backup`, `--no-coq-gen`,
-`-s`, `--conassertion`, `--strategy-file/-folder-path`, `--no-strategy-gen`, `--CRules`) and adds:
+`StrategyCheck` turns `.strategies` files into Rocq strategy-soundness artifacts. It accepts the
+same input/path/generation/mode/assertion-format/output flags as `symexec` above —
+`--input-file`, `-I`, `--goal-file`, `--proof-auto-file`, `--proof-manual-file`,
+`--coq-output-dir`, `--no-coq-gen`, `-slp`, `--coq-logic-path`, `--no-logic-path`,
+`--CRules`/`--no-CRules`, `--strategy-file`, `--no-strategy-gen`, `--strategy-folder-path`,
+`-s`, `--conassertion`, `--full-auto`, the four `--*-assertion` formats, and `--no-exec-info` —
+plus one of its own:
 | Flag | Meaning |
 |---|---|
 | `--strategy-proof-logic-path <path>` | the Rocq logical path for the generated strategy proofs |
+
+It does **not** have the symexec-only `--program-path`, `--soundness-proof`, or `--dump-smt-vc-file`.
 
 Typical use (validates a `.strategies` file):
 
@@ -106,9 +112,11 @@ linux-binary/StrategyCheck \
 
 | Knob | Where | Effect |
 |---|---|---|
-| `ROCQ_MEMORY_LIMIT` (≈ 4 GiB cap) | the proving scripts' `coqc` invocations | caps `coqc` memory per file; a memory-heavy proof can be killed at this limit (raise it if large proofs OOM) |
-| `COQC_TRANSIENT_RETRIES` | intended `vc-proving` retry knob | *intended* to retry `coqc` after a transient (OOM) kill — **currently inert in the shipped build** (an undefined-globals bug; see [R5 Troubleshooting](TROUBLESHOOTING.md)) |
-| `loop_inv_iter_times`, `unroll_flag` | engine-internal | limited loop unrolling during invariant checking (advanced; not a user-facing CLI flag) |
+| `ROCQ_MEMORY_LIMIT_BYTES` (= 4 GiB) | a **hard-coded constant** in the proving scripts | caps `coqc` memory per worker; a memory-heavy proof can be killed at this limit. It is **not a shipped environment knob** — raising it means editing the script. |
+
+There is no shipped CLI or environment knob for loop-unrolling or `coqc`-retry behaviour. (The
+`vc-proving` skill *intends* a `coqc`-retry knob but it is currently broken — see
+[R5 Troubleshooting](TROUBLESHOOTING.md).)
 
 > **Exit codes are not a reliable success signal.** A malformed parse and a float program both
 > return `0`; most other fatal errors return `1`. Scan the *output* (and compile `goal_check`),
@@ -116,23 +124,28 @@ linux-binary/StrategyCheck \
 
 ## MCP configuration (Stage B)
 
-The MCP servers (`qcp-mcp`, `rocq-mcp`) are configured in your MCP client's `config.toml`. The
-QCP server entry sets the binary and Python path:
+The two MCP servers (`qcp`, `rocq-mcp`) are declared in an `.mcp.json` entry — the repo ships
+`mcp/qcp-mcp/.mcp.json`:
 
-```toml
-[mcp_servers.qcp]
-command = "<repo>/mcp/qcp-mcp/.venv/bin/python"
-args = ["-m", "qcp_mcp.server"]
-[mcp_servers.qcp.env]
-PYTHONPATH = "<repo>/mcp/qcp-mcp/src"
-QCP_MCP_BIN = "<repo>/linux-binary/mcp"          # which symexec/mcp binary the server drives
-[mcp_servers.qcp.tools.symbolic]
-approval_mode = "approve"                          # gate the symbolic-execution tool behind approval
+```json
+{
+  "mcpServers": {
+    "qcp": {
+      "type": "stdio",
+      "command": "<repo>/mcp/qcp-mcp/.venv/bin/python",
+      "args": ["-m", "qcp_mcp.server"],
+      "env": { "QCP_MCP_BIN": "<repo>/linux-binary/mcp" }
+    },
+    "rocq-mcp": { "type": "stdio", "command": "rocq-mcp", "args": [], "env": {} }
+  }
+}
 ```
 
-`QCP_MCP_BIN` selects the platform binary; `approval_mode` controls whether a tool call needs
-confirmation. See [ch 7](../ch07-invariants-and-the-ai-dial.md) for the Stage-B workflow and its
-maturity caveats.
+`QCP_MCP_BIN` points the server at the platform `mcp` binary it drives; the server also reads
+`QCP_MCP_CONFIG`, `QCP_MCP_LOG`, and `QCP_MCP_USE` from the environment. If your MCP client uses a
+different config format (VS Code JSON, a CLI's own config), translate the same
+`command` / `args` / `env` contract into it. See [ch 7](../ch07-invariants-and-the-ai-dial.md) for
+the Stage-B workflow and its maturity caveats.
 
 ## Build targets (`SeparationLogic/`)
 

@@ -19,9 +19,10 @@ The list is alphabetical. A handful of pairs that are only meaningful together (
 Rocq kernel; a lemma that ends in `Admitted` is accepted **without** a re-checked proof. QCP uses
 the split deliberately: auto VCs in `*_proof_auto.v` end in `Admitted` (the strategy solver
 settled them; its result is accepted without a re-checkable certificate), and manual VCs in
-`*_proof_manual.v` end in `Qed` (kernel-checked). The auto `Admitted` is expected, not a hole —
-it records solver-verified reasoning. An `Admitted` in a *manual* file or case lib is the one
-genuine watch-item — a real unproven hole. See [ch 10](../ch10-trust-and-soundness.md).
+`*_proof_manual.v` are the ones you (or the LLM) prove — each is kernel-checked **only when that
+individual lemma actually ends in `Qed`**, lemma by lemma. The auto `Admitted` is expected, not a
+hole — it records solver-verified reasoning. An `Admitted` left in a *manual* file or case lib is
+the one genuine watch-item — a real unproven hole. See [ch 10](../ch10-trust-and-soundness.md).
 
 **AI dial** {#ai-dial} — the amount of work you delegate to the LLM, turned up or down. It is a **dial, not
 a tier**: every tier 🟢🔵🟣 runs it high or low. Dial up and the LLM drafts the loop invariants
@@ -40,11 +41,12 @@ postcondition relate the result to the original inputs. See
 (emitting a [VC](#v) that the state so far implies it). Use it to pin down what you believe is
 true mid-function. Not a runtime check. See [R1 §7](BESTIARY.md).
 
-**auto / manual (fraction)** — the two pools every [VC](#v) falls into. **Auto** = VCs
+**auto / manual (fraction)** {#auto-manual} — the two pools every [VC](#v) falls into. **Auto** = VCs
 `symexec`'s [strategy solver](#strategy) discharges on its own (land in `*_proof_auto.v`, end in
 `Admitted` — accepted without a re-checkable certificate, but solver-verified, not a hole).
-**Manual** = VCs that need a written Rocq proof (land in `*_proof_manual.v`, end in `Qed`,
-kernel-checked). "Manual" means *needs-a-Rocq-proof*, **not** *a human must type it* — with the
+**Manual** = VCs that need a written Rocq proof (land in `*_proof_manual.v`; kernel-checked
+*per lemma*, once that lemma ends in `Qed` — a manual lemma left `Admitted` is a real hole).
+"Manual" means *needs-a-Rocq-proof*, **not** *a human must type it* — with the
 AI dial up the LLM drafts most manual proofs and you review them. Roughly a quarter to a third of
 proof effort is manual on average. See [ch 10](../ch10-trust-and-soundness.md) and
 [ch 12](../ch12-scope-and-scaling.md).
@@ -74,8 +76,10 @@ the entailment, not necessarily of the function). See [ch 9](../ch09-goals-symex
 
 **`Extern Coq` / `Import Coq`** — annotation directives that connect C annotations to Rocq.
 `Extern Coq (name : type)` *declares* a Rocq predicate/function/type for use in annotations;
-`Import Coq Require Import <Module>` pulls in a Rocq library module. (The keyword stays spelled
-`Coq` even though the prover is now Rocq — it is a literal token.) See
+`Import Coq …` passes a Rocq import or scope command through from the annotations into the
+generated files — most commonly `Import Coq Require Import <Module>`, but also `Import …`,
+`From … Require Import …`, or `Local Open Scope …`. (The keyword stays spelled `Coq` even though
+the prover is now Rocq — it is a literal token.) See
 [ch 6](../ch06-annotations-as-specs.md) and [R1 §8](BESTIARY.md).
 
 ## G
@@ -155,14 +159,16 @@ for the theory, follow the [tutorials](../../tutorial/). See
 [R3 invocation anatomy](INVOCATION.md) for the full flag semantics.
 
 **`store(...)`** {#store} — the corpus's common **storage predicate**: a typed-by-context memory
-cell, e.g. `store(&(q -> tail), ...)`. It is the form you'll most often see in worked examples
-(≈436 uses in the example corpus), alongside `undef_data_at(...)` for uninitialized cells.
-Conceptually the same job as [`data_at`](#data-at). See [R1 §3](BESTIARY.md).
+cell, e.g. `store(&(q -> tail), ...)`. It is the dominant storage form in the worked examples
+(count it for a given snapshot with `rg -c -- 'store\(' -g'*.c' QCP_examples`), alongside
+`undef_data_at(...)` for uninitialized cells. Conceptually the same job as
+[`data_at`](#data-at). See [R1 §3](BESTIARY.md).
 
 **strategy / `.strategies` / `StrategyCheck`** {#strategy} — the automation extension point. A **strategy**
 is a user-authored rewrite/cancellation rule (in a `.strategies` file) the solver uses to
-discharge routine VCs automatically; the 50+-rule strategy library is what drives the auto
-fraction. **`StrategyCheck`** is the binary that emits Rocq soundness obligations for those
+discharge routine VCs automatically; the shipped strategy library is what drives the auto
+fraction (for a snapshot count of the soundness-proof files, `ls SeparationLogic/examples/**/*_strategy_proof.v`).
+**`StrategyCheck`** is the binary that emits Rocq soundness obligations for those
 rules — most close with `Qed` and are re-checked, a small named residue is `Admitted`. See
 [ch 14](../ch14-extension.md) and [R3](INVOCATION.md).
 
@@ -178,7 +184,7 @@ separate tracks): 🟢 **Tier 1** — C programmer, no Rocq, autopilot; 🔵 **T
 fixes the manual proofs; 🟣 **Tier 3** — SL/Rocq expert who writes new predicates and strategies.
 The [AI dial](#ai-dial) is orthogonal to the tiers. See [ch 1](../ch01-what-qcp-is.md).
 
-**Trusted Computing Base (TCB)** — the set of things a QCP "✔" rests on without re-checking: the
+**Trusted Computing Base (TCB)** {#trusted-computing-base-tcb} — the set of things a QCP "✔" rests on without re-checking: the
 Rocq kernel, `unifysl`'s foundational axioms, `symexec`'s annotation→VC translation (unaudited —
 the kernel checks proofs match the VCs, never that the VCs faithfully model your C), the strategy
 solver, the few `Admitted` strategy rules, and your own annotations. See
@@ -196,8 +202,11 @@ is kernel-checked when, and only when, it ends in `Qed`. See
 ## V
 
 **verification condition (VC)** — a proof obligation emitted by symbolic execution, in the form
-of an [entailment](#entailment) `P |-- Q`. Proving all of a function's VCs proves it meets its spec. Each
-VC is either auto-discharged or proved manually. See [ch 9](../ch09-goals-symexec-and-proof.md).
+of an [entailment](#entailment) `P |-- Q`. Discharging all of a function's emitted VCs establishes
+the function against its *written spec* — relative to QCP's [TCB](#trusted-computing-base-tcb),
+the emitted VCs themselves, and the two-tier [auto/manual](#auto-manual) split (see
+[ch 10](../ch10-trust-and-soundness.md)). Each VC is either auto-discharged or proved manually.
+See [ch 9](../ch09-goals-symexec-and-proof.md).
 
 ## W
 
