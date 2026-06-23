@@ -61,7 +61,7 @@ itself never runs `coqc` (see [ch 4](../ch04-quickstart-stage-a.md)).
 | Flag | Meaning |
 |---|---|
 | `--full-auto` | **fully automatic proof mode** — push automation as far as it goes before falling back to manual VCs. The flag behind the "dial it up" autopilot story ([ch 7](../ch07-invariants-and-the-ai-dial.md)). Trust split: VCs it closes automatically land in `*_proof_auto.v` as trusted (`Admitted`) results, *not* kernel-re-checked ([ch 10](../ch10-trust-and-soundness.md)). |
-| `-s <0..5>` | **execution mode — almost always leave unset.** `0` (the default, and what every shipped command uses) runs the full verify. `1` / `2` / `3` are **inspection modes** that dump the parsed program / statement list / execution tree *instead of* completing the proof pipeline — useful only for debugging how `symexec` reads your code, never for verifying it. `4` / `5` behave like `0`. |
+| `-s <0..5>` | **debug-output verbosity — almost always leave unset.** It changes only what `symexec` prints to stdout; the generated `.v` files are byte-identical at every setting (verified by `diff`), so it never affects verification. `0` (the default, used by every shipped command) runs quietly; `1` dumps the parsed program, `2` the parsed statement list, `3` a GraphViz tree of the parse — all useful only for inspecting how `symexec` read your code. `4` / `5` behave like `0`. |
 | `--conassertion` | an advanced / developer flag — **leave it unset.** It is parsed but drives no behaviour you can observe in normal use, and no shipped command sets it. It is *not* one of the `--*-assertion` format flags below. |
 
 ### Assertion format
