@@ -5,7 +5,7 @@ This page gets QCP working on your machine. Follow it once, end to end, and you 
 - **Stage A (required) — the core verifier.** A prebuilt engine binary plus **Rocq (formerly Coq)**, so you can run `symexec` and compile the generated proofs. This is all [ch 4](../ch04-quickstart-stage-a.md) needs.
 - **Stage B (optional) — the AI workflow.** `uv` plus a Python environment for the MCP servers, so an LLM agent can drive QCP. Skip it until you want the AI dial ([ch 7](../ch07-invariants-and-the-ai-dial.md)).
 
-Pick your platform and read only its column. **Linux (including WSL) is the primary, best-tested track**; macOS is fully supported; Windows works but has a known packaging gap, called out below.
+Pick your platform and read only its column. **Linux (including WSL) is the primary, best-tested track**; macOS has shipped binaries and follows the same core flow (Stage B is still intended-workflow); Windows works but has a known packaging gap, called out below.
 
 > **Note:** The engine binaries are **closed, prebuilt** per platform. There is no source build of `symexec`/`StrategyCheck`/`lsp`/`mcp` — you use the one for your OS. What you *do* build from source is the Rocq proof library, and that is the same on every platform.
 
@@ -25,7 +25,7 @@ Pick your platform and read only its column. **Linux (including WSL) is the prim
 
 ### 1. Pick your platform's engine binary
 
-The repository ships four prebuilt binary directories, one per platform. Each contains the same four executables: `symexec` (runs the verification), `StrategyCheck` (emits the soundness-proof goals for `.strategies` rules — most close with `Qed` and are kernel-checked, with a small named `Admitted` residue that is trusted; see [ch 10](../ch10-trust-and-soundness.md)), `lsp` (powers QIDE), and `mcp` (the Stage-B backend).
+The repository ships four prebuilt binary directories, one per platform. Each contains the same four executables: `symexec` (runs the verification), `StrategyCheck` (emits the strategy-rule proof goals for `.strategies` rules — most close with `Qed` and are kernel-checked, with a small named `Admitted` residue that is trusted; see [ch 10](../ch10-trust-and-soundness.md)), `lsp` (powers QIDE), and `mcp` (the Stage-B backend).
 
 | Platform | Directory | How to tell |
 |---|---|---|
@@ -113,7 +113,7 @@ Stage A is complete when you can turn an annotated `.c` file into a compiled, gr
 1. **`symexec`** reads your annotated C and writes the generated `.v` files.
 2. **`coqc`** (via `make`) compiles those `.v` files. The green `*_goal_check.vo` is your verified result. (What each file is → [ch 9](../ch09-goals-symexec-and-proof.md).)
 
-> **Warning:** [`run-example-linux.sh`](../../run-example-linux.sh) runs only `symexec` and `StrategyCheck` — it **never runs `coqc` on `goal_check`**. Running the script regenerates the `.v` files but does **not** compile them, so it alone does not produce a green check. You must build the proofs with `make` (step 3) to actually verify them. [Ch 4](../ch04-quickstart-stage-a.md) walks the full command line; [R3](INVOCATION.md) documents every flag.
+> **Warning:** [`run-example-linux.sh`](../../run-example-linux.sh) runs only `symexec` and `StrategyCheck` — it **never runs `coqc` on `goal_check`**. Running the script regenerates the `.v` files but does **not** compile them, so it alone does not produce a green check. To verify a case you must compile **its** completeness target — `make <name>_goal_check.vo` (not the library-wide `make core` of step 3, which only builds the proof library). [Ch 4](../ch04-quickstart-stage-a.md) walks the full command line; [R3](INVOCATION.md) documents every flag.
 
 "Green" is the *completeness* gate, not an end-to-end re-check of every obligation — read [ch 10](../ch10-trust-and-soundness.md) before you treat a green build as fully proven.
 
@@ -159,7 +159,7 @@ uv venv .venv
 uv sync
 ```
 
-> On **Windows**, install `uv` with its PowerShell one-liner (`irm https://astral.sh/uv/install.ps1 | iex`), then run the same `uv venv .venv` / `uv sync` from `mcp/qcp-mcp`.
+> On **Windows** the shipped flow is different: from `mcp/qcp-mcp`, create a `.venv-win` with the system Python and install in place — `py -3 -m venv .venv-win` then `.\.venv-win\Scripts\python.exe -m pip install -e .` (per `README_WINDOWS.md`). The Windows MCP client entries then point at `.venv-win\Scripts\python.exe`. Note the referenced helper `scripts/setup-windows-mcp-env.ps1` is **not shipped** (see the Windows notes); set `QCP_MCP_BIN` by hand, or use WSL and follow the Linux flow above.
 
 `qcp-mcp` then needs to know where the engine `mcp` binary is, and your MCP client (VS Code, Claude Code, Codex) needs its own server entry. The `QCP_MCP_BIN`/`CONFIGURE` wiring and the full env-var contract are documented in [R3](INVOCATION.md); the ready-to-paste per-client server blocks (VS Code Copilot, Claude Code, Codex) live in `README_LINUX.md`'s *MCP Setup* section. `rocq-mcp` additionally requires `opam` + `coq-lsp`; see [ch 7](../ch07-invariants-and-the-ai-dial.md) for when it is worth setting up.
 

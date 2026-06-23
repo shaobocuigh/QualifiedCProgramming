@@ -104,14 +104,14 @@ The design enforces strict file ownership: sub-agents are read-only by default a
 
 > **Intended-workflow, not a guaranteed script.** The agent layer is still maturing (above), so read this as the *shape* of a session, not a promise that it runs hands-free.
 
-You drive the *agent*, not the six tools it calls. Verifying one function — say a shipped loop case like one under `QCP_examples/QCP_demos_LLM/` — typically goes:
+You drive the *agent*, not the underlying tools. Verifying one function — say a shipped loop case under `QCP_examples/QCP_demos_LLM/` — moves through the phases above:
 
-1. **You** point the agent at the file and ask it to verify the function against its spec — writing that spec first if there isn't one ([ch 5](ch05-your-first-spec.md); this is the step you can't delegate).
-2. **The agent (annotation)** loads the file (`load_target_file`), then drafts the loop invariant and intermediate assertions, checking each against the live symbolic state (`symbolic`, `step`, `check`) — the dial-up move this chapter is about.
-3. **The agent (goal-frozen)** runs `symexec` to freeze the VC set into the auto file plus the manual stubs.
-4. **The agent (vc-proving)** proves the manual VCs (`proof`, via `rocq-mcp`), looping back to revise the spec if an obligation turns out unprovable.
-5. **The agent (final-check)** compiles the result and audits it — the gate it must clear is **no `Admitted`/extra `Axiom`** in the manual file or case lib before it reports `done`.
-6. **You** review. The one thing to confirm yourself is exactly that gate ([ch 10](ch10-trust-and-soundness.md)'s watch-item); then `close` ends the session.
+1. **You** point the agent at the file and ask it to verify the function against its spec. Write — or at least **review** — the spec first: the LLM may draft it, but the spec is *your* statement of intent, so you have to check it says what you mean ([ch 5](ch05-your-first-spec.md)).
+2. **annotation** — the agent drafts the loop invariant and any intermediate assertions, checking each against the live symbolic state. This is the dial-up move this chapter is about.
+3. **goal-frozen** — the agent runs `symexec` and freezes the VC set into the auto file plus the manual stubs.
+4. **vc-proving** — the agent proves the manual Rocq VCs through `rocq-mcp`, looping back to revise the spec if an obligation turns out unprovable.
+5. **final-check** — the agent compiles the result and audits it; the gate it must clear before reporting `done` is **no `Admitted` or extra `Axiom`** in the manual file or case lib.
+6. **You** review on **two axes**: that the spec and invariants still match what you intended (the tool proves the code against the *spec*, not against your intent — [ch 10](ch10-trust-and-soundness.md)), and that the final-check gate came back clean.
 
 The higher the dial, the more of steps 2–4 the agent does unattended; lower it and you hand-write more of the invariant or the proofs.
 
@@ -124,7 +124,7 @@ Two failure modes look alike from the outside and need opposite fixes. Keep them
 
 The shipped agent scripts are intended-workflow and can fail as software — e.g. a known `vc-proving` `NameError` that can leave `Admitted` stubs in `*_proof_manual.v` and so masquerade as "N unproven obligations" rather than a tool fault. The details, the self-check recipe (`pyflakes` for undefined-name bugs; a `grep` for leftover `Admitted`), and the fix are in [ch 13](ch13-honest-limits.md) / [R5](reference/TROUBLESHOOTING.md).
 
-There is a third outcome between "finished" and "crashed," and it is the one that bites: **the tool can exit 0 and *say* it finished while leaving a hole behind.** A `$?` of `0` is **not** proof of success — `symexec` returns 0 on a malformed/truncated parse, and a float program returns 0 with `"Successfully finished"` while emitting verification conditions the shipped Rocq layer can't discharge ([ch 13](ch13-honest-limits.md)). So after a run, don't trust the exit code: scan the tool output for warnings, and confirm the case actually compiles by building its `*_goal_check.v`. After **any** run, the question to answer is: did the tool finish *and* leave a compilable, hole-free result — or did it crash, or exit 0 over a silent gap? That audit is exactly why [ch 10](ch10-trust-and-soundness.md) makes a manual-file `Admitted` the one thing worth actively auditing.
+There is a third outcome between "finished" and "crashed," and it is the one that bites: **the tool can exit 0 and *say* it finished while leaving a hole behind.** A `$?` of `0` is **not** proof of success — `symexec` returns 0 on a malformed/truncated parse, and a float program returns 0 with `"Successfully finished"` while emitting verification conditions the shipped Rocq layer can't discharge ([ch 13](ch13-honest-limits.md)). So after a run, don't trust the exit code: scan the tool output for a `fatal error`, parse errors, or warnings, and confirm the case actually compiles by building its `*_goal_check.v` to a green `.vo`. After **any** run, the question to answer is: did the tool finish *and* leave a compilable, hole-free result — or did it crash, or exit 0 over a silent gap? That audit is exactly why [ch 10](ch10-trust-and-soundness.md) makes a manual-file `Admitted` the one thing worth actively auditing.
 
 > **Honest limit (frontier model required).** The dial-up workflow needs a frontier model today. Weaker models do not reliably draft invariants or close manual VCs, and there is no verified success rate to set expectations by (above). Budget for the strongest model you have access to, and expect to review.
 

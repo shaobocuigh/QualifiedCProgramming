@@ -1,11 +1,12 @@
 # Reference — Invocation, flags & configuration
 
-> The complete reference for **driving** QCP: every `symexec` / `StrategyCheck` flag that affects how you use it, the
+> The reference for **driving** QCP: the `symexec` / `StrategyCheck` flags you'll actually use, the
 > environment and build knobs, and the MCP configuration. For *what the pipeline does* see
 > [ch 9](../ch09-goals-symexec-and-proof.md); for a first run see [ch 4](../ch04-quickstart-stage-a.md).
 > Flag descriptions are the tool's own (`symexec --help`); behaviours marked **advanced** are
-> exposed but not needed for ordinary use. Verify against `--help` on your build — flags can change
-> between releases.
+> exposed but not needed for ordinary use. A couple of flags that `--help` lists but that are inert
+> or developer-only in this build (e.g. `--conassertion`, `--soundness-proof`) are deliberately
+> left out. Verify against `--help` on your build — flags can change between releases.
 
 ## The canonical command
 
@@ -73,7 +74,7 @@ distinction in [ch 6](../ch06-annotations-as-specs.md)):
 | `--primary-assertion` | the primary form |
 | `--inner-assertion` | the internal `PROP / LOCAL / SEP` form |
 
-In QIDE, the same choice is the `qide.assertionType` setting (`user` / `inner` / `basic assertion`) — see [R6 — Installation](INSTALLATION.md).
+In QIDE, the same choice is the `qide.assertionType` setting (`user assertion` / `inner assertion` / `basic assertion`) — see [R6 — Installation](INSTALLATION.md).
 
 ### Output & diagnostics
 | Flag | Meaning |
@@ -88,15 +89,15 @@ In QIDE, the same choice is the `qide.assertionType` setting (`user` / `inner` /
 `StrategyCheck` turns `.strategies` files into Rocq strategy-soundness artifacts. It accepts the
 same input/path/generation/mode/assertion-format/output flags as `symexec` above —
 `--input-file`, `-I`, `--goal-file`, `--proof-auto-file`, `--proof-manual-file`,
-`--coq-output-dir`, `--no-coq-gen`, `-slp`, `--coq-logic-path`, `--no-logic-path`,
-`--CRules`/`--no-CRules`, `--strategy-file`, `--no-strategy-gen`, `--strategy-folder-path`,
-`-s`, `--full-auto`, the four `--*-assertion` formats, and `--no-exec-info` —
-plus one of its own:
+`--coq-output-dir`, `--gen-and-backup`, `--no-coq-gen`, `-slp`, `--coq-logic-path`,
+`--no-logic-path`, `--CRules`/`--no-CRules`, `--strategy-file`, `--no-strategy-gen`,
+`--strategy-folder-path`, `-s`, `--full-auto`, the four `--*-assertion` formats, and
+`--no-exec-info` — plus one of its own:
 | Flag | Meaning |
 |---|---|
 | `--strategy-proof-logic-path <path>` | the Rocq logical path for the generated strategy proofs |
 
-It does **not** have the symexec-only `--program-path` or `--dump-smt-vc-file`.
+It does **not** have symexec's `--input-file-name`, `--disable-solver-info`, `--program-path`, or `--dump-smt-vc-file`.
 
 Typical use (validates a `.strategies` file):
 
@@ -150,7 +151,7 @@ are diagnostics knobs, all optional:
 |---|---|---|
 | `QCP_MCP_BIN` | — | absolute path to the platform `mcp` binary (highest precedence) |
 | `QCP_MCP_CONFIG` | packaged `CONFIGURE` | path to a `CONFIGURE` file giving `QCP_MCP_BIN` |
-| `QCP_MCP_LOG_LEVEL` | `INFO` | server log level |
+| `QCP_MCP_LOG_LEVEL` | `DEBUG` | server log level |
 | `QCP_MCP_LOG_FILE` | _(unset)_ | write the server log to this file |
 | `QCP_MCP_USE_STDBUF` | `0` | wrap the engine in `stdbuf` for line-buffered output (set `1` to debug streaming) |
 
