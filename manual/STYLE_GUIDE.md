@@ -129,14 +129,30 @@ Rules:
 
 ---
 
-## 4. Rocq exposure: hide by default, expand for experts
+## 4. This is a USER manual — technical detail only if it changes what the user does
 
-The manual is a **layered single document**. Rocq detail is **collapsed by default**.
+**The governing test for any technical/internal detail: "would this change how the reader *uses
+or trusts* the tool?"** If no, cut it — or move it to an internal source doc. A user manual is
+not a technical report; readers came to *use* QCP, not to learn its construction.
 
+- **Keep** (affects use/judgment): the two-tier trust model and the manual-`Admitted` audit; the
+  scope boundaries and how each fails; the effort tax; the spec-faithfulness gap; the
+  invariant/proof delegation; the commands a reader runs.
+- **Cut** (does not affect use): engine internals (solver algorithms, SAT/SMT/CDCL, proof terms,
+  parser/IR, module-type *plumbing*); **how a fact was discovered** ("reverse-engineered from the
+  binary", "per the DWARF symbols") — never put methodology/provenance in a chapter; **WIP or
+  dormant features** (e.g. an unwired `--soundness-proof` certificate) — a user can't use them, so
+  they don't belong in *this* version.
+- **Internal source docs are for drafting only.** `reference/ENGINE_INTERNALS.md`, the
+  reverse-engineering notes, and `docs/` are *sources you mine* — **never link to them from a
+  chapter or a distributed reference page**, and never cite "we reverse-engineered…" State the
+  resulting fact plainly, at the altitude a user needs.
+
+Rocq detail specifically is **collapsed by default**:
 - Lead with the C-level / annotation-level view. Show Rocq only when it changes what the reader
   does.
-- Put extended Rocq (tactic listings, `.v` internals, module-type plumbing) inside a
-  `<details>` block or a clearly-marked 🟣 subsection, so tier-1 readers skim past it.
+- Put extended Rocq (tactic listings, `.v` internals) inside a `<details>` block or a
+  clearly-marked 🟣 subsection, so tier-1 readers skim past it.
 
 ```markdown
 <details><summary>🟣 Rocq detail: what <code>entailer!</code> leaves behind</summary>

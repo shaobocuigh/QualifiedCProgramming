@@ -37,7 +37,7 @@ For each input `<name>.c`, `symexec` writes four files into the parallel `Separa
 | `<name>_proof_manual.v` | `Lemma` stubs for VCs needing a written Rocq proof — *intended* to end in `Qed` (kernel-checked only when they do; audit for stray `Admitted`) | **human-editable** |
 | `<name>_goal_check.v` | `Module VC_Correctness : VC_Correct` that `Include`s both proof files — the **completeness** gate | tool-owned |
 
-The split between `_proof_auto.v` and `_proof_manual.v` is the **two-tier trust model**: auto VCs are discharged by `symexec`'s proof-producing solver and ride as `Admitted` (trusted, certificate not re-emitted); manual VCs are *meant* to end in `Qed` — and a manual VC is re-checked by the Rocq kernel exactly when it does, so audit for any stray `Admitted` a crashed run left behind. The `_goal_check.v` gate enforces *completeness* (every VC has a member, exactly once) — **not** that every VC was kernel-checked. The full story, the audit recipe, and why a green build is not "checked end to end" is [ch 10](ch10-trust-and-soundness.md); this chapter is about the *shapes* in those files, not their trust weight.
+The split between `_proof_auto.v` and `_proof_manual.v` is the **two-tier trust model**: auto VCs are settled by `symexec`'s strategy solver and ride as `Admitted` (trusted — the kernel doesn't re-check them); manual VCs are *meant* to end in `Qed` — and a manual VC is re-checked by the Rocq kernel exactly when it does, so audit for any stray `Admitted` a crashed run left behind. The `_goal_check.v` gate enforces *completeness* (every VC has a member, exactly once) — **not** that every VC was kernel-checked. The full story, the audit recipe, and why a green build is not "checked end to end" is [ch 10](ch10-trust-and-soundness.md); this chapter is about the *shapes* in those files, not their trust weight.
 
 ## The shape of a VC: witnesses and the five kinds
 
@@ -68,7 +68,7 @@ Read it left to right. The `forall` binds the ghost/program values and the **pur
 
 ## Loops: you supply the invariant; `symexec` checks it
 
-Loops are the sharpest illustration of the "**you write WHAT, you delegate the WHY**" promise. `symexec` does **not** infer loop invariants — it does no invariant *inference* (it won't analyze a loop and discover one). It *expects* a `/*@ Inv … */` (or `/*@ Inv Assert … */`) on the loop and **checks** it, the classic Hoare-inductive way (source: FACTS §F3.2, from binary reverse-engineering):
+Loops are the sharpest illustration of the "**you write WHAT, you delegate the WHY**" promise. `symexec` does **not** infer loop invariants — it does no invariant *inference* (it won't analyze a loop and discover one). It *expects* a `/*@ Inv … */` (or `/*@ Inv Assert … */`) on the loop and **checks** it two ways:
 
 - **P → I** — the state entering the loop must establish the invariant. If it doesn't, you get `Loop invariant cannot be derived based on pre-condition, i.e. failed in P -> I.`
 - **I → I** — one iteration must preserve the invariant. If it doesn't: `Loop invariant is not inductive, i.e. failed in I -> I.`
@@ -97,7 +97,7 @@ Proof.
 Qed.
 ```
 
-Note the residue: after `entailer!` discharges the separation-logic structure, what's left is a **plain mathematical fact** about `Z.gcd` closed with ordinary Rocq (`rewrite`, `lia`, `reflexivity`). That is the typical division of labor — the SL tactics clear the heap reasoning, and you (or the LLM) supply the domain lemma. The auto file beside it, `gcd_proof_auto.v`, holds the same kind of lemma statement but every proof ends `Proof. Admitted.` — solver-verified, certificate not re-emitted; why that is fine (and not an unproven hole) is [ch 10](ch10-trust-and-soundness.md).
+Note the residue: after `entailer!` discharges the separation-logic structure, what's left is a **plain mathematical fact** about `Z.gcd` closed with ordinary Rocq (`rewrite`, `lia`, `reflexivity`). That is the typical division of labor — the SL tactics clear the heap reasoning, and you (or the LLM) supply the domain lemma. The auto file beside it, `gcd_proof_auto.v`, holds the same kind of lemma statement but every proof ends `Proof. Admitted.` — the strategy solver settled those; why that's fine (and not an unproven hole) is [ch 10](ch10-trust-and-soundness.md).
 
 > 🟣 **Tier 3** — When the *same* `entail_wit` shape recurs across many calls, don't re-prove it: write a `.strategies` rule so it discharges into `_proof_auto.v` automatically for every future case. That moves a VC from the manual pool to the auto pool ([ch 14](ch14-extension.md)).
 

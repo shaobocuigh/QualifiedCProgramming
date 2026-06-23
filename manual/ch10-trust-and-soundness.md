@@ -4,7 +4,7 @@ A QCP "✔" is not one thing. It is **two** things, and the difference decides h
 
 Read this chapter before you decide that a verified function is "done." Everything else in the manual — when to adopt QCP ([ch 2](ch02-should-you-use-qcp.md)), why a goal is stuck ([ch 11](ch11-stuck-goal-differential.md)), what the limits are ([ch 13](ch13-honest-limits.md)) — leans on the model you learn here.
 
-> **The one rule to carry out of this chapter:** a QCP green check is **genuinely strong** — most obligations are independently re-checked by the Rocq kernel, and the rest are discharged by `symexec`'s *proof-producing* solver. You do not need to distrust a green build. The single thing worth actively inspecting is an **`Admitted` or `Axiom` in a *manual* proof or case lib** — a real, usually-unwanted hole that a person left (or a crashed run left behind). The auto fraction is also marked `Admitted`, but that is the solver's *verified* result with its certificate simply not re-emitted — trust-the-tool, not a gap in the proof.
+> **The one rule to carry out of this chapter:** a QCP green check is **genuinely strong** — most obligations are independently re-checked by the Rocq kernel, and the rest are settled by `symexec`'s automated **strategy solver**. You do not need to distrust a green build. The single thing worth actively inspecting is an **`Admitted` or `Axiom` in a *manual* proof or case lib** — a real, usually-unwanted hole that a person left (or a crashed run left behind). The auto fraction is *also* marked `Admitted`, but that just records the solver's own result — the tool's automated reasoning, which the kernel doesn't independently re-check. That's trust-the-tool, not a gap in the proof.
 
 ## The two-tier trust model
 
@@ -15,19 +15,19 @@ QCP splits every **verification condition** (VC — an entailment `P |-- Q` that
 | **Auto** | VCs `symexec`'s strategy solver discharges | `*_proof_auto.v` | `Lemma … Proof. Admitted.` | **trusted** — accepted as an axiom, **not** re-checked |
 | **Manual** | VCs a human or the LLM proves | `*_proof_manual.v` | `… Qed.` | **kernel-checked** — fully re-elaborated by the Rocq kernel |
 
-The **auto** pool is the larger one — roughly two-and-a-half to three auto VCs for every manual one (i.e. roughly a quarter to a third of proof effort is manual; see [ch 12](ch12-scope-and-scaling.md) for the effort calibration and its methodology). Those VCs close with `Admitted` — but read that carefully, because it is the line most people misread. `symexec`'s solver is **proof-producing**: it constructs an actual derivation for each entailment. Under the hood it is a serious decision procedure — a separation-logic entailment checker driving an in-house, from-scratch **certifying SMT solver** (a CDCL core combining congruence/EUF, linear integer arithmetic, and floating-point-interval theories; *not* a call out to Z3), and every stage builds its own proof term (🟣 architecture: [reference/ENGINE_INTERNALS.md](reference/ENGINE_INTERNALS.md)). The `Admitted` does **not** mean "guessed" or "assumed blind"; it means that internally-constructed proof **is not emitted** for the Rocq kernel to re-elaborate, so what lands on disk is an axiom-shaped placeholder standing in for a proof that was actually carried out. Relying on the auto fraction is therefore *trusting the verifier's solver* — much as you trust the core of any verification tool — **not** accepting an unproven assertion. What you give up versus the manual path is the *independent kernel re-check* and an *auditable certificate*, not the verification itself. (A dormant `--soundness-proof` pathway in the binary could one day emit that certificate; see the TCB below.)
+The **auto** pool is the larger one — roughly two-and-a-half to three auto VCs for every manual one (i.e. roughly a quarter to a third of proof effort is manual; see [ch 12](ch12-scope-and-scaling.md)). Those VCs close with `Admitted` — but don't misread that. They were **settled by `symexec`'s strategy solver**, the engine's automated reasoning; `Admitted` simply records that the solver discharged the entailment and the Rocq kernel does not independently re-check that result. So relying on the auto fraction is **trusting the tool's automation** — the same trust you place in the core of any verifier — **not** accepting an unproven guess. What you give up versus the manual path is the *independent kernel re-check*, not the reasoning itself; there is nothing unproven there for you to audit.
 
 The **manual** pool is the minority, and it is where the kernel does its own re-elaboration. A manual proof that ends in `Qed` has been re-checked, term by term, against the emitted VC. If the proof is wrong, `Qed` fails and the build goes red. That is the strongest guarantee in the system — and it is also where the **one real watch-item** lives: a manual proof (or a case lib) is supposed to end every obligation in `Qed`, but nothing *forces* it to, so a stray `Admitted`/`Axiom` here is a genuine unproven hole (§"the one real watch-item" below).
 
 > 🟢 **Tier 1** — You never read either file. What matters to you: the green check is *partly* a solver's word (auto) and *partly* a kernel-checked proof (manual). When you need to know which, run the two-minute audit below — no Rocq knowledge required.
 
-> 🔵 **Tier 2** — The proofs you read and fix live in `*_proof_manual.v`. Every `Qed` you close there is genuinely re-checked. The `*_proof_auto.v` file beside it is `Admitted` end to end; that's the solver's verified result with no proof term emitted to read — not a bug to hunt.
+> 🔵 **Tier 2** — The proofs you read and fix live in `*_proof_manual.v`. Every `Qed` you close there is genuinely re-checked. The `*_proof_auto.v` file beside it is `Admitted` end to end — the solver settled those, so there's no hand-written proof to read or fix there.
 
 ## The one real watch-item: `Admitted`/`Axiom` in a *manual* proof
 
 If you remember one actionable thing from this chapter, make it this. The two pools handle `Admitted` very differently, and only one of them should worry you:
 
-- **Auto fraction (`*_proof_auto.v`): `Admitted` is expected and fine.** It's the proof-producing solver's verified result with the certificate not re-emitted (above). You don't audit it for "holes" — there's nothing unproven there to find; you're trusting the solver, as you trust any verifier's core.
+- **Auto fraction (`*_proof_auto.v`): `Admitted` is expected and fine.** It records the strategy solver's own result (above). You don't audit it for "holes" — there's nothing unproven there to find; you're trusting the tool's automation, as you trust any verifier's core.
 - **Manual fraction (`*_proof_manual.v`) and case libs: `Admitted` or `Axiom` is a genuine hole.** These files are *supposed* to close every obligation with `Qed`. An admit here means a real proof obligation was **assumed, not proved** — and nothing in the build forces it shut. That is almost always **unwanted**: a placeholder someone left, or what a crashed proving run leaves behind (the example tree has shown exactly this — see the audit below). **Inspect any manual-file admit closely before you trust the result.**
 
 The one-command check (no Rocq needed):
@@ -65,7 +65,7 @@ This is the single most important thing to internalize: **do not read a green bu
 
 It is easy to over-correct here into cynicism. Don't. The manual path carries a genuinely strong guarantee — state it precisely:
 
-> On the **manual** path, the Rocq kernel re-checks every `Qed` proof term against the **emitted VC** and the **imported axioms**. So no one can produce a `Qed` for a VC that is **false** — that is, not provable from those axioms — short of the axioms themselves being unsound. A generator bug that emits an unprovable VC makes that VC **stay red**; it cannot turn a false VC green on the manual path.
+> On the **manual** path, the Rocq kernel re-checks every `Qed` proof against the **emitted VC** and the **imported axioms**. So no one can produce a `Qed` for a VC that is **false** — that is, not provable from those axioms — short of the axioms themselves being unsound. A generator bug that emits an unprovable VC makes that VC **stay red**; it cannot turn a false VC green on the manual path.
 
 That is the property to quote when someone asks "but how do you know the proof is right?" — for the manual fraction, *a `Qed` on a false VC is impossible* (absent an unsound axiom).
 
@@ -124,7 +124,7 @@ Every "✔" rests on a set of things you are trusting without re-checking. Know 
 | 1 | The **Rocq kernel** (`coqc`, 8.20.1) | It re-checks every `Qed`; if it's wrong, everything is. |
 | 2 | `SeparationLogic/` + `unifysl` and their **foundational axioms** | The logic the proofs are built on; assumed sound. |
 | 3 | `symexec`'s **annotation → VC translation** | `coqc` checks proofs *match* the VCs, never that the VCs *faithfully model your C*. **This faithfulness is unaudited.** |
-| 4 | `symexec`'s **strategy solver** | Every auto VC is `Admitted` on the solver's word. The solver is in-house and *proof-producing* (it builds a derivation, with no external SMT) — but that certificate is **not emitted**, so the kernel never re-checks it. A `--soundness-proof` pathway exists in the binary but is dormant/empty today; until it's wired up, the auto pool is trusted. |
+| 4 | `symexec`'s **strategy solver** | Every auto VC is `Admitted` on the solver's word — the kernel never re-checks the solver's automated reasoning, so you trust the solver's implementation (as with any verifier's core). |
 | 5 | The **6 admitted strategy rules** | `SeparationLogic/stdlib/string_strategy_proof.v` (×2) and `Applications_human/minigmp/gmp_strategy_proof.v` (×4) ship as `Admitted`; all but these 2 of the ~45 `*_strategy_proof.v` files (~43) close with `Qed` and are re-checked. So even the strategy layer is mostly kernel-checked, with a small named trusted residue. |
 | 6 | The **user's annotations** | A wrong `Require`/`Ensure` is faithfully "verified" — QCP proves your spec, not your intent. |
 
@@ -134,7 +134,7 @@ Item 6 is the one *you* control. QCP proves that your code satisfies the spec yo
 
 ## What to take away
 
-- A QCP "✔" is **two-tier**, and that's fine: manual VCs end in `Qed` (kernel-re-checked); auto VCs are `Admitted` — the proof-producing solver's verified result, certificate just not re-emitted. Relying on the auto fraction is trust-the-tool, not a leap of faith.
+- A QCP "✔" is **two-tier**, and that's fine: manual VCs end in `Qed` (kernel-re-checked); auto VCs are `Admitted` — the strategy solver's own result, which the kernel doesn't re-check. Relying on the auto fraction is trust-the-tool, not a leap of faith.
 - **The one real watch-item:** an `Admitted`/`Axiom` in a *manual* proof or case lib is a genuine unproven hole (usually unwanted). Check it: `grep -rl Admitted … *_proof_manual*.v`. An admit in `*_proof_auto.v` is not a hole.
 - A green `goal_check.vo` proves **completeness** (every VC is present), not end-to-end kernel re-checking — so it's the *manual-admit* audit, not the green build, that's the assurance worth running.
 - The strong, true property: on the manual path a false `Qed` is impossible (absent an unsound axiom). It guards the *proof*, not the VC's *faithfulness* to your C — a provable-but-unfaithful VC still passes (the TCB's faithfulness gap).

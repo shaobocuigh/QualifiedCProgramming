@@ -117,7 +117,7 @@ them — and the gate is a **Coq module-type ascription, not a proof**: `_goal.v
 *source* emitters and contain zero `Qed` strings (the Qed/Admitted split is a file convention).
 (Source: `docs/verification-pipeline.md` §1–§2 (the annotation→VC translation + the four
 generated files) and §5 (StrategyCheck); `docs/coq-backend.md`; scope-matrix + trust-model
-investigations; binary RE — [reference/ENGINE_INTERNALS.md](reference/ENGINE_INTERNALS.md) §8.)
+investigations; binary reverse-engineering of the shipped `symexec`.)
 
 ### F1.3 What the auto solver actually is (binary RE — sharpens "Admitted = trusted")
 
@@ -143,8 +143,7 @@ story — use this precise framing:
   produced. There is
   **no external SMT solver and no subprocess** (links only libc/libm; the SMT subsystem is even
   compiled without DWARF). So an auto VC is discharged *by a derivation the engine constructs* — not
-  asserted blind. **Full architecture: [reference/ENGINE_INTERNALS.md](reference/ENGINE_INTERNALS.md)
-  §5–§6.**
+  asserted blind. (Established by binary reverse-engineering of the shipped `symexec`.)
 - **…and no certificate is emitted or checked.** Even the in-memory proof-node data the live
   solver does build (`initProofData`/`newProofNode`/`copy_ProofTerm`, for internal unsat-core /
   theory-conflict tracking) stays inside the engine and is never serialized;
@@ -225,8 +224,9 @@ all rest on the same kind of proof.**
   (`interval_theory_check`, Nelson-Oppen-registered), yet the core C-type/heap representation
   **cannot store a float**: `SimpleCtype`'s data union declares `C_float`/`C_double` enum tags but
   **omits their union cases** (11 members for 13 tags), and float constants are parked as unparsed
-  text. So float *arithmetic reasoning* is wired while float *heap storage* is a half-stub — see
-  [reference/ENGINE_INTERNALS.md](reference/ENGINE_INTERNALS.md) §4, §9.
+  text. So float *arithmetic reasoning* is wired internally while float *heap storage* is a
+  half-stub. **(This mechanism is engine-internal / WIP — keep it OUT of user-facing chapters;
+  the only user-facing fact is the conclusion: floats are off-limits and fail *silently*.)**
 - **(b) goto / function pointers — "no construct in the open library," and funcptr ERRORS
   LOUDLY.** No `Sgoto` AST node exists (zero matches in `SeparationLogic/**.v`); no
   call-expression constructor for indirect calls. **Function-pointer calls fail loudly in
