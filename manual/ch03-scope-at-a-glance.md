@@ -23,7 +23,7 @@ What QCP can verify, in one table. ✅ = supported; ⚠️ = supported with a re
 | Recursion | ✅ supported | by-contract self-calls; reasoned via inductive predicates |
 | `for`/`while`/`switch`/`break`/`continue`/`do`-`while` | ✅ supported | frontend desugars to an `if`/`while`/`seq` core — **you write ordinary C** (`continue` is model-supported via the desugaring but has **no** worked corpus case in this checkout — `grep -rn 'continue' QCP_examples --include='*.c'` returns nothing at snapshot) |
 | Polymorphic / generic predicates | ✅ supported (under-sold) | one list spec reused across any struct/field (`super_poly_sll2`) |
-| Multi-file / modular | ✅ supported (under-sold) | shared contracts in a `_def.h` + `/*@ Import/Extern Coq @*/` |
+| Multi-file / modular | ✅ supported (under-sold) | shared contracts in a `_def.h` + `/*@ Import/Extern Rocq @*/` |
 | Unions | ⚠️ limited | tagged-union only; write-one/read-another (overlapping storage) is **not** modeled |
 | `malloc` / `free` | ⚠️ limited | no built-in allocator; you declare contracted wrappers (flexible — but you write the spec) |
 | OS sync (LiteOS, via STS) | ⚠️ limited | via **STS** state-machine abstractions; the shipped corpus is a ~17-function kernel sorted-link/list case set (snapshot — count below), **not** the whole RTOS — and **not** shared-memory parallelism |
@@ -44,7 +44,7 @@ Four things QCP cannot verify — four hard boundaries with **four different fai
 
 This is the only ❌ you have to actively watch for, because it does **not** announce itself. The closed `symexec` engine has a complete float front-end: hand it `float fadd(float x, float y) { return x + y; }` and it **exits 0 — "Successfully finished"** — and emits a genuine IEEE verification condition (with `fp32`/`fp32_add` and finiteness symbols). It *looks* verified.
 
-But the shipped `SeparationLogic/` Coq layer **defines none of those symbols** — there are zero `fp32` definitions in the library (verified live). So the generated `_goal.v` references undefined names: it **won't compile**, and the obligation can be discharged by neither the auto solver nor a manual proof. You are left with **apparent success and an uncompilable, unprovable obligation** — strictly worse than a clean rejection, because nothing flags it at the `symexec` step.
+But the shipped `SeparationLogic/` Rocq layer **defines none of those symbols** — there are zero `fp32` definitions in the library (verified live). So the generated `_goal.v` references undefined names: it **won't compile**, and the obligation can be discharged by neither the auto solver nor a manual proof. You are left with **apparent success and an uncompilable, unprovable obligation** — strictly worse than a clean rejection, because nothing flags it at the `symexec` step.
 
 > **Honest limit:** floats and doubles are **off-limits in practice.** Not because they're "cleanly rejected" — because the engine is ahead of the shipped proof base. The reason matters: don't trust a green `symexec` exit on float code; it tells you nothing. (Exit code 0 is not proof of success in general — see [ch 13](ch13-honest-limits.md).)
 

@@ -4,7 +4,7 @@
 > Each fact carries a **source citation** (repo path, and a line where one pins it). Writers
 > pull the slice they need and cite *this file* (which in turn cites source). **Rule:** if a
 > claim isn't here and you can't verify it against live repo source, it doesn't ship — mark it
-> *intended-workflow* or cut it. Snapshot baseline: commit `9804a85`, QCP v2.0.3, Coq/Rocq
+> *intended-workflow* or cut it. Snapshot baseline: commit `9804a85`, QCP v2.0.3, Rocq
 > **8.20.1**. ⚠ The generated proofs under `SeparationLogic/examples/` are **regenerated
 > artifacts** — exact counts are a moving target (they shifted during this manual's own
 > authoring), so every count below leads with its **command** and is quoted as **approximate**;
@@ -19,7 +19,7 @@ QCP's "verified" is **two-tier**. Conflating the tiers is the #1 over-claim to a
 | Tier | Where | How it ends | Kernel status |
 |---|---|---|---|
 | **Auto** — VCs `symexec`'s strategy solver discharges | `*_proof_auto.v` | `Lemma … Proof. Admitted.` | **trusted, accepted as an axiom — NOT re-checked** |
-| **Manual** — VCs a human/LLM proves | `*_proof_manual.v` | `… Qed.` | **fully re-elaborated by the Coq kernel** |
+| **Manual** — VCs a human/LLM proves | `*_proof_manual.v` | `… Qed.` | **fully re-elaborated by the Rocq kernel** |
 
 **Live counts — treat as a SNAPSHOT; lead with the command, quote the number as approximate.**
 Baseline commit `9804a85`, but the files under `SeparationLogic/examples/` are **regenerated
@@ -57,7 +57,7 @@ runs `Print Assumptions` / `coqchk` to forbid `Admitted`.** `run-example-linux.s
 (Source: `docs/verification-pipeline.md` §2, §6; `docs/project-overview.md` "What's actually
 in this repository".)
 
-**The strong, true property (state it precisely):** the Coq kernel re-checks every `Qed` proof
+**The strong, true property (state it precisely):** the Rocq kernel re-checks every `Qed` proof
 term against the **emitted VC** and the **imported axioms/assumptions** — so on the **manual**
 path no one can produce a `Qed` for a **false** (unprovable) VC, absent an unsound axiom; such a
 VC stays *unprovable* (red). **Crucial caveat — don't overstate it:** this stops *unsound
@@ -83,7 +83,7 @@ Print Assumptions VC_Correctness.proof_of_<witness>.
 - `Closed under the global context` ⇒ that VC is **kernel-checked** (manual `Qed`).
 - `Axioms: …_proof_auto…` ⇒ that VC is **admitted/trusted** (auto).
 
-**Proxy without launching Coq:** `grep -c Admitted <name>_proof_auto.v` vs
+**Proxy without launching Rocq:** `grep -c Admitted <name>_proof_auto.v` vs
 `grep -c Qed <name>_proof_manual.v`.
 
 **Worked specimen:** `SeparationLogic/examples/QCP_demos_human/swap_*` →
@@ -93,7 +93,7 @@ Print Assumptions VC_Correctness.proof_of_<witness>.
 ### F1.2 The Trusted Computing Base (TCB)
 
 What you trust when you trust a QCP "✔":
-1. The **Coq kernel** (`coqc` 8.20.1).
+1. The **Rocq kernel** (`coqc` 8.20.1).
 2. `SeparationLogic/` + `unifysl` and their foundational axioms.
 3. **`symexec`'s annotation→VC translation** — `coqc` checks proofs *match* the emitted VCs,
    never that the VCs *faithfully model the C source*. This faithfulness is **unaudited**.
@@ -122,7 +122,7 @@ story — use this precise framing:
   auto VC is discharged *by a derivation the engine constructs* — not asserted blind.
 - **…but the certificate is not emitted or checked.** That derivation stays inside the engine;
   what lands on disk is `Lemma proof_of_<wit> : <wit>. Proof. Admitted.` (and `_goal.v` declares
-  the matching `Axiom proof_of_<wit>` inside `Module Type VC_Correct`). The Coq kernel never sees
+  the matching `Axiom proof_of_<wit>` inside `Module Type VC_Correct`). The Rocq kernel never sees
   it. So the precise claim is **"discharged by an in-house proof-producing oracle whose
   certificate isn't emitted, so the kernel doesn't re-check it"** — not "asserted without proof,"
   but also not "kernel-checked."
@@ -133,12 +133,31 @@ story — use this precise framing:
   and unwired** in the shipped flow (completeness unknown from outside). Don't promise it; do note
   it exists as a future trust lever.
 
+### F1.4 Trust-TONE guidance (don't over-dramatize the auto fraction)
+
+The two-tier model is accurate, but the *framing* must not scare a practitioner off a green check.
+Hold this balance in every chapter that touches trust:
+
+- **The auto/`Admitted` fraction is NOT a risk to flag.** `symexec` performs real formal
+  verification there (proof-producing solver, F1.3); the only thing missing is the *emitted,
+  re-checkable certificate*. Relying on it is **trust-the-tool** (as with any verifier's core),
+  **not** "accepting unproven assertions." Say "solver-verified, certificate not re-emitted," not
+  "trusted, unchecked, scary."
+- **The ONE genuine watch-item is `Admitted`/`Axiom` in a *manual* proof or case lib.** Those
+  files are meant to be all-`Qed`; an admit there is a real unproven hole (a placeholder, or a
+  crashed run's leftover) and is **usually unwanted** — inspect closely. The actionable check is
+  `grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"` (clean = the
+  assurance that matters).
+- **Net message:** a QCP green check is *genuinely strong*; don't induce cynicism. State the
+  faithfulness gap (F1.2 #3) and the manual-admit watch-item honestly, but do not present the
+  auto fraction as a soundness hole — it isn't.
+
 ---
 
 ## F2. Scope support matrix (VERIFIED — high confidence)
 
-The Coq value/AST/memory model bounds what C can be verified. The "unsupported" verdicts below
-were established by direct inspection of the open Coq library (see the per-feature evidence in
+The Rocq value/AST/memory model bounds what C can be verified. The "unsupported" verdicts below
+were established by direct inspection of the open Rocq library (see the per-feature evidence in
 F2.1 — each cites a file/line). **Cite the evidence by provenance — the four hard "no"s do not
 all rest on the same kind of proof.**
 
@@ -151,11 +170,11 @@ all rest on the same kind of proof.**
 | Recursion | ✅ supported | by-contract self-calls; reasoned via inductive predicates |
 | `for`/`while`/`switch`/`break`/`continue`/`do-while` | ✅ supported | frontend desugars to an if/while/seq core — **you write ordinary C** |
 | Polymorphism / generic predicates | ✅ supported (UNDER-SOLD) | one list spec reused across any struct/field (`super_poly_sll2`) |
-| Multi-file / modular | ✅ supported (UNDER-SOLD) | contracts in shared `_def.h` + `/*@ Import/Extern Coq @*/` |
+| Multi-file / modular | ✅ supported (UNDER-SOLD) | contracts in shared `_def.h` + `/*@ Import/Extern Rocq @*/` |
 | Unions | ⚠️ limited | tagged-union only; write-one/read-another (overlapping storage) NOT modeled |
 | malloc / free | ⚠️ limited | no built-in allocator; you declare contracted wrappers (flexible; but you write the spec) |
 | OS sync (locks/events/interrupts) | ⚠️ limited | via **STS abstractions** (LiteOS RTOS, 17 fns) — state-machine, NOT shared-memory parallelism |
-| **Floats / doubles** | ❌ unsupported — **SILENT HALF-STUB** | ⚠ the closed engine *accepts* floats and exits 0, but the shipped Coq layer can't discharge the VCs (F2.1a) — the dangerous case |
+| **Floats / doubles** | ❌ unsupported — **SILENT HALF-STUB** | ⚠ the closed engine *accepts* floats and exits 0, but the shipped Rocq layer can't discharge the VCs (F2.1a) — the dangerous case |
 | **goto** | ❌ unsupported | no `Sgoto` node in the open library; rejected (F2.1b) |
 | **Function pointers / indirect calls** | ❌ unsupported — **errors loudly** | verification mode fails with `fatal error: FindFuncInfo` (EXIT=1) — a safe hard limit, not silent (F2.1b) |
 | **Shared-memory concurrency** | ❌ unsupported | CSL proven sound but never wired into the C frontend (F2.1c) |
@@ -164,11 +183,11 @@ all rest on the same kind of proof.**
 
 - **(a) Floats/doubles — a SILENT HALF-STUB, not a clean boundary (corrected via binary RE).**
   The earlier "floats are positively-proven unsupported via `Invalid_store`" describes only the
-  *open Coq layer's* store typing rejecting float *storage* (`CommonAssertion.v:351/443`). But
+  *open Rocq layer's* store typing rejecting float *storage* (`CommonAssertion.v:351/443`). But
   the **closed `symexec` engine has a complete float front-end**: on `float fadd(float x,float y)
   {return x+y;}` it **exits 0 ("Successfully finished")** and emits a *genuine* IEEE VC
   (`… |-- fp32_isFinite (fp32_add x_pre y_pre)`, with `fp32`/`fp32_add`/safety-constraint
-  symbols). **The shipped `SeparationLogic/` Coq layer defines none of those symbols** (zero
+  symbols). **The shipped `SeparationLogic/` Rocq layer defines none of those symbols** (zero
   `fp32` definitions), so the generated `_goal.v` references undefined symbols, **won't compile,
   and can't be discharged auto OR manual.** Net: the engine *looks like it succeeded* but leaves
   an unprovable, uncompilable obligation — **more dangerous than a clean rejection.** Manual
@@ -207,6 +226,18 @@ frozen `collect_and_analyze.py` number as fact. Note the manual `Qed` count **ex
 admitted manual stubs a crashed run leaves behind (F1) — those VCs are neither auto-discharged nor
 proven, so they don't count as "manual effort done."
 
+**⚠ "Manual" ≠ "human-written" — say this whenever you state the tax.** The auto:manual split is
+*solver-auto-discharged* vs *needs-a-written-Rocq-proof* (the `*_proof_auto.v` vs `*_proof_manual.v`
+files). It does **not** measure human-vs-LLM. In the AI-driven workflow the **LLM drafts the
+manual proofs** (and the loop invariants, F3.2); the human reviews them and handles only the rare
+cases the LLM can't close. So a practitioner's *hands-on* proving burden is materially **smaller**
+than the 25–33% manual fraction — it's the LLM's residual, which is small for array/string/list
+code reusing shipped predicates (the skew above) and larger for arithmetic/OS code. **No verified
+LLM success-rate exists** (the corpus has an `LLM_bench` suite but no audited "LLM closes X% of
+manual VCs" figure here) — keep this qualitative and pair it with the frontier-model-required
+caveat (F8/F9). Don't conflate "manual fraction" (a VC-classification snapshot) with "human
+effort" (the LLM's residual).
+
 **Skew (qualitative, medium confidence — category estimates, NOT reproduced by one command;
 label as such or cut):** more manual for arithmetic/number-theory & OS/STS code; much less for
 array/string/list/algorithmic code that reuses shipped predicates; a shard-aware count finds
@@ -234,7 +265,7 @@ For each input `<name>.c`, `symexec` writes into `SeparationLogic/examples/<sub>
 |---|---|---|
 | `<name>_goal.v` | one `Definition` per VC: the entailment `P \|-- Q` | tool-owned (never hand-edit) |
 | `<name>_proof_auto.v` | `Lemma proof_of_<wit>` for solver-discharged VCs (`Admitted`) | tool-owned |
-| `<name>_proof_manual.v` | `Lemma` stubs for VCs needing a human/LLM Coq proof (`Qed`) | **human-editable** |
+| `<name>_proof_manual.v` | `Lemma` stubs for VCs needing a human/LLM Rocq proof (`Qed`) | **human-editable** |
 | `<name>_goal_check.v` | `Module VC_Correctness : VC_Correct` `Include`-ing both proof files — the **completeness** gate (every VC accounted for exactly once) | tool-owned |
 
 Key behaviors (Source: `docs/verification-pipeline.md` §2):
@@ -266,10 +297,30 @@ linux-binary/symexec \
   --no-exec-info
 ```
 
-- **`-I` ≠ `-slp`.** `-I<dir>` resolves C `#include`s; `-slp <dir> <Coq.Path>` resolves
-  `.strategies` files and Coq logical paths. Many cases need several of each; `-slp` pairs nest
+- **`-I` ≠ `-slp`.** `-I<dir>` resolves C `#include`s; `-slp <dir> <Rocq.Path>` resolves
+  `.strategies` files and Rocq logical paths. Many cases need several of each; `-slp` pairs nest
   (up to three in `mergeablelist/sll_project`).
 - **Logic-path derivation:** `SimpleC.EE.` + the directory path segment-by-segment.
+
+### F3.2 Loop handling: required invariants, not inferred (binary RE)
+
+How `symexec` treats loops — central to the "you write WHAT, you delegate the WHY" promise and to
+ch 5 / ch 7:
+
+- **You (or the LLM) supply the loop invariant; the tool does NOT infer it.** There is **no
+  abstract interpretation, no widening, no path enumeration** — the engine expects an invariant
+  and *checks* it. Binary strings confirm the design: `Expected loop after loop invariant.`,
+  `/*@ FILL IN INVARIANT */`, `<FULL INVARIANT>`.
+- **It checks the supplied invariant two ways** (classic Hoare inductive checking), with these
+  exact error messages:
+  - **P → I:** *"Loop invariant cannot be derived based on pre-condition, i.e. failed in P -> I."*
+  - **I → I:** *"Loop invariant is not inductive, i.e. failed in I -> I."*
+- **Partial Invariant Solve:** the engine mechanically fills the easy/frame parts (string
+  `Partial Solved Invariant:`), so you supply the essential *pure* part rather than the whole
+  assertion. Knobs `unroll_flag` / `loop_inv_iter_times` allow limited unrolling.
+- **Manual implication:** a stuck loop goal is usually a *missing or too-weak invariant* you/the
+  LLM owns (ch 11 cause 4), not a tool limitation — and "the tool writes invariants" is **false**;
+  it checks and partial-solves the ones you provide. (Verified: strings in `linux-binary/symexec`.)
 
 ---
 
@@ -277,8 +328,8 @@ linux-binary/symexec \
 
 ### F4.1 `*` is separating conjunction, not multiply (THE #1 false friend)
 
-`*` joins **disjoint** memory regions (separating conjunction, Coq `**`); `&&` joins **pure**
-heap-independent facts (Coq `[| P |]` or the generated `“ P ”`). Specimen (typed int-storage
+`*` joins **disjoint** memory regions (separating conjunction, Rocq `**`); `&&` joins **pure**
+heap-independent facts (Rocq `[| P |]` or the generated `“ P ”`). Specimen (typed int-storage
 form `data_at(p, int, v)` from tutorial T2):
 
 ```c
@@ -337,8 +388,8 @@ ghost?) — confirm its role.
 
 `Z` = **unbounded mathematical integer** ≠ fixed-width `int`. Corpus (`*.c` scope, snapshot):
 `: Z` ≈ 687, `list Z` ≈ 584; `: nat`/`: N` **0** at the surface. This is exactly why `abs.c` opens with
-`INT_MIN < x && x <= INT_MAX` — the user manually re-imposes C bounds on Coq's `Z`. **The
-manual cannot paper over `Z`;** it can only cushion it (a ~10-symbol "Coq types you'll meet, in
+`INT_MIN < x && x <= INT_MAX` — the user manually re-imposes C bounds on Rocq's `Z`. **The
+manual cannot paper over `Z`;** it can only cushion it (a ~10-symbol "Rocq types you'll meet, in
 C terms" translation table). The CPS/monadic spec style (`With {B} l0 (c: list Z -> program
 unit B) X`) is the *avoidable, advanced* leak — quarantine to a tier-3 "higher-order specs"
 section.
@@ -354,7 +405,7 @@ invariant):
 1. **Wrong spec** — the `Require`/`Ensure` doesn't say what you meant. (Your bug.)
 2. **Real program bug** — the code is wrong; the tool is *succeeding* by refusing to prove a
    false thing. (The tool working as intended.)
-3. **Coq + SL limitation** — true, but needs a lemma/predicate the library lacks, or a manual
+3. **Rocq + SL limitation** — true, but needs a lemma/predicate the library lacks, or a manual
    proof step. (Tier-2/3 territory.)
 4. **Automation/LLM came up short** — provable and in-scope, but the solver/LLM didn't find it.
    (Dial the AI, add a `.strategies` rule, or prove by hand.)
@@ -364,23 +415,25 @@ differential = "red — whose fault?". Best rendered as a **decision-tree diagra
 
 ---
 
-## F6. Honesty ledger — known over-claims to NOT reproduce
+## F6. Honesty ledger — over-claims about QCP's *guarantees* to NOT reproduce
 
-The surrounding material shipped these errors; the manual must not repeat them:
+**Keep this list NARROW.** It is only for places where docs/tutorials over-state *what a QCP
+green check guarantees* — the claims that, if believed, change how much you'd lean on a result.
+It is **NOT** a catalog of every typo (see the separate note below). The genuine over-claims:
 - **"every VC is machine-checked" / "no `Admitted`" / "strategy soundness is machine-checked"**
-  — false for the auto fraction and the 6 admitted strategy rules (F1, F1.2). The internal
-  `docs/` were corrected on 2026-06-23; older copies/tutorials may still over-claim.
-- **"manual proof files never contain `Admitted`"** — also false: a crashed proving run can leave
-  admitted stubs in a manual file (observed during this manual's authoring in
-  `QCP_demos_LLM/array_cases_noinv_proof_manual.v`, later filled — the tree regenerates, so audit
-  with `grep -rl Admitted …_proof_manual*.v`, F1/F9). The no-`Admitted` rule is a convention, not
-  a guarantee; the trustworthy unit is a `Qed`, not a file.
-- **qua.codes `store_int` bug** — `exists v, store_int(p,v)*store_int(q,v)` was labeled
-  "non-negative" while missing `v >= 0`. Correct form adds `v >= 0 &&` (F4.1).
-- **qua.codes `add1_ptr` bug** — body `* x ++` parses as `*(x++)` (increments the pointer); the
-  spec wants `(*x)++` (increments the value). Code/spec contradiction.
-- Full external-tutorial backlog: `docs/qua-codes-tutorial-fixes.md` (external; can't edit from
-  repo). **Implication:** mine-but-vet — re-verify before quoting any tutorial/qua.codes claim.
+  — the auto fraction is `Admitted` (solver-verified, not kernel-re-checked — F1, F1.4; *don't*
+  over-dramatize it), and 2 of ~45 strategy-proof files admit (F1.2). Reasonable to rely on; just
+  not "independently re-checked end to end."
+- **"manual proof files never contain `Admitted`"** — false, and this is **the one over-claim
+  worth actively checking** (F1.4): an admit in a *manual* proof/lib is a real unproven hole.
+  Convention, not guarantee — audit `grep -rl Admitted …_proof_manual*.v` (F1/F9).
+
+**Separate, mundane category — NOT QCP over-claims (don't file these as limits):** the external
+tutorials carry ordinary **typo-level** bugs — a `store_int` example missing `v >= 0`; a `* x ++`
+that parses as `*(x++)` not `(*x)++`. These are copy-paste slips on the website, not statements
+about QCP's guarantees. **Implication: mine-but-vet** — re-verify any snippet against live source
+before quoting it. Full external backlog: `docs/qua-codes-tutorial-fixes.md` (website; not
+editable from this repo).
 
 ---
 
@@ -412,7 +465,7 @@ present at `9804a85`):
 - **QIDE** (VS Code, `qide.vsix` → `lsp` binary) — `Alt+→` "interpret to point" shows the live
   symbolic-assertion state while you annotate.
 - **MCP servers** — `qcp-mcp` (interactive symbolic execution / annotation checking) and
-  `rocq-mcp` (interactive Coq proof dev) expose QCP to LLM agents. *(Maturity: MCP/AI is partly
+  `rocq-mcp` (interactive Rocq proof dev) expose QCP to LLM agents. *(Maturity: MCP/AI is partly
   **intended-workflow**; label friction honestly — frontier-model-required today, setup
   friction, Windows gaps.)*
 - **Agent workflow** — a main orchestrator + fixed sub-agents run a phase state machine
@@ -454,7 +507,7 @@ it gets there). Document this honestly; it's a credibility win, not a weakness.
   an infrastructure fault — always check whether the tool actually finished.
 - **Self-diagnosis recipe for the manual (give readers this):**
   1. Distinguish **infrastructure failure** (Python traceback / `NameError` / "before worker
-     launch" / non-Coq error) from a **proof failure** (a Coq goal you can't close → F5
+     launch" / non-Rocq error) from a **proof failure** (a Rocq goal you can't close → F5
      Stuck-Goal Differential). Different fix paths.
   2. Static-check the shipped scripts before relying on them:
      `python3 -m pyflakes .agents/skills/*/scripts/*.py` (or `ruff check --select F821`). At
@@ -469,7 +522,7 @@ it gets there). Document this honestly; it's a credibility win, not a weakness.
   scripts can carry undocumented bugs like F9's.
 - **Engine-vs-shipped-layer edges (binary RE) — state these in ch 13:**
   - ⚠ **Floats are a *silent half-stub* (the one soundness-adjacent edge).** `symexec` accepts a
-    float program, exits 0 "Successfully finished", and emits real IEEE VCs — but the shipped Coq
+    float program, exits 0 "Successfully finished", and emits real IEEE VCs — but the shipped Rocq
     layer can't discharge them, so you get *apparent success* with an uncompilable obligation
     (F2.1a). Unlike `goto`/funcptr (which are rejected/error loudly), floats fail **silently**.
   - **Exit code is unreliable — `0` is not proof of success.** Re-measured live at `9804a85`:

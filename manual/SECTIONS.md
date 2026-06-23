@@ -127,12 +127,12 @@ story (ch 2's teaser links to it).
 - **Goal:** the practitioner reference for the annotation language as a *spec* tool (not an SL
   course).
 - **In:** `With`/`Require`/`Ensure`, `Assert`, `Inv Assert`, `which implies`, `where`,
-  `Extern Coq`/`Import Coq`/`include strategies`; basic vs concise; the `data_at` surface shapes
+  `Extern Rocq`/`Import Rocq`/`include strategies`; basic vs concise; the `data_at` surface shapes
   (all three, F4.2); the storage-predicate reality (`store(...)`, typed compounds — F4.1).
   **Keep to syntax-as-spec.**
 - **Out / link:** **full predicate/operator inventory → R1 bestiary**; representation-predicate
   *theory* → ch 8 + tutorials; strategy authoring → ch 14.
-- **Sources:** `docs/annotation-language.md` (vet); FACTS §F4. **Tier/AI:** 🔵 for Coq terms.
+- **Sources:** `docs/annotation-language.md` (vet); FACTS §F4. **Tier/AI:** 🔵 for Rocq terms.
   **Maturity:** battle-tested. **Deps:** ch 5. **Length:** ~2000–2600. **Wave 2.**
 
 ### Ch 7 — Invariants & the AI dial (Stage B: MCP/AI)
@@ -228,7 +228,7 @@ story (ch 2's teaser links to it).
 
 ### Ch 14 — Extension: new predicates & strategies
 - **Goal:** for tier-3 — add a representation predicate and a `.strategies` rule to extend QCP.
-- **In:** defining a Coq `Assertion` predicate; `Extern Coq`-declaring it; writing a
+- **In:** defining a Rocq `Assertion` predicate; `Extern Rocq`-declaring it; writing a
   `.strategies` rule; the `_strategy_proof.v`/`Include` mechanism (verification-pipeline §5);
   the strategy soundness obligation (mostly `Qed`, some trusted).
 - **⚠ T7 GAP — release decision (made):** tutorial T7 (strategy authoring) is missing. **Ship a

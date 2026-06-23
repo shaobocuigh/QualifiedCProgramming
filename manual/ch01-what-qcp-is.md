@@ -1,8 +1,8 @@
 # What QCP is — and the one promise
 
-You already test, fuzz, and review your C. Those tools sample behavior: they run the code on some inputs and look for failures. **QCP (Qualified C Programming)** does something different — it **proves** that a function meets its specification for *all* inputs in scope, by reducing the code to separation-logic verification conditions, letting a strategy solver discharge many of them automatically, and checking the rest as manual `Qed` proofs in the Coq/Rocq proof assistant. Where a test says "no failure on the cases I tried," a QCP proof says "no failure, by construction, against the spec I wrote." (That split — solver-discharged versus kernel-checked — is QCP's two-tier trust model; [ch 10](ch10-trust-and-soundness.md) is where it gets its weight.)
+You already test, fuzz, and review your C. Those tools sample behavior: they run the code on some inputs and look for failures. **QCP (Qualified C Programming)** does something different — it **proves** that a function meets its specification for *all* inputs in scope. Where a test says "no failure on the cases I tried," a QCP proof says "no failure, by construction, against the spec I wrote." **You write the specification; QCP's automated solver and (optionally) an LLM produce the proof.** That proof is expressed in separation logic and checked by the Rocq proof assistant under the hood — but **you do not need to know either to start.** (When you *do* want to weigh what the green check is worth, the proof turns out to be *two-tier* — solver-discharged versus kernel-checked — and [ch 10](ch10-trust-and-soundness.md) gives that its weight.)
 
-That difference is the whole point — and so is its cost. This chapter gives you the mental model: the one promise QCP makes, the price that promise carries, the pipeline that delivers it, and the three ways you'll drive it. It does **not** re-teach separation logic; when you need the mechanics of `**` or how a Hoare triple is derived, the [tutorials](../tutorial/) and [qua.codes](https://qua.codes) own that. This manual is the judgment layer on top.
+That difference is the whole point — and so is its cost. This chapter gives you the mental model: the one promise QCP makes, the price that promise carries, the pipeline that delivers it, and the three ways you'll drive it. **You do not need to know separation logic, Rocq, or symbolic execution to read this manual or to start using QCP** — tier 1 is autopilot. You reach for that theory only when you choose to go deeper: to write a new predicate, to read or fix a proof by hand, or to understand *why* the guarantees are as strong as they are. When you do, the [tutorials](../tutorial/) and [qua.codes](https://qua.codes) teach the mechanics of `**` and Hoare triples; this manual is the judgment layer on top of them — not a prerequisite course you must pass first.
 
 ## The one promise
 
@@ -12,7 +12,11 @@ Hold onto the spine metaphor: **you own the WHAT; you delegate (and review) the 
 
 ### The promise travels with a tax
 
-The promise is real, but it is not "no effort." The honest counterweight: on the current corpus snapshot, **roughly a quarter to a third of proof effort is still manual on average** — automation carries the majority, but a real minority lands on you (or the LLM you supervise and then check). Treat that range as a measured snapshot, not a constant: the example tree is a regenerated artifact whose counts drift, and the exact figure depends on what you count. And there is one tax you pay *every time*: in the proof logic, a C `int` is modeled as `Z`, an **unbounded mathematical integer**, so **every integer result costs a manual range/overflow bound**. There is no overflow automation. The promise and the tax always travel together — see [ch 12](ch12-scope-and-scaling.md) for the calibration, the counting commands, and how it was measured.
+The promise is real, but it is not "no effort." Two things to understand about the cost — and the first one is reassuring.
+
+**"Manual" does not mean "you write it by hand."** QCP splits the proof obligations into an *auto* fraction the strategy solver closes by itself and a *manual* fraction it can't — and on the current corpus snapshot the manual fraction is **roughly a quarter to a third** of the obligations. But *manual* is QCP's name for "needs a written Rocq proof," **not** "a human must write it." With the AI dial up, the **LLM drafts those proofs** (and the loop invariants); your residual job is to *review* them and to step in only on the rare, genuinely hard cases the LLM can't close. So a tier-1 practitioner's hands-on proving burden is much smaller than "a third" — it's whatever the LLM leaves behind, which for routine array/string/list code reusing the shipped predicates is little. (How small depends on the case and the model — this is frontier-model territory today, [ch 7](ch07-invariants-and-the-ai-dial.md); the manual fraction itself is a corpus snapshot that drifts, [ch 12](ch12-scope-and-scaling.md).)
+
+**The one tax you pay every time, automation or not:** in the proof logic a C `int` is modeled as `Z`, an **unbounded mathematical integer**, so **every integer result needs a range/overflow bound** written into the spec — there is no overflow automation. You or the LLM must state that bound; the solver won't infer it. The promise and this tax always travel together.
 
 ## What QCP proves — and what it doesn't
 
@@ -33,7 +37,7 @@ flowchart LR
 1. **Annotate.** Add ownership predicates and a function spec (`With` / `Require` / `Ensure`), plus in-body `Assert` and loop `Inv` annotations, inside `/*@ ... @*/` comments in your `.c` file.
 2. **Symbolically execute.** Run the `symexec` binary. It walks the program statement by statement and reduces correctness to a set of separation-logic entailments `P |-- Q` — the **verification conditions** (VCs).
 3. **Auto-solve.** A user-extensible strategy engine discharges the routine VCs automatically.
-4. **Prove the rest.** The remaining VCs need a human or LLM to write a Coq proof.
+4. **Prove the rest.** The remaining VCs need a human or LLM to write a Rocq proof.
 5. **Check.** `coqc` compiles the proofs against the `SeparationLogic/` library; a `goal_check` module confirms every VC is accounted for.
 
 For an ordinary example case, `symexec` emits **four files** into the parallel `SeparationLogic/examples/` tree — a goal file, two proof files, and a completeness gate; the only one you edit is `<name>_proof_manual.v`. (The standard-library inputs under `QCP_examples/stdlib/` are the one exception — their artifacts land in `SeparationLogic/stdlib/` under the `SimpleC.StdLib` namespace, not under `examples/`.) The file taxonomy, witness numbering, the never-overwrite behavior, and the proof loop are [ch 9](ch09-goals-symexec-and-proof.md)'s subject.
@@ -71,11 +75,11 @@ The surface you pick is *how* you drive QCP; the next axis is *how deep* you go.
 
 Practitioners use QCP at three depths. These are an **overlay on one shared workflow**, not separate tracks — the body of this manual is written tier-agnostically, and a tier callout appears only where the right action genuinely differs.
 
-| Tier | Who | Mode | Relationship to Coq |
+| Tier | Who | Mode | Relationship to Rocq |
 |---|---|---|---|
-| 🟢 **Tier 1** | C programmer, no Coq | autopilot | never reads Coq; writes specs, lets auto-solve + the LLM close proofs |
-| 🔵 **Tier 2** | C programmer who reads Coq | co-pilot | reads and fixes the manual proofs the LLM drafts |
-| 🟣 **Tier 3** | separation-logic / Coq expert | tactical director | writes new predicates and `.strategies`, extends the library |
+| 🟢 **Tier 1** | C programmer, no Rocq | autopilot | never reads Rocq; writes specs, lets auto-solve + the LLM close proofs |
+| 🔵 **Tier 2** | C programmer who reads Rocq | co-pilot | reads and fixes the manual proofs the LLM drafts |
+| 🟣 **Tier 3** | separation-logic / Rocq expert | tactical director | writes new predicates and `.strategies`, extends the library |
 
 **AI is a dial, not a fourth tier.** Every tier turns delegation up or down — there is no separate "AI user." A tier-1 practitioner runs the dial high (the LLM drafts invariants and proofs; they review the green check). A tier-3 expert often runs it low for the parts they want to control by hand. When this manual says "dial up," it means *more delegation*; "dial down" means *more by-hand control*.
 
@@ -93,4 +97,4 @@ From here:
 - **Is your code in scope?** [Ch 3 — Scope at a glance](ch03-scope-at-a-glance.md)
 - **Want to run something now?** [Ch 4 — Quickstart](ch04-quickstart-stage-a.md), starting from `QCP_examples/QCP_demos_human/simple_arith/abs.c`.
 - **What does the green check really mean?** [Ch 10 — Trust & soundness](ch10-trust-and-soundness.md).
-- **New to separation logic?** Start with the [tutorials](../tutorial/) — this manual assumes, rather than teaches, the mechanics.
+- **Curious about the separation logic underneath?** You don't need it to start — jump to [ch 4](ch04-quickstart-stage-a.md). When you *want* the mechanics (or to write your own predicates), the [tutorials](../tutorial/) and [qua.codes](https://qua.codes) teach them.

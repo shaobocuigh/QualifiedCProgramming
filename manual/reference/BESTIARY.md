@@ -18,7 +18,7 @@ exists v, v >= 0 && data_at(p, int, v) * data_at(q, int, v)
 //          └─ pure (&&) ─┘             └─ spatial (*): p and q are DISJOINT cells ─┘
 ```
 
-| Symbol (C annotation) | Name | Joins | Coq form | Meaning |
+| Symbol (C annotation) | Name | Joins | Rocq form | Meaning |
 |---|---|---|---|---|
 | `*` | **separating conjunction** | two **disjoint** memory regions | `**` | "this heap splits into a part for `P` and a *separate* part for `Q`" |
 | `&&` | **ordinary / pure conjunction** | heap-independent facts | `&&` | "both propositions hold" — no disjointness claim |
@@ -27,7 +27,7 @@ exists v, v >= 0 && data_at(p, int, v) * data_at(q, int, v)
 | `==` / `!=` | equality / inequality | — | `=` / `<>` | |
 | `-*` | **magic wand** | — | `-*` | "memory that, combined with any `P`-memory, yields `Q`-memory" (used in multi-spec derivation) |
 | `emp` | empty heap | — | `emp` | owns no memory |
-| *(bare prop)* `P` | pure proposition | — | `[\| P \|]` *or* `“ P ”` | heap-independent; two Coq spellings — `[\| P \|]` (tutorials) vs typographic `“ P ”` (generated `*_goal.v`) |
+| *(bare prop)* `P` | pure proposition | — | `[\| P \|]` *or* `“ P ”` | heap-independent; two Rocq spellings — `[\| P \|]` (tutorials) vs typographic `“ P ”` (generated `*_goal.v`) |
 
 > 🟢 **Tier 1** — In practice you only need the top three rows fluently: `*` separates memory,
 > `&&` joins facts, `exists` introduces a value. The rest you'll *read* before you *write*.
@@ -36,7 +36,7 @@ exists v, v >= 0 && data_at(p, int, v) * data_at(q, int, v)
 
 ## 2. The quantifier triad — `With` (∀) · `forall` (∀) · `exists` (∃)
 
-The most learnable slice of the "Coq-in-disguise" surface: a C developer already owns ∀/∃ from
+The most learnable slice of the "Rocq-in-disguise" surface: a C developer already owns ∀/∃ from
 math. Learn **scope** (whole triple vs one assertion) and **direction** (caller-given vs
 callee-produced), not new logic. Corpus frequency (`*.c`, snapshot ≈): `exists` (≈718) >
 `With` (≈382) > `forall` (≈252).
@@ -51,7 +51,7 @@ callee-produced), not new logic. Corpus frequency (`*.c`, snapshot ≈): `exists
   produces the `exists` witnesses coming out.
 - **Why `With` ≠ `forall`:** a `forall` is trapped inside one assertion, but a ghost variable
   must appear in **both** `Require` and `Ensure` (the same `l`), so the triple-level ∀ needs its
-  own keyword. (Heritage from Coq/VST — but heritage *with a reason*.)
+  own keyword. (Heritage from Rocq/VST — but heritage *with a reason*.)
 
 > 🟣 **Tier 3** — `With {B} l0 (c: list Z -> program unit B) X` is the CPS/monadic form for
 > higher-order/callback specs (QCP has no function pointers, so callbacks are encoded this way).
@@ -59,7 +59,7 @@ callee-produced), not new logic. Corpus frequency (`*.c`, snapshot ≈): `exists
 
 ---
 
-## 3. Storage primitives — `data_at`, `store`, and the C↔Coq map
+## 3. Storage primitives — `data_at`, `store`, and the C↔Rocq map
 
 **Reality check (verified):** `store_int(...)` is a **qua.codes/tutorial-website** spelling and
 appears **zero** times in `QCP_examples/`. Note too that **bare `data_at(` is ≈0 in the corpus
@@ -74,9 +74,9 @@ forms are `store(...)` and `undef_data_at(...)`:
 | `data_at(&x, v)` | basic 2-arg address/value | tutorials T3/T4; **also** in symbolic-state dumps | documented; not "internal-only" |
 | `data_at(&node->next, struct list*)` | concise value-omitted | docs/tutorials | corpus's nearest real form: `undef_data_at(&(node->next), struct list*)` |
 
-**C ↔ Coq notation map:**
+**C ↔ Rocq notation map:**
 
-| Meaning | C annotation | Coq |
+| Meaning | C annotation | Rocq |
 |---|---|---|
 | separating conjunction | `*` | `**` |
 | existential | `exists` | `EX` |
@@ -94,7 +94,7 @@ forms are `store(...)` and `undef_data_at(...)`:
 ## 4. Representation predicates — the data-shape inventory
 
 A **representation predicate** describes how a structure is laid out in memory. It is defined in
-Coq (type `Assertion`) and *declared* into C with `Extern Coq`. The common compound predicates
+Rocq (type `Assertion`) and *declared* into C with `Extern Rocq`. The common compound predicates
 in the corpus (with surface counts):
 
 | Predicate | Describes | Corpus uses |
@@ -106,15 +106,15 @@ in the corpus (with surface counts):
 | `store_dll(...)` | doubly-linked list | ≈38 |
 | `store_queue` / `store_map` / `store_solution` | queues, maps, SAT solutions | ≈32 / ≈24 / ≈32 |
 
-**Declaring one** (`Extern Coq` + `Import Coq` + `include strategies`), typically in a `*_def.h`:
+**Declaring one** (`Extern Rocq` + `Import Rocq` + `include strategies`), typically in a `*_def.h`:
 
 ```c
-/*@ Extern Coq (sll : {A} -> (Z -> A -> Assertion) -> Z -> list A -> Assertion) */
-/*@ Import Coq Require Import poly_sll_lib */
+/*@ Extern Rocq (sll : {A} -> (Z -> A -> Assertion) -> Z -> list A -> Assertion) */
+/*@ Import Rocq Require Import poly_sll_lib */
 /*@ include strategies "sll.strategies" */
 ```
 
-Example Coq definition (int list):
+Example Rocq definition (int list):
 
 ```coq
 Fixpoint sll (x: addr) (l: list Z): Assertion :=
@@ -175,12 +175,12 @@ opened for access) — rarely written by hand.
 
 ## 6. String predicates
 
-`string.h` (`Import Coq … string_lib`) adds C-string predicates on top of `CharArray`:
+`string.h` (`Import Rocq … string_lib`) adds C-string predicates on top of `CharArray`:
 
 | Predicate | For | Definition / note |
 |---|---|---|
 | `store_string(p, s)` | **mutable** C-string buffer (`char *`, `char a[]`) | sugar: `CharArray::full(p, string_length s + 1, c_string s)`, `c_string s = s ++ [0]`; logical `s` **excludes** the terminating `0` (≈115 corpus uses) |
-| `store_stringLit(p, s)` | **read-only** string literal (`char *p = "abc"`) | literal kept as a Coq `string`; writing through it is illegal — a writable `char a[]="abc"` must be `store_string`/`CharArray::full` |
+| `store_stringLit(p, s)` | **read-only** string literal (`char *p = "abc"`) | literal kept as a Rocq `string`; writing through it is illegal — a writable `char a[]="abc"` must be `store_string`/`CharArray::full` |
 | `GlobalStrings(LitMap)` | global string-literal table | `LitMap : string → addr` interning map |
 | `GlobalStrings_missing(LitMap, l)` | the table with literals `l` split out | library axioms peel/merge one literal |
 
@@ -236,8 +236,8 @@ y = insertion_sort(x) /*@ where (high_level_spec) l = l */;
 
 | Directive | Meaning |
 |---|---|
-| `/*@ Extern Coq (name : type) */` | declare a Coq function/predicate/type for use in annotations (≈485 uses) |
-| `/*@ Import Coq Require Import <Module> */` | import a Coq lib module (definitions + lemmas) (≈184) |
+| `/*@ Extern Rocq (name : type) */` | declare a Rocq function/predicate/type for use in annotations (≈485 uses) |
+| `/*@ Import Rocq Require Import <Module> */` | import a Rocq lib module (definitions + lemmas) (≈184) |
 | `/*@ include strategies "<file>.strategies" */` | pull in solver strategies for the predicates used (≈63) |
 
 Common shared headers (`*_def.h` collect these): `verification_stdlib.h` (utilities, `option`,

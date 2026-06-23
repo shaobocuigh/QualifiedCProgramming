@@ -4,7 +4,7 @@
 
 The frame to carry through: **scope is two axes, not one.**
 
-- **Feature coverage is binary.** A C construct is either in the model or it isn't. Floats, `goto`, function pointers, and shared-memory concurrency are out; everything else in the [matrix](reference/SUPPORT_MATRIX.md) is in. No amount of effort moves a feature across this line — it's a property of the Coq/Rocq value/AST/memory model, not of how hard you try.
+- **Feature coverage is binary.** A C construct is either in the model or it isn't. Floats, `goto`, function pointers, and shared-memory concurrency are out; everything else in the [matrix](reference/SUPPORT_MATRIX.md) is in. No amount of effort moves a feature across this line — it's a property of the Rocq value/AST/memory model, not of how hard you try.
 - **Effort cost is continuous.** *Inside* the supported set, the cost of verifying a function ranges from nearly free (the strategy solver discharges everything) to substantial (you write a stack of manual `Qed` proofs). This axis is where your budget actually goes, and it's the one ch 3 doesn't quantify.
 
 Read this chapter for the second axis. For the first — the yes/no verdicts and their evidence — stay with [ch 3](ch03-scope-at-a-glance.md) and the full [support matrix (R2)](reference/SUPPORT_MATRIX.md).
@@ -81,7 +81,7 @@ The **global** ≈ 2.5–3 : 1 split is solid: it's a direct count over the whol
 There is a manual tax you pay on **every** integer result, regardless of category: **range and overflow bounding.** In QCP annotations, `Z` is an **unbounded mathematical integer**, not a fixed-width C `int`. There is no overflow automation — so each `Z` arithmetic VC carries a manual range/overflow bound that *you* state. This is exactly why the simplest arithmetic example in the corpus, `QCP_examples/QCP_demos_human/simple_arith/abs.c`, opens by re-imposing C bounds by hand:
 
 ```c
-/*@ Extern Coq (Zabs: Z -> Z) */
+/*@ Extern Rocq (Zabs: Z -> Z) */
 /*@ Require INT_MIN < x && x <= INT_MAX && emp
     Ensure  __return == Zabs(x) && emp */
 ```
@@ -99,7 +99,7 @@ QCP scales the way well-factored C scales — **one function at a time, through 
 Two facilities make this **multi-file modularity** work — the seam that keeps scaling additive:
 
 - **Shared contracts in `_def.h` headers.** A **representation predicate** (the ownership predicate describing a structure's memory layout — see [glossary](reference/GLOSSARY.md)) and the contracts that use it live in a header (e.g. `QCP_examples/QCP_demos_human/bst_def.h`, `int_array_def.h`, `poly_sll_def.h`), included by every `.c` that touches that structure. One definition, many callers — the modular seam is a real, shipped pattern, not an aspiration.
-- **`Import Coq` / `Extern Coq` to bind the Coq side.** These pull the Coq-level predicate definitions and lemmas into a case so its contracts typecheck (≈ 485 `Extern Coq` and ≈ 184 `Import Coq` occurrences across the corpus C/headers). This is the mechanism by which a predicate defined once is reused everywhere.
+- **`Import Rocq` / `Extern Rocq` to bind the Rocq side.** These pull the Rocq-level predicate definitions and lemmas into a case so its contracts typecheck (≈ 485 `Extern Rocq` and ≈ 184 `Import Rocq` occurrences across the corpus C/headers). This is the mechanism by which a predicate defined once is reused everywhere.
 
 **Predicate polymorphism** sharpens the leverage. A single generic list spec covers any struct/field shape — `super_poly_sll2` (used in `Applications_human/cnf_trans/` and `alpha_equiv/`) is one list contract reused across unrelated data types. You write the spec once; it scales across the codebase without per-type duplication. This is one of QCP's most **under-sold** capabilities; for the full list of under-sold capabilities, see [ch 3](ch03-scope-at-a-glance.md) and the [support matrix (R2)](reference/SUPPORT_MATRIX.md).
 
@@ -154,7 +154,7 @@ The takeaway is not the totals but the *spread*: from one-line arithmetic up thr
 ## What to take away
 
 - **Scope is two axes.** Feature coverage is binary (the [ch 3](ch03-scope-at-a-glance.md) gate); effort cost is continuous (this chapter). Budget against the second only once you're past the first.
-- **Plan for roughly a quarter to a third manual proof, on average** — and always cite the *command*, never a frozen number, because the example proofs regenerate. The global ratio is solid; the per-category skew (arrays cheap, arithmetic/OS pricier) is a medium-confidence rule of thumb.
+- **Plan for roughly a quarter to a third manual proof, on average** — but remember *manual* means "needs a written Rocq proof," not "you write it": with the AI dial up the LLM drafts that fraction, so a tier-1 reader's hands-on share is the smaller residual it can't close. Always cite the *command*, never a frozen number, because the example proofs regenerate. The global ratio is solid; the per-category skew (arrays cheap, arithmetic/OS pricier) is a medium-confidence rule of thumb.
 - **Every integer result pays a manual range/overflow bound.** `Z` is unbounded; there is no overflow automation.
 - **QCP scales through contracts.** Effort is additive and local; shared `_def.h` contracts and predicate polymorphism keep it from becoming combinatorial. Large proofs **shard** into part-files (`minigmp`, six parts) to stay editable — the ratio holds at scale.
 - **Audit `Admitted` per checkout** (glob the shards), and remember the trustworthy unit is a `Qed`, not a file — see [ch 10](ch10-trust-and-soundness.md).

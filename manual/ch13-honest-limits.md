@@ -6,25 +6,23 @@ Read this before you stake anything consequential on a QCP result. None of what 
 
 > **The one rule to carry out of this chapter:** an exit code of `0` is **not** proof of success, and a green build is not proof that every obligation was kernel-checked. Verify the *output*, not the *return code* — and audit for what got left behind.
 
-## The honesty ledger: claims the surrounding material got wrong
+## The honesty ledger: where the *trust story* gets over-stated
 
-The tutorials, the qua.codes site, and earlier internal docs shipped real over-claims and logic bugs. This manual exists partly to not repeat them. Carry this ledger so you can spot the same mistakes if you read those sources directly.
+This is narrow on purpose. It is **not** a catalog of every typo in the surrounding material — it is the short list of places where docs or tutorials over-state *what a QCP green check guarantees*. Those are the claims worth correcting, because believing them changes how much you'd lean on a result.
 
 A **verification condition (VC)** is an entailment `P |-- Q` that `symexec` emits for one step of your annotated code; the manual leans on the term throughout.
 
 | Over-claim you'll see elsewhere | The honest correction |
 |---|---|
-| "every VC is machine-checked" / "no `Admitted`" | False for the auto fraction — those VCs are `Admitted` and trusted, not re-checked ([ch 10](ch10-trust-and-soundness.md)). |
-| "strategy soundness is machine-checked" | Mostly true, but 2 of the ~45 `*_strategy_proof.v` files ship `Admitted` (6 lemmas — `string_strategy_proof.v`, `minigmp/gmp_strategy_proof.v`). |
-| "manual proof files never contain `Admitted`" | A convention, not a guarantee — the trustworthy unit is a `Qed`, not a file. Audit before you rely. |
-| qua.codes `store_int` "non-negative" example | `exists v, store_int(p,v)*store_int(q,v)` was missing `v >= 0`; the prose claimed non-negativity. Correct form adds `v >= 0 &&`. |
-| qua.codes `add1_ptr` example | Body `* x ++` parses as `*(x++)` (increments the pointer); the spec wanted `(*x)++` (increments the value). Code and spec contradict. |
+| "every VC is machine-checked" / "no `Admitted`" | The auto fraction is `Admitted` — solver-verified but not kernel-re-checked ([ch 10](ch10-trust-and-soundness.md)). Reasonable to rely on; just not "independently re-checked end to end." |
+| "strategy soundness is machine-checked" | Mostly true: all but 2 of the ~45 `*_strategy_proof.v` files close with `Qed` and are re-checked; 2 ship `Admitted` (6 lemmas — `string_strategy_proof.v`, `minigmp/gmp_strategy_proof.v`). |
+| "manual proof files never contain `Admitted`" | A convention, not a guarantee — and the **one over-claim worth actively checking**, because an admit in a *manual* proof is a genuine unproven hole. The trustworthy unit is a `Qed`, not a file. Audit before you rely. |
 
-The point of the ledger is **mine-but-vet**: those sources contain useful material, but you re-verify every flag, path, predicate, and claim against live source before you trust it. The full external backlog lives in `docs/qua-codes-tutorial-fixes.md`; those pages are on the website and can't be edited from this repo.
+> **Aside — vet external examples before you copy them.** Separately, and far more mundanely, the public tutorials carry ordinary **typo-level** bugs — e.g. a `store_int` example missing its `v >= 0` constraint, or a `* x ++` that parses as `*(x++)` instead of `(*x)++`. These are **not** QCP limits or over-claims about QCP; they're a reminder that any source can have copy-paste slips, so re-verify a snippet against live source before you trust it. The full list lives in `docs/qua-codes-tutorial-fixes.md` (website pages, not editable from this repo).
 
 ## Exit code 0 does not prove success
 
-The most general tool-behavior trap — true of *all* input, not only the unsupported features — is this: **an exit code of `0` does not prove `symexec` succeeded.** Re-measured live at the snapshot baseline, most fatal errors *do* return EXIT=1 (no arguments, a missing or nonexistent input file, a missing `--program-path`). But two cases slip through with **EXIT=0**: a **malformed/truncated parse**, and — the dangerous one — a **float program**, which exits `0` reporting `Successfully finished` while emitting obligations no shipped Coq symbol can discharge (the float half-stub below). So the return code is an unreliable signal in exactly the cases that matter. (There is no `--version` flag on any binary, either.)
+The most general tool-behavior trap — true of *all* input, not only the unsupported features — is this: **an exit code of `0` does not prove `symexec` succeeded.** Re-measured live at the snapshot baseline, most fatal errors *do* return EXIT=1 (no arguments, a missing or nonexistent input file, a missing `--program-path`). But two cases slip through with **EXIT=0**: a **malformed/truncated parse**, and — the dangerous one — a **float program**, which exits `0` reporting `Successfully finished` while emitting obligations no shipped Rocq symbol can discharge (the float half-stub below). So the return code is an unreliable signal in exactly the cases that matter. (There is no `--version` flag on any binary, either.)
 
 > **Warning:** scripts and CI must scan `symexec` *output* for `Successfully finished` and for `fatal error`, never only test `$?`. An exit code of 0 is not proof of success. The float silent half-stub below is the dangerous worked instance: a feature that exits 0 *and* emits real-looking obligations, yet cannot be discharged.
 
@@ -54,52 +52,36 @@ float fadd(float x, float y)
 
 and it **exits 0 ("Successfully finished")** and emits a genuine IEEE verification condition referencing `fp32`, `fp32_add`, and finiteness-safety symbols — `“ (fp32_isFinite (fp32_add (x_pre) (y_pre)) ) ”` (verified live). (Note the annotation closes with `*/`, the corpus convention — `@*/` does not parse.)
 
-But the shipped `SeparationLogic/` Coq/Rocq layer **defines none of those symbols** — there are zero `fp32` definitions in the open library (`grep -rl fp32 SeparationLogic/ --include="*.v"` lists no files — use `-rl` or `rg`, since `grep -rc` would print a `:0` line per file rather than nothing). So the generated `_goal.v` references undefined symbols, won't compile, and can't be discharged on the auto path *or* the manual path. The engine *looks like it succeeded* and leaves you an unprovable, uncompilable obligation.
+But the shipped `SeparationLogic/` Rocq layer **defines none of those symbols** — there are zero `fp32` definitions in the open library (`grep -rl fp32 SeparationLogic/ --include="*.v"` lists no files — use `-rl` or `rg`, since `grep -rc` would print a `:0` line per file rather than nothing). So the generated `_goal.v` references undefined symbols, won't compile, and can't be discharged on the auto path *or* the manual path. The engine *looks like it succeeded* and leaves you an unprovable, uncompilable obligation.
 
 This is more dangerous than a clean rejection, because the success signal lies. Unlike `goto` and function pointers — which reject or error — a float program slips through `symexec` and only fails downstream at `coqc`, where the cause is far from obvious. The reason is "engine ahead of the shipped proof base," not "cleanly rejected." Manual stance: **floats are off-limits in practice.** Don't trust a clean `symexec` run on float code.
 
-> 🔵 **Tier 2 / 🟣 Tier 3** — If you read Coq, you can confirm the half-stub directly: open the generated `_goal.v` and you'll see the `fp32_isFinite (fp32_add …)` obligation against undefined `fp32`/`fp32_add` symbols, so the file won't compile. A tier-1 reader can't inspect this — for them the rule is "no float code."
+> 🔵 **Tier 2 / 🟣 Tier 3** — If you read Rocq, you can confirm the half-stub directly: open the generated `_goal.v` and you'll see the `fp32_isFinite (fp32_add …)` obligation against undefined `fp32`/`fp32_add` symbols, so the file won't compile. A tier-1 reader can't inspect this — for them the rule is "no float code."
 
 ## The pointer model is ILP32 — a model-choice caveat, not a failure mode
 
-This one is deliberately *not* under the scope limits above: pointers are fully supported. It is a model-choice caveat worth knowing before you verify pointer-heavy code. QCP fixes the pointer width at 4 bytes — `Axiom sizeof_ptr: sizeof_front_end_type FET_ptr = 4` (`SeparationLogic/SeparationLogic/CNotation.v:54`). The memory model is a flat byte heap with no provenance. This is an **ILP32 (~32-bit) model**, a hard design choice baked into the Coq layer. If your code's correctness depends on 64-bit pointer width or pointer-to-integer round-trips at 64 bits, the model does not match your target. State this as a limit, not a bug — but know it's there.
+This one is deliberately *not* under the scope limits above: pointers are fully supported. It is a model-choice caveat worth knowing before you verify pointer-heavy code. QCP fixes the pointer width at 4 bytes — `Axiom sizeof_ptr: sizeof_front_end_type FET_ptr = 4` (`SeparationLogic/SeparationLogic/CNotation.v:54`). The memory model is a flat byte heap with no provenance. This is an **ILP32 (~32-bit) model**, a hard design choice baked into the Rocq layer. If your code's correctness depends on 64-bit pointer width or pointer-to-integer round-trips at 64 bits, the model does not match your target. State this as a limit, not a bug — but know it's there.
 
 ## Maturity: what's battle-tested vs. intended-workflow
 
 Not every part of QCP carries the same warranty. Label them honestly.
 
-- **Battle-tested:** the CLI core — `symexec`, `StrategyCheck`, and the `coqc`/Coq backend. These are exercised across the whole corpus (production-scale cases like `minigmp` through teaching cases like `gcd`). When you run the CLI path from [ch 4](ch04-quickstart-stage-a.md), you are on solid ground.
+- **Battle-tested:** the CLI core — `symexec`, `StrategyCheck`, and the `coqc`/Rocq backend. These are exercised across the whole corpus (production-scale cases like `minigmp` through teaching cases like `gcd`). When you run the CLI path from [ch 4](ch04-quickstart-stage-a.md), you are on solid ground.
 - **Intended-workflow:** the LLM agent pipeline — the orchestrator, the sub-agent skills, the MCP servers (`qcp-mcp`, `rocq-mcp`), and the phase state machine (`intake → annotation → goal-frozen → vc-checking → vc-proving → final-check → done`). This is *designed* and partly working, but it is not bulletproof, and it can fail **as software** — a crash in the tooling, distinct from a proof being stuck.
 
 That distinction matters because the two failure classes need different responses. A red goal is the [Stuck-Goal Differential](ch11-stuck-goal-differential.md)'s subject ("whose fault is this proof?"). A *crashing pipeline* is something else entirely: the tool died before it ever produced a goal to be stuck on.
 
-## A shipped bug you will hit: the `vc-proving` `NameError`
+## Configuration worth knowing: the `coqc` transient-retry knob
 
-Here is the concrete proof that the agent pipeline is intended-workflow, not hardened. The `vc-proving` skill crashes on a live code path, and the crash ships everywhere.
+When `vc-proving` compiles generated `.v` files, a memory-heavy proof can be killed mid-compile by the OS OOM-killer — a *transient* failure that a re-run often clears. The pipeline is built to absorb that with a **retry knob**: `COQC_TRANSIENT_RETRIES` (how many times to retry a `coqc` that died on a transient signal) paired with `TRANSIENT_COQC_SIGNALS` (which signals count as transient — an OOM `SIGKILL`, *not* a genuine crash such as `SIGSEGV`, which should fail fast). Wired the natural way, `COQC_TRANSIENT_RETRIES` reads from the environment (default `2`; set `0` to disable) — raise it if you verify memory-heavy cases and see sporadic OOM kills.
 
-`.agents/skills/vc-proving/scripts/manual_goal_utils.py` references two **undefined** module globals inside `check_rocq_file_in_project()` — a path hit on every per-`.v` `coqc` compile:
+> **Current-build glitch (minor, transient).** In the shipped build those two globals are *referenced but not defined* in `vc-proving`'s `manual_goal_utils.py`, so the retry path raises a `NameError`. It is a two-line fix (define the constants — `docs/agent-workflow.md` §9.1 has it), exactly the kind of thing a point release clears or the agent workflow patches itself; it is **not** a design limit, so this manual won't dwell on it. One operational consequence *is* worth carrying: because the crash happens *before* proofs are filled, it can leave a case's `*_proof_manual.v` with `Admitted` stubs that look like a batch of unproven obligations rather than a tool fault. That is the real lesson — distinguish a tool crash from a stuck proof:
 
-```python
-attempts = COQC_TRANSIENT_RETRIES + 1            # line ~605 — name never defined
-...
-if result.returncode in TRANSIENT_COQC_SIGNALS and attempt < attempts:   # line ~618 — name never defined
-```
+### Tell an infrastructure failure apart from a proof failure
 
-Neither `COQC_TRANSIENT_RETRIES` nor `TRANSIENT_COQC_SIGNALS` is defined anywhere in the module. `vc-proving` aborts *before worker launch* with "Script infrastructure failure … references missing globals …".
+When something goes wrong, separate an **infrastructure failure** (the tool crashed) from a **proof failure** (a goal won't close) before you spend effort on the wrong fix.
 
-Three things make this the canonical honest-limits specimen:
-
-1. **No shipped doc mentions it.** Not in any `README*`, setup guide, `AGENTS*`, or MCP doc — the only shipped record is the auto-generated `timing_log.md` from a failed run. (Its root cause and fix are written up in the repo's internal `docs/agent-workflow.md` §9.1, added during this manual's work — but `docs/` is local-only, so a user cloning the distribution still gets no warning.)
-2. **It is unfixed across upstream and both known public forks** (as of 2026-06-23), all carrying a byte-identical `manual_goal_utils.py`. You cannot resolve it by switching forks — apply the fix locally.
-3. **Its damage masquerades as proof failure.** When `vc-proving` dies, the manual proofs are never filled, so the case's `*_proof_manual.v` is left with `Admitted` stubs — exactly the shape a *legitimate* batch of unproven obligations would take. A pipeline crash thus looks like "N unproven obligations" rather than an infrastructure fault.
-
-> 🟢 **Tier 1** — If a proving run reports an infrastructure failure or a Python traceback, that is not a stuck proof — don't hand it to the LLM as a proof problem. It's a tool crash; apply the fix from `docs/agent-workflow.md` §9.1 and re-run.
-
-### Self-diagnosis recipe
-
-When something goes wrong, distinguish an **infrastructure failure** from a **proof failure** before you spend effort on the wrong fix.
-
-1. **Classify the failure.** A Python traceback, a `NameError`, "before worker launch", or any non-Coq error is an **infrastructure failure** → fix the tooling (this section, [R5](reference/TROUBLESHOOTING.md)). A Coq goal you can't close is a **proof failure** → [ch 11](ch11-stuck-goal-differential.md), the Stuck-Goal Differential.
+1. **Classify the failure.** A Python traceback, a `NameError`, "before worker launch", or any non-Rocq error is an **infrastructure failure** → fix the tooling (this section, [R5](reference/TROUBLESHOOTING.md)). A Rocq goal you can't close is a **proof failure** → [ch 11](ch11-stuck-goal-differential.md), the Stuck-Goal Differential.
 2. **Static-check the shipped scripts before relying on them.** This catches the `NameError` class without running anything. Scope the check to undefined names — a plain `pyflakes` run reports other lint (unused imports, f-string warnings) that persists even after the two globals are fixed, so it is never "clean":
 
    ```bash
@@ -130,7 +112,7 @@ This is the real trust floor, and the last thing to internalize before you act o
 
 The mechanism — why the auto solver is proof-producing yet its certificate is never emitted or re-checked, and the small `symexec`-emits-both-goals-and-gate circularity — is the trust chapter's job: [ch 10](ch10-trust-and-soundness.md) treats it across items 3–4 of its Trusted Computing Base (TCB) — faithfulness is item 3, and the proof-producing solver with its un-emitted certificate is item 4. There is also a **dormant** certificate pathway worth one sentence: the binary carries `--soundness-proof` / `--program-path` flags that *could* one day emit the auto solver's certificate for the kernel to re-check, but today it is latent and unwired — empty output, auto files still `Admitted`, zero uses in `run-example-linux.sh`. Note it as a possible future trust lever, not a feature you can use.
 
-> 🟢 **Tier 1** — You can't audit faithfulness — there is no Coq to read and no command to run that confirms the VC models your C. For you, treat it as the fixed floor: a green check means "my spec was proved," never "my spec was right." Keep specs small and review them by eye.
+> 🟢 **Tier 1** — You can't audit faithfulness — there is no Rocq to read and no command to run that confirms the VC models your C. For you, treat it as the fixed floor: a green check means "my spec was proved," never "my spec was right." Keep specs small and review them by eye.
 
 > **Honest limit:** a green QCP check means "your annotations entail the obligations `symexec` derived from your code, and the manual ones were kernel-checked." It does **not** mean "the obligations are the right ones" or "the spec is what you meant." That residual trust — VC faithfulness plus the foundational axioms — is the real floor, and it is not zero.
 

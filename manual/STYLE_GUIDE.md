@@ -36,9 +36,28 @@ principles, or derive Hoare logic. When a reader needs that, **link out** to the
 qua.codes. We teach *judgment about* the mechanics, plus a **practitioner reference** (the
 bestiary, the matrix, the invocation anatomy) — not a course.
 
+> **No prerequisite knowledge — the core positioning. NEVER violate this.** The default reader
+> is a C programmer with **zero** separation-logic / Rocq / symbolic-execution background, and the
+> manual must be readable — and QCP usable at tier-1 autopilot — *without* it. That theory is
+> **opt-in**, reached only for: writing new predicates (🟣), reading/fixing a proof by hand (🔵),
+> or understanding *why* the guarantees are strong (trust, ch 10). **Banned framings:** "this
+> manual assumes the mechanics", "assumes, rather than teaches", "you should already know SL", or
+> *leading* a user-facing description with raw `**`/`Qed`/separation-logic jargon. Link out for
+> readers who *want* the theory — never as a gate they must pass first.
+
+> **"Manual" ≠ "you write it by hand."** *Manual* is QCP's name for a VC the strategy solver
+> didn't auto-discharge (it lands in `*_proof_manual.v` and needs a written Rocq proof) — **not**
+> "a human must write it." With the AI dial up the **LLM drafts the manual proofs and the loop
+> invariants**; the human's residual is to *review* them and to handle the rare cases the LLM
+> can't close. So whenever you state the "~quarter-to-a-third manual" tax, make clear it is the
+> *needs-a-Rocq-proof* fraction, most of which the LLM handles — the tier-1 reader's hands-on
+> proving burden is much smaller. (Don't invent an LLM success rate — none is verified; keep it
+> qualitative + the frontier-model caveat.)
+
 > **Writer's test:** if a paragraph would fit equally well in a university SL lecture, it
 > probably belongs in the tutorial, not here. Cut it or replace it with a link + the
-> *judgment* a practitioner needs.
+> *judgment* a practitioner needs. And if a sentence would make a no-Rocq tier-1 reader feel they
+> must go learn separation logic before continuing, rewrite it.
 
 ---
 
@@ -70,11 +89,11 @@ QCP is used at three depths. These are an **overlay on shared content**, not sep
 or separate books. **Write the main text tier-agnostically; add a tier callout only where a
 tier genuinely diverges** (different action, different escape hatch, different expectation).
 
-| Tier | Who | Mode | Relationship to Coq |
+| Tier | Who | Mode | Relationship to Rocq |
 |---|---|---|---|
-| 🟢 **Tier 1** | C programmer, no Coq | **autopilot** | never reads Coq; writes specs, lets auto-solve + LLM close proofs |
-| 🔵 **Tier 2** | C programmer who reads Coq | **co-pilot** | reads/fixes the manual proofs the LLM drafts |
-| 🟣 **Tier 3** | SL / Coq expert | **tactical director** | writes new predicates, `.strategies`, extends the library |
+| 🟢 **Tier 1** | C programmer, no Rocq | **autopilot** | never reads Rocq; writes specs, lets auto-solve + LLM close proofs |
+| 🔵 **Tier 2** | C programmer who reads Rocq | **co-pilot** | reads/fixes the manual proofs the LLM drafts |
+| 🟣 **Tier 3** | SL / Rocq expert | **tactical director** | writes new predicates, `.strategies`, extends the library |
 
 **AI is a DIAL, not a fourth tier.** Every tier turns AI delegation up or down; it is not a
 persona. Don't write "the AI user" — write "turn the dial up" (more delegation) or "down"
@@ -104,17 +123,17 @@ Rules:
 
 ---
 
-## 4. Coq exposure: hide by default, expand for experts
+## 4. Rocq exposure: hide by default, expand for experts
 
-The manual is a **layered single document**. Coq detail is **collapsed by default**.
+The manual is a **layered single document**. Rocq detail is **collapsed by default**.
 
-- Lead with the C-level / annotation-level view. Show Coq only when it changes what the reader
+- Lead with the C-level / annotation-level view. Show Rocq only when it changes what the reader
   does.
-- Put extended Coq (tactic listings, `.v` internals, module-type plumbing) inside a
+- Put extended Rocq (tactic listings, `.v` internals, module-type plumbing) inside a
   `<details>` block or a clearly-marked 🟣 subsection, so tier-1 readers skim past it.
 
 ```markdown
-<details><summary>🟣 Coq detail: what <code>entailer!</code> leaves behind</summary>
+<details><summary>🟣 Rocq detail: what <code>entailer!</code> leaves behind</summary>
 
 ... expert-only material ...
 
@@ -131,7 +150,7 @@ as one voice. Use the left column; avoid the "don't say" column.
 | Concept | Say | Don't say | Note |
 |---|---|---|---|
 | The tool | **QCP** | "the verifier", "the system" (vary) | "Qualified C Programming" |
-| Proof assistant | **Coq/Rocq** | pick one silently | renamed Rocq; repo uses both — say "Coq/Rocq" on first use, then "Coq" |
+| Proof assistant | **Rocq** | pick one silently | renamed Rocq; repo uses both — say "Rocq" on first use, then "Rocq" |
 | `**` / `*` in annotations | **separating conjunction** | "and", "times", "multiply" | THE #1 false friend — see §5.1 |
 | `&&` | **ordinary conjunction** (pure facts) | "separating" | pure, heap-independent |
 | `Z` | **unbounded mathematical integer** | "int", "number" | load-bearing: the overflow-tax source (§6) |
@@ -187,12 +206,12 @@ predicate and typed compounds (`store_tree`, `sll`, `IntArray::full`) rather tha
 human-editable proof into `*_proof_manual_part1.v … _partN.v` wired under an umbrella
 `*_proof_manual.v` — don't imply every manual proof is a single file.)
 
-### 5.3 Coq notation cheat (use the C surface form in body text)
+### 5.3 Rocq notation cheat (use the C surface form in body text)
 
-In body prose use the **C annotation** form; show the Coq form only in 🟣 detail.
+In body prose use the **C annotation** form; show the Rocq form only in 🟣 detail.
 `*`↔`**`, `exists`↔`EX`, `==`/`!=`↔`=`/`<>`, `emp`↔`emp`, `-*`↔`-*`,
-`data_at(p,int,v)`↔`p # Int |-> v`. Keep the `ₛ` in `->ₛ` when you must show Coq struct access.
-**Pure propositions have two Coq spellings:** the classic `[| P |]` (tutorials) and the
+`data_at(p,int,v)`↔`p # Int |-> v`. Keep the `ₛ` in `->ₛ` when you must show Rocq struct access.
+**Pure propositions have two Rocq spellings:** the classic `[| P |]` (tutorials) and the
 typographic `“ P ”` (smart quotes) used in the *generated* SimpleC `*_goal.v` files (e.g.
 `“ (Z.le 0 i) ”`) — show whichever matches the artifact you're quoting, and gloss it on first
 use.
@@ -205,7 +224,7 @@ The existing docs and public tutorials shipped real over-claims and logic bugs; 
 credibility *is* its honesty. The following are **load-bearing accuracy rules**. A reviewer
 will reject violations.
 
-1. **Two-tier trust (never blur it).** Say: *a manual VC is re-checked by the Coq kernel **when
+1. **Two-tier trust (never blur it).** Say: *a manual VC is re-checked by the Rocq kernel **when
    it ends in `Qed`**; auto VCs are discharged by symexec's strategy solver and **trusted**
    (`Admitted`), not re-checked.* **Banned phrasings:** "every VC is machine-checked", "no
    `Admitted`", "manual files never contain `Admitted`", "the proof is fully machine-checked"
@@ -225,7 +244,7 @@ will reject violations.
    bound** — there is no overflow automation. Say so wherever you say "automated."
 3. **Scope boundaries are hard, but cite the right evidence.** **Floats/doubles, `goto`,
    function pointers / indirect calls, and shared-memory concurrency are unsupported** — but the
-   *evidence differs by feature*, so don't blanket them all as "proven from the Coq model":
+   *evidence differs by feature*, so don't blanket them all as "proven from the Rocq model":
    - **Floats/doubles** — a genuine **value-model boundary**: every non-int/non-ptr type falls
      through to `Invalid_store` (`SeparationLogic/.../CommonAssertion.v`; `CTypes.v`). State this
      as a hard boundary.
@@ -273,7 +292,7 @@ will reject violations.
 - **Headings:** sentence case (`## Should you use QCP?`). One `#` H1 per chapter = the title.
 - **Code fences — always language-tagged:**
   - `c` — annotated C (specs in `/*@ ... @*/`).
-  - `coq` — Coq/Rocq source (`.v`, predicate definitions, tactics).
+  - `coq` — Rocq source (`.v`, predicate definitions, tactics).
   - `bash` — shell / `symexec` invocations.
   - `text` — VC dumps, symbolic-state snapshots, tool output, ASCII diagrams.
 - **Inline code** for every identifier, path, flag, filename, predicate, tactic: `symexec`,

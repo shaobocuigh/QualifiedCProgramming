@@ -12,7 +12,7 @@ Before the differential, one gate. **A crash in the tooling is not a red goal.**
 
 QCP's **CLI core** — `symexec`, `StrategyCheck`, `coqc` — is battle-tested. The **LLM agent-workflow scripts** that orchestrate annotation and proving are intended-workflow Python and can fail *as software*. That is an infrastructure failure, not a stuck goal.
 
-How to recognize it: a real stuck goal is a **Coq error about an entailment** — a tactic that fails, a goal left open, `entailer!` that won't close. An infrastructure failure is a **Python traceback or a non-Coq error**, often with the phrase "before worker launch" or "Script infrastructure failure." And the exit code is an **unreliable** signal in both directions: re-measured live at `9804a85`, no-args, a missing `--input-file`, and a missing `--program-path` all return **exit 1**, but a malformed/truncated parse and a float program both return **exit 0** ("Successfully finished") while leaving an undischargeable obligation — so `$? == 0` does *not* prove the tool succeeded. Scan the output; don't trust `$?`. The shipped scripts carry at least one infrastructure defect (the `vc-proving` skill aborts before any worker launches) — its full root cause and fix live in [ch 13 — Honest limits & roadmap](ch13-honest-limits.md) and [R5 — Troubleshooting](reference/TROUBLESHOOTING.md), not here.
+How to recognize it: a real stuck goal is a **Rocq error about an entailment** — a tactic that fails, a goal left open, `entailer!` that won't close. An infrastructure failure is a **Python traceback or a non-Rocq error**, often with the phrase "before worker launch" or "Script infrastructure failure." And the exit code is an **unreliable** signal in both directions: re-measured live at `9804a85`, no-args, a missing `--input-file`, and a missing `--program-path` all return **exit 1**, but a malformed/truncated parse and a float program both return **exit 0** ("Successfully finished") while leaving an undischargeable obligation — so `$? == 0` does *not* prove the tool succeeded. Scan the output; don't trust `$?`. The shipped scripts carry at least one infrastructure defect (the `vc-proving` skill aborts before any worker launches) — its full root cause and fix live in [ch 13 — Honest limits & roadmap](ch13-honest-limits.md) and [R5 — Troubleshooting](reference/TROUBLESHOOTING.md), not here.
 
 You can confirm this class of bug statically, before you trust any shipped script:
 
@@ -26,7 +26,7 @@ python3 -m pyflakes .agents/skills/*/scripts/*.py     # or: ruff check --select 
 > grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"
 > ```
 
-If the pre-check fires — Python error, abort before worker launch, or "Successfully finished" / exit 0 on a program the Coq layer can't actually discharge (a bad parse or a float) — **stop here.** This is not a differential case. Route it to [ch 13 — Honest limits & roadmap](ch13-honest-limits.md) for the maturity context and to [R5 — Troubleshooting](reference/TROUBLESHOOTING.md) for the fix. Only once you have a genuine **Coq goal you cannot close** do you enter the differential.
+If the pre-check fires — Python error, abort before worker launch, or "Successfully finished" / exit 0 on a program the Rocq layer can't actually discharge (a bad parse or a float) — **stop here.** This is not a differential case. Route it to [ch 13 — Honest limits & roadmap](ch13-honest-limits.md) for the maturity context and to [R5 — Troubleshooting](reference/TROUBLESHOOTING.md) for the fix. Only once you have a genuine **Rocq goal you cannot close** do you enter the differential.
 
 ## The four causes
 
@@ -36,7 +36,7 @@ A red goal that survives the pre-check has exactly four causes. They are not equ
 |---|---|---|---|
 | 1 | **Wrong spec** — the `Require`/`Ensure` doesn't say what you meant | Yours (the author) | Re-read the spec against your intent; fix the annotation |
 | 2 | **Real program bug** — the code is wrong; the tool is *succeeding* by refusing a false thing | Yours (the code) | Read the goal as a counterexample; fix the C |
-| 3 | **Coq + SL limitation** — true and in scope, but needs a lemma or predicate the library lacks | The proof base / tier-2/3 territory | Supply the missing lemma or predicate; or it's out of scope (ch 13) |
+| 3 | **Rocq + SL limitation** — true and in scope, but needs a lemma or predicate the library lacks | The proof base / tier-2/3 territory | Supply the missing lemma or predicate; or it's out of scope (ch 13) |
 | 4 | **Automation or LLM came up short** — provable and in scope, but the solver/LLM didn't find it | The automation | Dial the AI, add a `.strategies` rule, or prove it by hand |
 
 Causes 1 and 2 are the same underlying event seen from two sides: **QCP working correctly by refusing to prove something false.** This is the insight that flips a red goal from frustrating to useful. Check them first not because they are provably the most frequent — that depends on your code and isn't measured here — but because they are the cheapest to test and the only ones where a red goal is the tool *working*. When QCP gets stuck on a true, in-scope goal (causes 3 and 4), the obstacle is on QCP's side rather than yours.
@@ -49,11 +49,11 @@ Walk the tree top-down. Each branch is a question you can answer before the one 
 flowchart TD
     A[Red goal] --> P{Pre-check:<br/>Python traceback / NameError /<br/>abort before worker launch /<br/>'Successfully finished' but the<br/>goal won't compile bad parse or float?}
     P -->|Yes| INFRA[INFRASTRUCTURE FAILURE<br/>Not a stuck goal.<br/>Route to ch 13 / R5.<br/>Audit for leftover Admitted.]
-    P -->|"No — a real Coq goal"| T{Is the statement<br/>even TRUE?}
+    P -->|"No — a real Rocq goal"| T{Is the statement<br/>even TRUE?}
     T -->|"No — spec is wrong"| C1[CAUSE 1: Wrong spec<br/>You wrote Require/Ensure that<br/>doesn't mean what you meant.<br/>Fix the annotation.]
     T -->|"No — code is wrong"| C2[CAUSE 2: Real program bug<br/>The tool is SUCCEEDING by<br/>refusing a false thing.<br/>Fix the C.]
     T -->|"Yes — it's true and in scope"| W{Why won't it PROVE?}
-    W -->|"Needs a lemma/predicate<br/>the library lacks"| C3[CAUSE 3: Coq + SL limitation<br/>Supply the lemma/predicate,<br/>or it's out of scope.]
+    W -->|"Needs a lemma/predicate<br/>the library lacks"| C3[CAUSE 3: Rocq + SL limitation<br/>Supply the lemma/predicate,<br/>or it's out of scope.]
     W -->|"Provable, automation<br/>missed it"| C4[CAUSE 4: Automation/LLM short<br/>Dial the AI, add a .strategies<br/>rule, or prove by hand.]
 ```
 
@@ -73,7 +73,7 @@ For how `symexec` builds these goals statement-by-statement so you can read them
 
 The spec says something other than what you meant. The proof can't close because you are asking QCP to prove a falsehood you wrote down by accident.
 
-Re-read the `Require`/`Ensure` line by line against the behavior you intend. Classic traps: a `Z` result with no range bound, so the goal demands an overflow-free guarantee your code can't give (every `Z` arithmetic result needs a manual range/overflow bound — there is no overflow automation); separating conjunction `*` where you meant ordinary conjunction `&&`, splitting a heap you meant to share; a postcondition that promises more than the body delivers. The shipped `abs` example is the canonical reminder that a correct spec must re-impose C's integer bounds on Coq's unbounded `Z`:
+Re-read the `Require`/`Ensure` line by line against the behavior you intend. Classic traps: a `Z` result with no range bound, so the goal demands an overflow-free guarantee your code can't give (every `Z` arithmetic result needs a manual range/overflow bound — there is no overflow automation); separating conjunction `*` where you meant ordinary conjunction `&&`, splitting a heap you meant to share; a postcondition that promises more than the body delivers. The shipped `abs` example is the canonical reminder that a correct spec must re-impose C's integer bounds on Rocq's unbounded `Z`:
 
 ```c
 /*@ Require
@@ -94,17 +94,17 @@ Read the open goal as a counterexample and trace it back to the statement that p
 
 > **This is the payoff, not the problem.** Causes 1 and 2 are QCP earning its keep: it caught a defect that tests might have missed. The honest framing from [ch 10](ch10-trust-and-soundness.md) cuts both ways — a green check only certifies the spec you wrote, and a red check is how that same machinery tells you the spec and the code disagree.
 
-### Cause 3 — Coq + SL limitation
+### Cause 3 — Rocq + SL limitation
 
 The goal is true and in scope, but the proof needs a lemma, a representation predicate, or a manual step the shipped library doesn't already give you. This is tier-2/3 territory.
 
 The test that separates cause 3 from cause 4: would the proof go through if you handed the solver **one more lemma** or unfolded **one more predicate**? If that lemma or predicate already exists and the search missed it, it is an automation gap (cause 4). If the lemma or predicate **doesn't exist yet** — or the feature is off QCP's map entirely — it is a limitation (cause 3).
 
-First, confirm it is genuinely in scope and not a hard boundary masquerading as a missing lemma. **Floats and doubles, `goto`, function pointers / indirect calls, and shared-memory concurrency are unsupported** — and they fail in revealingly different ways. A function-pointer call fails *loudly* in verification mode (`fatal error: FindFuncInfo`, exit 1) — a tool-level failure to handle like the pre-check, not a stuck goal. Floats are the dangerous case: the engine *accepts* a float program, reports success at **exit 0**, and emits real IEEE VCs — but the shipped Coq layer defines none of the float symbols, so the generated goal references undefined symbols and **can't compile or be discharged at all**. (This is exactly why the exit code is unreliable both ways — a hard funcptr boundary exits 1, while an unsupported float "succeeds" at exit 0. Scan the output, not `$?`.) A "stuck" float goal is not a cause-3 lemma gap; it is an unsupported feature ([ch 13](ch13-honest-limits.md) and [ch 12 — Scope & scaling](ch12-scope-and-scaling.md) treat these boundaries).
+First, confirm it is genuinely in scope and not a hard boundary masquerading as a missing lemma. **Floats and doubles, `goto`, function pointers / indirect calls, and shared-memory concurrency are unsupported** — and they fail in revealingly different ways. A function-pointer call fails *loudly* in verification mode (`fatal error: FindFuncInfo`, exit 1) — a tool-level failure to handle like the pre-check, not a stuck goal. Floats are the dangerous case: the engine *accepts* a float program, reports success at **exit 0**, and emits real IEEE VCs — but the shipped Rocq layer defines none of the float symbols, so the generated goal references undefined symbols and **can't compile or be discharged at all**. (This is exactly why the exit code is unreliable both ways — a hard funcptr boundary exits 1, while an unsupported float "succeeds" at exit 0. Scan the output, not `$?`.) A "stuck" float goal is not a cause-3 lemma gap; it is an unsupported feature ([ch 13](ch13-honest-limits.md) and [ch 12 — Scope & scaling](ch12-scope-and-scaling.md) treat these boundaries).
 
-If it *is* in scope, the fix is to supply the missing logic: prove a helper lemma in the case's Coq library and `sep_apply` it; unfold a representation predicate so the solver can see through it; or, for a recurring shape, define a new predicate and a `.strategies` rule so the obligation discharges automatically forever after ([ch 14 — Extension](ch14-extension.md)).
+If it *is* in scope, the fix is to supply the missing logic: prove a helper lemma in the case's Rocq library and `sep_apply` it; unfold a representation predicate so the solver can see through it; or, for a recurring shape, define a new predicate and a `.strategies` rule so the obligation discharges automatically forever after ([ch 14 — Extension](ch14-extension.md)).
 
-> 🟢 **Tier 1** — You won't write Coq here. Hand the stuck goal to the LLM with the AI dial up; if it can't close it either, this may be a real library gap — escalate or pick a different approach. Don't grind on it by hand.
+> 🟢 **Tier 1** — You won't write Rocq here. Hand the stuck goal to the LLM with the AI dial up; if it can't close it either, this may be a real library gap — escalate or pick a different approach. Don't grind on it by hand.
 
 > 🔵 **Tier 2** — Open `*_proof_manual.v` and read the failing `entailer!`. The missing fact is often a range bound or a length equality you can add with one `Intros`/`lia` step, or a `sep_apply` of an existing list/array lemma. Re-read the current `_goal.v` first — names like `H3` may now be `PreH5` after regeneration; prefer `match goal with … end` over hard-coded hypothesis numbers (`Version_Log/V2-0-3.md`).
 
@@ -116,7 +116,7 @@ The goal is provable and in scope; the solver or the LLM didn't find the proof. 
 
 Three moves, cheapest first. **Dial the AI up:** ask the LLM to draft or repair the proof, or to strengthen a loop invariant that was too weak to be preserved. **Add a `.strategies` rule:** if the same routine VC keeps landing in the manual file, a strategy rule teaches the solver to discharge it automatically — and the rule itself is kernel-checked by `StrategyCheck` (mostly `Qed`, a small named residue trusted; [ch 10](ch10-trust-and-soundness.md), [ch 14](ch14-extension.md)). **Prove it by hand:** the standard pattern is `Intros` the pure facts, `Exists`/instantiate the witnesses, `sep_apply` a representation-predicate lemma, then `entailer!`; reach for `destruct` on an inductive predicate when a list or tree needs case analysis ([`../docs/coq-backend.md#tactics`](../docs/coq-backend.md#tactics); tutorial [T5](../tutorial/T5-prove-vc.md)).
 
-> 🟢 **Tier 1** — Dial the AI up and hand it over: ask the LLM to draft or repair the proof, then re-read the spec it touched. You don't open the Coq.
+> 🟢 **Tier 1** — Dial the AI up and hand it over: ask the LLM to draft or repair the proof, then re-read the spec it touched. You don't open the Rocq.
 
 > 🟣 **Tier 3** — Dial down and prove it by hand for the parts you want to control, or promote the recurring VC into a `.strategies` rule so it discharges automatically thereafter.
 
@@ -128,7 +128,7 @@ Trace one real case end to end. The qua.codes `add1_ptr`-style increment functio
 
 Walk the differential:
 
-1. **Pre-check.** The error is a Coq goal about an entailment, not a Python traceback — so the tool ran. Enter the differential. (If it had been a traceback, you'd stop and `grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"` to see what the crash left unfilled.)
+1. **Pre-check.** The error is a Rocq goal about an entailment, not a Python traceback — so the tool ran. Enter the differential. (If it had been a traceback, you'd stop and `grep -rl Admitted SeparationLogic/examples --include="*_proof_manual*.v"` to see what the crash left unfilled.)
 2. **Is it even true?** Read the open `P |-- Q`. The precondition `P` describes the cell `x` points at; the postcondition `Q` demands that cell now hold the incremented value. But the body parsed `* x ++` as `*(x++)` — it advanced the *pointer*, leaving the pointed-to cell untouched. `P` cannot support `Q`. The goal is **false**: you've found a real defect.
 3. **Spec or code?** Localize by authorship. The `Require`/`Ensure` correctly states the intent (increment the value), so this is not cause 1. The **C** contradicts the spec it correctly wrote: `*(x++)` ≠ `(*x)++`. This is **cause 2** — a real program bug, and QCP caught it.
 4. **Fix the C, not the proof.** Edit the source to `(*x)++`, regenerate, and re-read the fresh `_goal.v` (witness numbering and hypothesis names shift on every regeneration). The goal now closes. That catch — a parse-precedence bug a passing test might have missed — is the payoff.
