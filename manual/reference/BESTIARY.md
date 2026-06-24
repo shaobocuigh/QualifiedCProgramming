@@ -3,6 +3,8 @@
 > A **practitioner reference**, not a separation-logic course. It answers "what can I write in
 > an annotation, and what does it mean?" — at a glance, with a corpus-verified specimen for
 > each entry. For *why* `**` behaves as it does, follow the tutorials / qua.codes (link out).
+> (Throughout, **Rocq** is the proof assistant — formerly Coq; the annotation keywords keep the
+> literal spelling `Coq`.)
 > Surface counts are from `QCP_examples/` at commit `95437ee`; see `manual/FACTS.md` for the
 > facts these rest on.
 
@@ -18,7 +20,7 @@ exists v, v >= 0 && data_at(p, int, v) * data_at(q, int, v)
 //          └─ pure (&&) ─┘             └─ spatial (*): p and q are DISJOINT cells ─┘
 ```
 
-| Symbol (C annotation) | Name | Joins | Rocq (formerly Coq) form | Meaning |
+| Symbol (C annotation) | Name | Joins | Rocq form | Meaning |
 |---|---|---|---|---|
 | `*` | **separating conjunction** | two **disjoint** memory regions | `**` | "this heap splits into a part for `P` and a *separate* part for `Q`" |
 | `&&` | **ordinary / pure conjunction** | heap-independent facts | `&&` | "both propositions hold" — no disjointness claim |

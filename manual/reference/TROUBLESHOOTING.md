@@ -2,12 +2,13 @@
 
 > A living list. When something goes wrong, first decide **which kind** of failure you have, then
 > jump to the right place. Verify every entry against live source — the example tree regenerates.
+> (*Rocq* below is the proof assistant, formerly Coq.)
 
 ## Step 0: which failure is this?
 
 | Symptom | Kind | Where to go |
 |---|---|---|
-| Python traceback / `NameError` / "before worker launch" / a non-Rocq (formerly Coq) tool error | **infrastructure failure** (the tool crashed) | this page + [ch 13](../ch13-honest-limits.md) |
+| Python traceback / `NameError` / "before worker launch" / a non-Rocq tool error | **infrastructure failure** (the tool crashed) | this page + [ch 13](../ch13-honest-limits.md) |
 | `symexec` says "Successfully finished" / exits 0, but the proof won't compile | **silent success** (e.g. floats) | [ch 13](../ch13-honest-limits.md) |
 | A Rocq VC is red / you can't close a goal | **proof failure** | [ch 11 — Stuck-Goal Differential](../ch11-stuck-goal-differential.md) |
 | A green build you're not sure you can trust | **trust question** | [ch 10 — Trust & soundness](../ch10-trust-and-soundness.md) |
