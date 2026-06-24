@@ -591,7 +591,9 @@ def main() -> int:
     parser.add_argument("--worker-execution-mode", default=None,
                         choices=sorted(WORKER_EXECUTION_MODES),
                         help="Explicit worker tooling mode. Overrides --no-rocq-mcp "
-                             "and any manifest worker_execution_mode during prepare.")
+                             "and the manifest worker_execution_mode, during prepare "
+                             "or a --skip-prepare resume (the Windows guard still "
+                             "forces coqc/coqtop).")
     parser.add_argument("--reuse-index", default=None,
                         help="Optional proof reuse index JSON. If omitted, manifest "
                              "proof_reuse_index/reuse_index is used when present.")
@@ -645,11 +647,32 @@ def main() -> int:
     # --- Prepare phase ---
     if args.skip_prepare:
         group_manifests = load_groups_manifest(base_work_dir)
-        use_rocq_mcp = effective_use_rocq_mcp(args.use_rocq_mcp and not args.no_rocq_mcp)
-        if not use_rocq_mcp:
-            for gm in group_manifests:
+        # Resolve each group's worker tooling mode with the same precedence as
+        # prepare: an explicit --worker-execution-mode wins, else the group's
+        # recorded worker_execution_mode. The previous code ignored both and
+        # recomputed from --use-rocq-mcp (a store_true defaulting to False), so a
+        # bare --skip-prepare silently rewrote every prepared rocq_mcp group to
+        # coqc_only (and renamed each worker .codex/config.toml), discarding a mode
+        # prepare deliberately recorded. Downgrade to coqc_only only for a real
+        # reason: the Windows guard (effective_use_rocq_mcp -> False on nt, which
+        # wins over everything since rocq-mcp is unavailable there), or an explicit
+        # --no-rocq-mcp when no --worker-execution-mode overrides it (mirrors
+        # prepare, where --worker-execution-mode overrides --no-rocq-mcp).
+        explicit_mode = args.worker_execution_mode
+        for gm in group_manifests:
+            mode = normalize_worker_execution_mode(
+                explicit_mode or gm.get("worker_execution_mode"),
+                use_rocq_mcp=gm.get("use_rocq_mcp", True),
+            )
+            wants_rocq_mcp = worker_mode_uses_rocq_mcp(mode)
+            if not effective_use_rocq_mcp(wants_rocq_mcp) or (
+                args.no_rocq_mcp and explicit_mode is None
+            ):
                 gm["worker_execution_mode"] = WORKER_MODE_COQC_ONLY
                 gm["use_rocq_mcp"] = False
+            elif explicit_mode is not None:
+                gm["worker_execution_mode"] = mode
+                gm["use_rocq_mcp"] = wants_rocq_mcp
         print(f"Loaded {len(group_manifests)} group manifest(s) from "
               f"{base_work_dir / GROUPS_MANIFEST_NAME}")
     else:

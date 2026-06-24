@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -862,6 +863,90 @@ class TestPhaseSeparation:
         assert result["status_counts"].get("solved", 0) == 3
         # Only one batch of agent calls (no duplicate from prepare)
         assert mock_run.call_count == len(gms)
+
+    def test_skip_prepare_main_honors_manifest_worker_execution_mode(self, tmp_path):
+        """`main() --skip-prepare` must resolve the worker mode with prepare's
+        precedence: explicit --worker-execution-mode > recorded manifest mode,
+        with the Windows guard always winning and --no-rocq-mcp forcing coqc
+        unless an explicit --worker-execution-mode overrides it.
+
+        Pins the incident fix (a prepared rocq_mcp manifest must be HONORED, not
+        silently downgraded to coqc_only) plus the explicit-override behavior.
+        """
+        import run_agent_concurrent
+
+        def _write_manifest(name, mode):
+            work_dir = tmp_path / name
+            work_dir.mkdir()
+            gms = []
+            for i in range(2):
+                gdir = work_dir / f"group_{i:02d}"
+                gdir.mkdir()
+                gms.append({
+                    "work_dir": str(gdir),
+                    "proof_group_id": f"group_{i:02d}",
+                    "worker_execution_mode": mode,
+                    "use_rocq_mcp": mode == "rocq_mcp",
+                    "goals": [{"split_rocq_file": str(gdir / f"goal_01__g{i}.v"),
+                               "name": f"g{i}"}],
+                })
+            (work_dir / GROUPS_MANIFEST_NAME).write_text(json.dumps(gms), encoding="utf-8")
+            mpath = work_dir / "manifest.json"
+            mpath.write_text(json.dumps({"work_dir": str(work_dir)}), encoding="utf-8")
+            return mpath
+
+        def _drive(manifest_path, extra_argv, effective):
+            captured = {}
+
+            def _spy(group_manifests, **kwargs):
+                captured["modes"] = [g["worker_execution_mode"] for g in group_manifests]
+                captured["use_rocq_mcp"] = [g["use_rocq_mcp"] for g in group_manifests]
+                return {}
+
+            argv = ["run_agent_concurrent.py", str(manifest_path),
+                    "--skip-prepare", "--skip-finalize"] + extra_argv
+            with patch.object(run_agent_concurrent, "run_agents", side_effect=_spy), \
+                 patch.object(run_agent_concurrent, "effective_use_rocq_mcp",
+                              side_effect=effective), \
+                 patch.object(sys, "argv", argv):
+                assert run_agent_concurrent.main() == 0
+            return captured
+
+        posix = lambda requested: bool(requested)   # non-Windows: pass the request through
+        nt = lambda requested: False                # Windows guard: rocq-mcp unavailable
+        rocq = _write_manifest("rocq", "rocq_mcp")
+        coqc = _write_manifest("coqc", "coqc_only")
+
+        # 1. Bare --skip-prepare: HONOR the prepared rocq_mcp manifest (the incident).
+        r = _drive(rocq, [], posix)
+        assert r["modes"] == ["rocq_mcp", "rocq_mcp"], \
+            "skip-prepare downgraded a prepared rocq_mcp manifest to coqc_only"
+        assert r["use_rocq_mcp"] == [True, True]
+
+        # 2. --no-rocq-mcp (no --worker-execution-mode) downgrades to coqc_only.
+        assert _drive(rocq, ["--no-rocq-mcp"], posix)["modes"] == ["coqc_only", "coqc_only"]
+
+        # 3. Windows guard forces coqc_only regardless of the manifest.
+        assert _drive(rocq, [], nt)["modes"] == ["coqc_only", "coqc_only"]
+
+        # 4. Explicit --worker-execution-mode coqc_only is HONORED over a rocq_mcp
+        #    manifest (lets a resume force coqc/coqtop when rocq-mcp is broken).
+        r = _drive(rocq, ["--worker-execution-mode", "coqc_only"], posix)
+        assert r["modes"] == ["coqc_only", "coqc_only"]
+        assert r["use_rocq_mcp"] == [False, False]
+
+        # 5. Explicit --worker-execution-mode rocq_mcp is HONORED over a coqc_only manifest.
+        r = _drive(coqc, ["--worker-execution-mode", "rocq_mcp"], posix)
+        assert r["modes"] == ["rocq_mcp", "rocq_mcp"]
+        assert r["use_rocq_mcp"] == [True, True]
+
+        # 6. Windows guard still wins over an explicit --worker-execution-mode rocq_mcp.
+        assert _drive(coqc, ["--worker-execution-mode", "rocq_mcp"], nt)["modes"] \
+            == ["coqc_only", "coqc_only"]
+
+        # 7. --worker-execution-mode overrides a conflicting --no-rocq-mcp (mirrors prepare).
+        assert _drive(coqc, ["--worker-execution-mode", "rocq_mcp", "--no-rocq-mcp"], posix)["modes"] \
+            == ["rocq_mcp", "rocq_mcp"]
 
 
 # ---------------------------------------------------------------------------
