@@ -1,0 +1,89 @@
+# Render the QCP User Manual as a browsable site.
+#   pip install mkdocs-material
+#   mkdocs serve      # preview at http://127.0.0.1:8000
+#   mkdocs build      # emit static site to ./site
+#
+# The manual is plain Markdown and also reads fine on GitHub via manual/README.md;
+# this config is optional packaging, not a dependency of the content.
+#
+# Note: a few links point at sibling repo files OUTSIDE manual/ (the tutorials,
+# ../../run-example-*.sh). Those resolve in the GitHub / in-repo view; in the
+# isolated site they are off-tree, so use `mkdocs build` (not --strict) — the
+# validation block below keeps such cross-repo links from failing the build.
+
+site_name: QCP User Manual
+site_description: Qualified C Programming — the practitioner's manual
+docs_dir: manual
+use_directory_urls: true
+
+validation:
+  links:
+    not_found: ignore        # tolerate off-tree links to sibling repo files
+    anchors: warn            # still catch broken in-doc anchors
+  nav:
+    omitted_files: ignore
+
+# Internal scaffolding lives under manual/ but is NOT part of the reader-facing site.
+exclude_docs: |
+  FACTS.md
+  STYLE_GUIDE.md
+  SECTIONS.md
+  internal/
+  .workflow/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - toc.follow
+  palette:
+    - scheme: default
+      toggle: { icon: material/weather-night, name: Dark mode }
+    - scheme: slate
+      toggle: { icon: material/weather-sunny, name: Light mode }
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: README.md
+  - Part I — Orient:
+      - What QCP is: ch01-what-qcp-is.md
+      - Should you use QCP?: ch02-should-you-use-qcp.md
+      - Scope at a glance: ch03-scope-at-a-glance.md
+  - Part II — Get working:
+      - Quickstart — Stage A: ch04-quickstart-stage-a.md
+      - Your first spec: ch05-your-first-spec.md
+  - Part III — How it works:
+      - Annotations as specs: ch06-annotations-as-specs.md
+      - Invariants & the AI dial: ch07-invariants-and-the-ai-dial.md
+      - Separation logic & memory: ch08-separation-logic-memory-model.md
+      - Goals, symexec & proof: ch09-goals-symexec-and-proof.md
+      - Trust & soundness: ch10-trust-and-soundness.md
+  - Part IV — Diagnose, scale, extend:
+      - The stuck-goal differential: ch11-stuck-goal-differential.md
+      - Scope & scaling in depth: ch12-scope-and-scaling.md
+      - Honest limits & maturity: ch13-honest-limits.md
+      - Extension — predicates & strategies: ch14-extension.md
+  - Reference:
+      - R1 — Bestiary: reference/BESTIARY.md
+      - R2 — Support matrix: reference/SUPPORT_MATRIX.md
+      - R3 — Invocation & configuration: reference/INVOCATION.md
+      - R4 — Glossary: reference/GLOSSARY.md
+      - R5 — Troubleshooting: reference/TROUBLESHOOTING.md
+      - R6 — Installation: reference/INSTALLATION.md
