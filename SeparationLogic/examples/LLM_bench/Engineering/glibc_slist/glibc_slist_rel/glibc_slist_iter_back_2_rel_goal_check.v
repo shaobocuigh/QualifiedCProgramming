@@ -1,0 +1,8 @@
+Require Import glibc_slist_iter_back_2_rel_goal glibc_slist_iter_back_2_rel_proof_auto glibc_slist_iter_back_2_rel_proof_manual.
+
+Module VC_Correctness : VC_Correct.
+  Include safeexecE_strategy_proof.
+  Include sll_strategy_proof.
+  Include glibc_slist_iter_back_2_rel_proof_auto.
+  Include glibc_slist_iter_back_2_rel_proof_manual.
+End VC_Correctness.

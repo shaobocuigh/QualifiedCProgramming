@@ -545,10 +545,6 @@ Proof.
   pre_process.
 Qed.
 
-Lemma proof_of_thm_apply_partial_solve_wit_9_pure : thm_apply_partial_solve_wit_9_pure.
-Proof.
-  pre_process.
-Qed.
 
 Lemma proof_of_thm_apply_which_implies_wit_1 : thm_apply_which_implies_wit_1.
 Proof. 

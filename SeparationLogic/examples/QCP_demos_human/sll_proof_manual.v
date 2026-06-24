@@ -33,8 +33,7 @@ Proof.
   Exists (l1_2 ++ (p_data::nil)) l3.
   entailer!; simpl.
   - sep_apply sllseg_len1; try easy.
-    rewrite logic_equiv_sepcon_comm.
-    sep_apply sllseg_sllseg.
+    sep_apply (sllseg_sllseg p_pre).
     easy.
   - rewrite Zlength_app.
     rewrite <- PreH3.

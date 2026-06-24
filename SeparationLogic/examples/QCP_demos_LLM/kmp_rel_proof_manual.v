@@ -26,7 +26,6 @@ Ltac kmp_solve :=
   repeat first
     [ split_pure_spatial
     | split_pures
-    | apply derivable1_refl
     | dump_pre_spatial
     | progress subst
     | progress cbn in *
@@ -51,7 +50,7 @@ Proof.
   split_pure_spatial.
   - Intros_p H4.
     Intros_p H5.
-    apply derivable1_refl.
+    cancel.
   - split_pures.
     + Intros_p H6.
       Intros_p H7.
@@ -99,7 +98,7 @@ Lemma proof_of_inner_return_wit_2 : inner_return_wit_2.
 Proof. 
   pre_process.
   split_pure_spatial.
-  - apply derivable1_refl.
+  - cancel.
   - split_pures.
     + dump_pre_spatial.
       unfold inner_loop in PreH4.
@@ -118,7 +117,7 @@ Lemma proof_of_inner_return_wit_1 : inner_return_wit_1.
 Proof. 
   pre_process.
   split_pure_spatial.
-  - apply derivable1_refl.
+  - cancel.
   - split_pures.
     + dump_pre_spatial.
       unfold inner_loop in PreH5.
@@ -181,13 +180,9 @@ Proof.
   prop_apply (IntArray.full_Zlength vnext).
   split_pure_spatial.
   - Intros_p Hz_spatial.
-    rewrite (logic_equiv_sepcon_comm
-      (IntArray.full vnext i vnext0)
-      (CharArray.full patn_pre (n_low_level_spec + 1) (app str_low_level_spec (cons 0 nil)) **
-       IntArray.full (vnext + i * sizeof ( INT )) (n_low_level_spec - i) l0)).
     cancel (CharArray.full patn_pre (n_low_level_spec + 1) (app str_low_level_spec (cons 0 nil))).
     sep_apply (IntArray.full_merge_to_full vnext i n_low_level_spec vnext0 l0).
-    + apply derivable1_refl.
+    + cancel.
     + lia.
   - Intros_p Hz.
     split_pures.
@@ -254,7 +249,7 @@ Proof.
         - rewrite Hzj. lia.
       }
       rewrite Hprefix, Hsuffix.
-      apply derivable1_refl.
+      cancel.
     + split_pures.
       * dump_pre_spatial.
         exact PreH1.
@@ -280,12 +275,7 @@ Proof.
     cbn.
      Intros_p Hzero.
      Intros_p Hnil_eq.
-    rewrite
-      (logic_equiv_sepcon_comm
-         (IntArray.full vnext_2 n_low_level_spec vnext0)
-         (CharArray.full patn_pre (n_low_level_spec + 1)
-            (str_low_level_spec ++ 0 :: nil))).
-    apply derivable1_refl.
+    cancel.
   - apply string_Zlength in Hstr.
     unfold constr_loop_from in PreH2.
     unfold_loop in PreH2.
@@ -310,6 +300,14 @@ Proof.
     unfold_loop in PreH2.
     prog_nf in PreH2.
     safe_choice_l PreH2; try lia.
+  - dump_pre_spatial.
+    lia.
+  - dump_pre_spatial.
+    unfold constr_loop_from in PreH2.
+    rewrite Hstr in PreH2.
+    unfold_loop in PreH2.
+    prog_nf in PreH2.
+    safe_choice_l PreH2; try lia.
     unfold constr_body at 1 in PreH2.
     prog_nf in PreH2.
     safe_step PreH2.
@@ -319,55 +317,15 @@ Proof.
     unfold constr_loop_from.
     rewrite Hstr.
     exact PreH2.
-  - dump_pre_spatial.
-    lia.
-  - dump_pre_spatial.
-    exact PreH3.
-  - dump_pre_spatial.
-    rewrite app_Znth1 by lia.
-    unfold constr_loop_from_after.
-    unfold constr_loop_from.
-    rewrite Hstr.
-    rewrite range_iter_unfold.
-    prog_nf. rewrite choice_l_equiv.
-    2:{ prog_nf. apply assume_false_equiv; lia. }
-    rewrite assume_equiv by lia.
-    unfold constr_body at 1.
-    prog_nf.
-    rewrite assert_equiv by lia.
-    prog_nf.
-    easy.
 Qed.
 
 Lemma proof_of_match_entail_wit_1 : match_entail_wit_1.
 Proof.
   pre_process.
   subst; kmp_solve.
-  - rewrite (logic_equiv_sepcon_comm
-      (CharArray.full patn_pre (n_low_level_spec + 1) (patn0_low_level_spec ++ 0 :: nil))
-      (&( "patn_len") # Int |-> n_low_level_spec **
-       (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil) **
-        (&( "text_len") # Int |-> m_low_level_spec **
-         IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec)))).
-    repeat rewrite <- logic_equiv_sepcon_assoc.
-    rewrite (logic_equiv_sepcon_comm
-      (&( "patn_len") # Int |-> n_low_level_spec)
-      (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil) **
-       (&( "text_len") # Int |-> m_low_level_spec **
-        (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec **
-         CharArray.full patn_pre (n_low_level_spec + 1) (patn0_low_level_spec ++ 0 :: nil))))).
-    rewrite (logic_equiv_sepcon_comm
-      (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil))
-      (&( "text_len") # Int |-> m_low_level_spec **
-       (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec **
-        CharArray.full patn_pre (n_low_level_spec + 1) (patn0_low_level_spec ++ 0 :: nil)))).
-    repeat rewrite logic_equiv_sepcon_assoc.
-    cancel (&( "text_len") # Int |-> m_low_level_spec).
+  - cancel (&( "text_len") # Int |-> m_low_level_spec).
     cancel (CharArray.full patn_pre (n_low_level_spec + 1) (patn0_low_level_spec ++ 0 :: nil)).
     cancel (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil)).
-    rewrite (logic_equiv_sepcon_comm
-      (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec)
-      (&( "patn_len") # Int |-> n_low_level_spec)).
     cancel (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec).
     cancel (&( "patn_len") # Int |-> n_low_level_spec).
   - dump_pre_spatial.
@@ -391,9 +349,6 @@ Proof.
   Intros_p Htext.
   kmp_solve.
   - apply string_Zlength in Htext.
-    rewrite (logic_equiv_sepcon_comm
-      (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec)
-      (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil))).
     cancel (CharArray.full patn_pre (n_low_level_spec + 1) (patn0_low_level_spec ++ 0 :: nil)).
     cancel (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil)).
     cancel (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec).
@@ -403,7 +358,7 @@ Proof.
     | H : safeExec ATrue (applyf _ _) _ |- _ =>
         unfold match_loop_from_after, applyf in H;
         rewrite Htext in H;
-        safe_choice_r H; [auto | lia]
+        safe_choice_r H; [unfold continue in H; prog_nf in H; exact H | lia]
     end.
   - dump_pre_spatial.
     lia.
@@ -426,17 +381,14 @@ Proof.
   rewrite Hpatn in *; clear Hpatn.
   Exists (Some (i - n_low_level_spec + 1)).
   kmp_solve.
-  - rewrite (logic_equiv_sepcon_comm
-      (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec)
-      (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil))).
-    cancel (CharArray.full patn_pre (n_low_level_spec + 1) (patn0_low_level_spec ++ 0 :: nil)).
+  - cancel (CharArray.full patn_pre (n_low_level_spec + 1) (patn0_low_level_spec ++ 0 :: nil)).
     cancel (CharArray.full text_pre (m_low_level_spec + 1) (text0_low_level_spec ++ 0 :: nil)).
     cancel (IntArray.full vnext_pre n_low_level_spec vnext0_low_level_spec).
   - dump_pre_spatial.
-    match goal with
-    | H : safeExec ATrue _ _ |- _ =>
-        safe_choice_l H; auto
-    end.
+    safe_choice_l PreH2; try lia.
+    unfold break in PreH2.
+    prog_nf in PreH2.
+    exact PreH2.
   - dump_pre_spatial.
     reflexivity.
 Qed. 
@@ -476,49 +428,24 @@ Proof.
   apply string_Zlength in Htext.
   split_pures.
   - dump_pre_spatial.
-    eapply safeExec_proequiv.
-    2: match goal with
-       | H : safeExec ATrue (match_loop_from _ _ _ _ _ _) _ |- _ => exact H
-       end.
-    rewrite app_Znth1 by lia.
-    unfold match_loop_from_after.
-    unfold match_loop_from.
-    rewrite Htext.
-    rewrite (range_iter_break_unfold _ _ i).
-    prog_nf.
-    rewrite choice_l_equiv.
-    2:{ prog_nf. apply assume_false_equiv; lia. }
-    rewrite assume_equiv by lia.
-    unfold match_body at 1.
-    prog_nf.
-    rewrite assert_equiv by lia.
-    prog_nf.
-    apply common_step_equiv; intros.
-    unfold break, continue.
-    prog_nf.
-    easy.
-  - dump_pre_spatial.
     lia.
   - dump_pre_spatial.
     lia.
   - dump_pre_spatial.
-    rewrite app_Znth1 by lia.
+    unfold match_loop_from in PreH2.
+    rewrite Htext in PreH2.
+    unfold_loop in PreH2.
+    prog_nf in PreH2.
+    safe_choice_l PreH2; try lia.
+    unfold match_body at 1 in PreH2.
+    prog_nf in PreH2.
+    safe_step PreH2.
+    prog_nf in PreH2.
     unfold match_loop_from_after.
+    rewrite app_Znth1 by lia.
     unfold match_loop_from.
     rewrite Htext.
-    rewrite (range_iter_break_unfold _ _ i).
-    prog_nf.
-    rewrite choice_l_equiv.
-    2:{ prog_nf. apply assume_false_equiv; lia. }
-    rewrite assume_equiv by lia.
-    unfold match_body at 1.
-    prog_nf.
-    rewrite assert_equiv by lia.
-    prog_nf.
-    apply common_step_equiv; intros.
-    unfold break, continue.
-    prog_nf.
-    easy.
+    exact PreH2.
 Qed. 
 
 Lemma proof_of_match_derive_high_level_spec_by_low_level_spec : match_derive_high_level_spec_by_low_level_spec.
@@ -535,42 +462,47 @@ Proof.
   assert (Zlength patn0_high_level_spec > 0) by lia.
   rewrite <- Zlength_nonnil in H6.
   pose proof match_loop_sound 0 patn0_high_level_spec text0_high_level_spec vnext0_high_level_spec H6 ltac:(lia) H.
-  split_pure_spatial.
-  - cancel.
-    apply derivable1_wand_sepcon_adjoint.
-    Intros ret retval.
-    pose proof H7 as Hloop.
-    destruct Hloop as [Hpost _].
-    apply safeExec_ret_Atrue_finnal in H8.
-    destruct H8 as [σ H8]; subst prog.
-    specialize (Hpost ret tt σ I H8).
-    destruct ret; simpl in H9.
-    + Right; Exists z.
-      split_pure_spatial.
-      * cancel (CharArray.full patn_pre (n_high_level_spec + 1) (patn0_high_level_spec ++ 0 :: nil)).
-        cancel (CharArray.full text_pre (m_high_level_spec + 1) (text0_high_level_spec ++ 0 :: nil)).
-        cancel (IntArray.full vnext_pre n_high_level_spec vnext0_high_level_spec).
-      * split_pures.
-        -- dump_pre_spatial. apply first_occur_nonneg in Hpost; auto.
-        -- dump_pre_spatial. exact Hpost.
+	  split_pure_spatial.
+	  - cancel.
+	    apply derivable1_wand_sepcon_adjoint.
+	    Intros ret retval.
+	    subst prog.
+	    destruct (@Hoare_safeexec_compose unit (option Z)
+	                ATrue
+	                (match_loop 0 patn0_high_level_spec text0_high_level_spec
+	                   vnext0_high_level_spec)
+	                (fun res _ =>
+	                   match res with
+	                   | Some r => first_occur patn0_high_level_spec text0_high_level_spec r
+	                   | None => no_occurance patn0_high_level_spec text0_high_level_spec
+	                   end)
+	                H7 ATrue ret tt H8 I) as [σ [Hpost _]].
+	    destruct ret; simpl in H9.
+	    + Right; Exists z.
+	      split_pure_spatial.
+	      * cancel (CharArray.full patn_pre (n_high_level_spec + 1) (patn0_high_level_spec ++ 0 :: nil)).
+	        cancel (CharArray.full text_pre (m_high_level_spec + 1) (text0_high_level_spec ++ 0 :: nil)).
+	        cancel (IntArray.full vnext_pre n_high_level_spec vnext0_high_level_spec).
+	      * split_pures.
+	        -- dump_pre_spatial. apply first_occur_nonneg in Hpost; auto.
+	        -- dump_pre_spatial. exact Hpost.
     + Left; Exists (-1).
       split_pure_spatial.
       * cancel (CharArray.full patn_pre (n_high_level_spec + 1) (patn0_high_level_spec ++ 0 :: nil)).
         cancel (CharArray.full text_pre (m_high_level_spec + 1) (text0_high_level_spec ++ 0 :: nil)).
         cancel (IntArray.full vnext_pre n_high_level_spec vnext0_high_level_spec).
-      * split_pures.
-        -- dump_pre_spatial. reflexivity.
-        -- dump_pre_spatial. exact Hpost.
-  - split_pures.
-    + dump_pre_spatial.
-      pose proof H7 as Hloop.
-      destruct Hloop as [_ Herr].
-      specialize (Herr tt).
-      subst prog.
-      apply safeExec_monad_Atrue_finnal; tauto.
-    + dump_pre_spatial. lia.
-    + dump_pre_spatial. lia.
-    + dump_pre_spatial. lia.
+	      * split_pures.
+	        -- dump_pre_spatial. reflexivity.
+	        -- dump_pre_spatial. exact Hpost.
+	  - split_pures.
+	    + dump_pre_spatial.
+	      subst prog.
+	      apply safeExec_monad_Atrue_finnal.
+	      intro Herr.
+	      eapply (proj2 H7); [exact I | exact Herr].
+	    + dump_pre_spatial. lia.
+	    + dump_pre_spatial. lia.
+	    + dump_pre_spatial. lia.
 Qed.
 
 Lemma proof_of_constr_derive_high_level_spec_by_low_level_spec : constr_derive_high_level_spec_by_low_level_spec.
@@ -586,26 +518,26 @@ Proof.
   split_pure_spatial.
   - cancel.
     apply derivable1_wand_sepcon_adjoint.
-    Intros vnext retval.
-    Exists vnext retval.
-    split_pure_spatial.
-    + cancel.
-    + dump_pre_spatial.
-      pose proof H3 as Hloop.
-      destruct Hloop as [Hpost _].
-      apply safeExec_ret_Atrue_finnal in H4.
-      destruct H4 as [σ H4].
-      specialize (Hpost vnext tt σ I H4).
-      destruct Hpost as [Hprefix _].
-      exact Hprefix.
-  - split_pures.
-    + dump_pre_spatial.
-      pose proof H3 as Hloop.
-      destruct Hloop as [_ Herr].
-      specialize (Herr tt I).
-      apply safeExec_monad_Atrue_finnal; tauto.
-    + dump_pre_spatial. lia.
-    + dump_pre_spatial. lia.
+	    Intros vnext retval.
+	    Exists vnext retval.
+	    split_pure_spatial.
+	    + cancel.
+	    + dump_pre_spatial.
+	      destruct (@Hoare_safeexec_compose unit (list Z)
+	                  ATrue
+	                  (constr_loop 0 str_high_level_spec)
+	                  (fun vnext _ =>
+	                     is_prefix_func vnext str_high_level_spec /\
+	                     Zlength vnext = Zlength str_high_level_spec)
+	                  H3 ATrue vnext tt H4 I) as [σ [[Hprefix _] _]].
+	      exact Hprefix.
+	  - split_pures.
+	    + dump_pre_spatial.
+	      apply safeExec_monad_Atrue_finnal.
+	      intro Herr.
+	      eapply (proj2 H3); [exact I | exact Herr].
+	    + dump_pre_spatial. lia.
+	    + dump_pre_spatial. lia.
 Qed.
 
 Lemma proof_of_inner_derive_bind_spec_by_low_level_spec : inner_derive_bind_spec_by_low_level_spec.

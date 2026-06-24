@@ -7,782 +7,415 @@ Require Import Coq.micromega.Psatz.
 Require Import Coq.Sorting.Permutation.
 Require Import SetsClass.SetsClass.
 Require Export Coq.Classes.EquivDec.
-From GraphLib Require Import graph_basic reachable_basic reachable_restricted path path_basic vpath epath Zweight.
-From GraphLib.undirected Require Import tree.
+From GraphLib Require Import graph_basic reachable_basic reachable_restricted subgraph path path_basic vpath epath Zweight tree.
 From MaxMinLib Require Import MaxMin Interface. 
 From ListLib Require Import General.NoDup General.Forall.
 
+Import ListNotations.
 
 Local Open Scope sets.
 Local Open Scope Z.
 
 Section prim.
 
-Context {G V E: Type}
-        {pg: Graph G V E}
+Context {G V E: Type} 
+        {pg: Graph G V E} 
         {gv: GValid G}
         {stepvalid: StepValid G V E}
-        {noempty: NoEmptyEdge G V E}
-        {undirected: UndirectedGraph G V E}
-        {stepuniq: StepUniqueUndirected G V E}
-        (g: G)
-        {eq_dec_E: EqDec E eq}.
-
+        {noemptyedge: NoEmptyEdge G V E}
+        {step_aux_unique_undirected: StepUniqueUndirected G V E}
+        {undirectedgraph: UndirectedGraph G V E}
+        {finitegraph: FiniteGraph G V E}
+        {simplegraph: SimpleGraph G V E}
+        {addLeafExist: addLeafExist G V E}
+        {addEdgeExist: addEdgeExist G V E}. (*要求原图的加边存在性*)
 Context {P: Type}
         {path: Path G V E P}
         {emptypath: EmptyPath G V E P path}
         {singlepath: SinglePath G V E P path}
         {concatpath: ConcatPath G V E P path}
-        {destruct1npath: Destruct1nPath G V E P path emptypath singlepath concatpath}.
+        {destruct1npath: Destruct1nPath G V E P path emptypath singlepath concatpath}
+        {tr: Tree G V E P}.
+Context (g: G)
+        {g_valid: gvalid g}
+        {g_tree: tree g}.
 
-Context {ew: EdgeWeight G E}.
+Context (r: G)
+        {r_valid: gvalid r}
+        {ew: EdgeWeight G E}.
 
-Context (g_valid: gvalid g).
-
-Definition acyclic_eset (elist: list E): Prop := 
-  ~ exists u p, 
-    p <> nil /\ 
-    is_simple_epath g u p u /\ 
-    Forall (fun x => In x elist) p.
-
-Definition spans_all_vertices (elist: list E): Prop :=
-  forall u v,
-    vvalid g u -> vvalid g v ->
-    exists p, valid_epath g u p v /\ Forall (fun x => In x elist) p.
-
-
-Definition is_spanning_tree (elist: list E): Prop :=
-  (forall e, In e elist -> evalid g e) /\
-  spans_all_vertices elist /\
-  acyclic_eset elist.
-
-Definition total_weight (elist: list E): option Z :=
-  fold_right (fun e l => Z_op_plus (weight g e) l) (Some 0) elist.
-
-Definition is_mst (elist: list E): Prop :=
-  min_object_of_subset
-    Z_op_le (fun elist => NoDup elist /\ is_spanning_tree elist) total_weight elist.
-
-Fixpoint remove_once (e: E) (elist: list E) : list E :=
-  match elist with
-  | nil => nil
-  | e' :: elist' =>
-      if eq_dec_E e e'
-      then elist'
-      else e' :: remove_once e elist'
-  end.
-
-Definition swap_cons (e e' : E) (elist : list E) : list E :=
-  e :: remove_once e' elist.
-
-(** 用新边 [e] 替换旧边 [e']（[swap_cons]）后，原边 [e'] 被移除，
-    原边 [e'] 的可达性由新边 [e] 保持。 *)
-Definition swap_reconnects_removed_edge_fixed
-  (e e' : E) (elist : list E) : Prop :=
-  forall u' v',
-    step_aux g e' u' v' ->  
-    exists p, valid_epath g u' p v' /\ Forall (fun x => In x (swap_cons e e' elist)) p.
-
-(** 用新边 [e] 替换旧边 [e']（[swap_cons]）后，新边 [e] 不会形成环。 *)
-Definition swap_keeps_new_edge_cycle_free_fixed
-  (e e' : E) (elist : list E) : Prop :=
-  forall u v,
-    step_aux g e u v ->
-    ~ exists p, valid_epath g u p v /\ Forall (fun x => In x (remove_once e' elist)) p.
-
-(* ？ *)
-Definition chosen_path_disconnects_after_removal
-  (e e' : E) (elist : list E) : Prop :=
-  forall u v p1 p2 y1 y2,
-    step_aux g e u v ->
-    valid_epath g u p1 y1 ->
-    step_aux g e' y1 y2 ->
-    valid_epath g y2 p2 v ->
-    NoDup (p1 ++ e' :: p2) ->
-    Forall (fun e => In e elist) (p1 ++ e' :: p2) ->
-    ~ exists p, valid_epath g u p v /\ Forall (fun e => In e (remove_once e' elist)) p.
-
-Lemma acyclic_eset_empty :
-  acyclic_eset nil.
-Proof.
-  unfold acyclic_eset.
-  intros [u [p [Hp_nonempty [_ Hp_forall]]]].
-  destruct p as [|e p'].
-  - contradiction.
-  - inversion Hp_forall.
-    contradiction.
-Qed.
-
-Lemma remove_once_in_elim :
-  forall e e' elist,
-    In e (remove_once e' elist) ->
-    In e elist.
-Proof.
-  intros e e' elist.
-  induction elist as [|x xs IH]; simpl; try tauto.
-  destruct (eq_dec_E e' x); simpl; auto.
-  intros [Heq | Hin]; [left|right]; auto.
-Qed.
-
-Lemma remove_once_not_in :
-  forall e elist,
-    NoDup elist ->
-    ~ In e (remove_once e elist).
-Proof.
-  intros e elist Hnd.
-  induction Hnd as [|e' elist Hnotin Hnd IH]; simpl.
-  - tauto.
-  - destruct (eq_dec_E e e') as [Heq_dec | Hneq].
-    + destruct Heq_dec. exact Hnotin.
-    + simpl. intros [Heq | Hin].
-      * apply Hneq. symmetry; exact Heq.
-      * auto.
-Qed.
-
-Lemma valid_epath_simple_preserve_Forall :
-  forall eset u p v,
-    valid_epath g u p v ->
-    Forall eset p ->
-    exists q, is_simple_epath g u q v /\ Forall eset q.
-Proof.
-  intros eset u p v H_valid Hfor.
-  remember (length p) as n.
-  revert u p v H_valid Hfor Heqn.
-  induction n using lt_wf_ind; intros u p v H_valid Hfor Heqn.
-  destruct (classic (NoDup p)).
-  - exists p. split; [split|]; auto.
-  - apply Nodup_exists_repetition in H0.
-    destruct H0 as [e [l1 [l2 [l3 H_eq]]]].
-    subst p.
-    assert ((forall (e : E) (x1 y1 x2 y2 : V),
-      step_aux g e x1 y1 ->
-      step_aux g e x2 y2 ->
-      x1 = x2 /\ y1 = y2 \/ x1 = y2 /\ x2 = y1)). { 
-        intros. eapply step_aux_unique_undirected in H0. 3:{apply H1. } 
-        destruct H0 as [[]|[]]; subst; auto. auto. 
-    }
-    pose proof (@valid_epath_shorten_cycle _ _ _ pg _ P _ _ _ _ _ g H0 u v l1 e l2 l3 H_valid) 
-    as [q [Hqpath [Hqlt Hsub]]].
-    apply (H (length q)) in Hqpath; auto.
-    lia.
-    rewrite Forall_forall in *. 
-    intros x Hin; auto. 
-Qed.
-
-Lemma Forall_edge_set_neq_of_notin :
-  forall (elist: list E) e p,
-    Forall (fun e => In e elist) p ->
-    ~ In e p ->
-    Forall (fun x => In x elist /\ x <> e) p.
-Proof.
-  intros elist e p Hfor Hnotin.
-  rewrite Forall_forall in *.
-  intros x Hin.
-  split.
-  - apply Hfor; exact Hin.
-  - intro Heq.
-    apply Hnotin.
-    subst x.
-    exact Hin.
-Qed.
-
-Lemma Forall_remove_once_old_neq :
-  forall elist e p,
-    NoDup elist ->
-    Forall (fun x => In x (remove_once e elist)) p ->
-    Forall (fun x => In x elist /\ x <> e) p.
-Proof.
-  intros elist e p Hnd Hfor.
-  rewrite Forall_forall in *.
-  intros x Hin.
-  pose proof (Hfor x Hin) as Hremove.
-  split.
-  - eapply remove_once_in_elim; eauto.
-  - intro Heq.
-    subst x.
-    pose proof (remove_once_not_in e elist Hnd) as Hnotin.
-    contradiction.
-Qed.
-
-Lemma reachable_in_eset_valid_epath :
-  forall eset u v,
-    reachable_in_eset g eset u v ->
-    exists p, valid_epath g u p v /\ Forall eset p.
-Proof.
-  intros eset u v Hreach.
-  unfold reachable_in_eset in Hreach. 
-  induction_1n Hreach.
-  - exists nil.
-    split.
-    + apply valid_epath_empty.
-    + constructor.
-  - destruct H as [e [Hvalid Hfor]]. 
-    apply IHrt in g_valid as [p [Hvalid' Hfor']]; auto.
-    exists (e :: p).
-    split.
-    + eapply valid_epath_cons; eauto. 
-    + constructor; auto.
-Qed.
-
-Lemma remove_once_in_preserved :
-  forall e e' elist,
-    e <> e' ->
-    In e elist ->
-    In e (remove_once e' elist).
-Proof.
-  intros e e' elist Hneq Hin.
-  induction elist as [|x xs IH]; simpl in *.
-  - contradiction.
-  - destruct Hin as [Heq | Hin].
-    + subst x.
-      destruct (eq_dec_E e' e) as [Heq_dec | Hneq'].
-      * exfalso. apply Hneq. symmetry; exact Heq_dec.
-      * simpl; auto.
-    + destruct (eq_dec_E e' x) as [Heq_dec | Hneq'].
-      * exact Hin.
-      * simpl; right; auto.
-Qed.
-
-Lemma remove_once_NoDup :
-  forall e elist,
-    NoDup elist ->
-    NoDup (remove_once e elist).
-Proof.
-  intros e elist Hnd.
-  induction Hnd as [|x elist Hnotin Hnd IH]; simpl.
-  - constructor.
-  - destruct (eq_dec_E e x).
-    + exact Hnd.
-    + constructor.
-      * intro Hin.
-        apply Hnotin.
-        eapply remove_once_in_elim; eauto.
-      * exact IH.
-Qed.
-
-Lemma total_weight_remove_once :
-  forall e elist,
-    NoDup elist ->
-    In e elist ->
-    total_weight elist = Z_op_plus (weight g e) (total_weight (remove_once e elist)).
-Proof.
-  intros e elist Hnd Hin.
-  induction Hnd as [|x xs Hnotin Hnd IH]; simpl in *; try contradiction.
-  destruct Hin as [Heq | Hin].
-  + subst x.
-    destruct (eq_dec_E e e) as [_ | Hneq]; [reflexivity | exfalso; apply Hneq; reflexivity].
-  + destruct (eq_dec_E e x) as [Heq_dec | Hneq].
-    * exfalso.
-      apply Hnotin.
-      rewrite <- Heq_dec.
-      exact Hin.
-    * simpl.
-      rewrite IH by exact Hin.
-      rewrite Z_op_plus_assoc.
-      rewrite (Z_op_plus_comm (weight g x) (weight g e)).
-      rewrite <- Z_op_plus_assoc.
-      reflexivity.
-Qed.
-
-Lemma total_weight_replace_le :
-  forall e e' elist,
-    NoDup elist ->
-    In e' elist ->
-    Z_op_le (weight g e) (weight g e') ->
-    Z_op_le (total_weight (swap_cons e e' elist)) (total_weight elist).
-Proof.
-  intros e e' elist Hnd Hin Hle.
-  simpl.
-  rewrite (total_weight_remove_once e' elist Hnd Hin).
-  apply Z_op_plus_mono; [assumption | apply Z_op_le_refl].
-Qed.
-
-Lemma swap_cons_NoDup :
-  forall e e' elist,
-    NoDup elist ->
-    ~ In e (remove_once e' elist) ->
-    NoDup (swap_cons e e' elist).
-Proof.
-  intros e e' elist Hnd Hnotin.
-  unfold swap_cons.
-  constructor.
-  - exact Hnotin.
-  - apply remove_once_NoDup.
-    exact Hnd.
-Qed.
-
-Lemma swap_cons_contains_new :
-  forall e e' elist,
-    In e (swap_cons e e' elist).
-Proof.
-  intros e e' elist.
-  unfold swap_cons.
-  simpl; auto.
-Qed.
-
-Lemma swap_cons_contains_old :
-  forall e e' elist x,
-    x <> e' ->
-    In x elist ->
-    In x (swap_cons e e' elist).
-Proof.
-  intros e e' elist x Hneq Hin.
-  unfold swap_cons in *.
-  simpl.
-  right.
-  eapply remove_once_in_preserved; eauto.
-Qed.
-
-Lemma swap_cons_evalid :
-  forall e e' elist,
-    evalid g e ->
-    (forall x, In x elist -> evalid g x) ->
-    forall x, In x (swap_cons e e' elist) -> evalid g x.
-Proof.
-  intros e e' elist Hevalid Holdvalid x Hin.
-  unfold swap_cons in Hin.
-  simpl in Hin.
-  destruct Hin as [Heq | Hin].
-  - subst x. exact Hevalid.
-  - apply Holdvalid.
-    eapply remove_once_in_elim; eauto.
-Qed.
-
-Lemma remove_once_not_in_of_not_in :
-  forall e e' elist,
-    ~ In e elist ->
-    ~ In e (remove_once e' elist).
-Proof.
-  intros e e' elist Hnotin Hin.
-  apply Hnotin.
-  eapply remove_once_in_elim; eauto.
-Qed.
-
-Lemma swap_cons_NoDup_if_fresh :
-  forall e e' elist,
-    NoDup elist ->
-    ~ In e elist ->
-    NoDup (swap_cons e e' elist).
-Proof.
-  intros e e' elist Hnd Hfresh.
-  apply swap_cons_NoDup.
-  - exact Hnd.
-  - apply remove_once_not_in_of_not_in.
-    exact Hfresh.
-Qed.
-
-Lemma swap_cons_valid_edges_if_spanning_tree :
-  forall e e' elist,
-    evalid g e ->
-    is_spanning_tree elist ->
-    forall x, In x (swap_cons e e' elist) -> evalid g x.
-Proof.
-  intros e e' elist Hevalid [Helist_valid _] x Hin.
-  eapply swap_cons_evalid; eauto.
-Qed.
-
-Lemma edge_in_swap_not_new_removed :
-  forall e e' elist x,
-    In x (swap_cons e e' elist) ->
-    x <> e ->
-    In x (remove_once e' elist).
-Proof.
-  intros e e' elist x Hin Hneq.
-  unfold swap_cons in *.
-  simpl in Hin.
-  destruct Hin as [Heq | Hin].
-  - subst x. exfalso. apply Hneq. reflexivity.
-  - exact Hin.
-Qed.
-
-Lemma Forall_swap_removed_if_not_new :
-  forall e e' elist p,
-    Forall (fun x => In x (swap_cons e e' elist)) p ->
-    ~ In e p ->
-    Forall (fun x => In x (remove_once e' elist)) p.
-Proof.
-  intros e e' elist p Hfor Hnotin.
-  rewrite Forall_forall in *.
-  intros x Hin.
-  apply (edge_in_swap_not_new_removed e e' elist x).
-  - eapply Hfor; eauto.
-  - intro Heq.
-    apply Hnotin.
-    subst x; exact Hin.
-Qed.
-
-Lemma valid_epath_Forall_reachable_in_eset :
-  forall eset u p v,
-    valid_epath g u p v ->
-    Forall eset p ->
-    (exists p, valid_epath g u p v /\ Forall eset p).
-Proof.
-  intros eset u p v Hpath.
-  revert u v Hpath.
-  induction p as [|e p IH]; intros u v Hpath Hfor.
-  - apply valid_epath_nil_inv in Hpath.
-    subst v.
-    exists nil.
-    split; [exact (valid_epath_empty g u) | constructor].
-  - inversion Hfor; subst.
-    apply valid_epath_cons_inv in Hpath.
-    destruct Hpath as [v0 [Hstep Hrest]].
-    destruct (IH v0 v Hrest H2) as [p' [Hp'path Hp'for]].
-    exists (e :: p').
-    split; [eapply valid_epath_cons; eauto | constructor; auto].
-Qed.
-
-Lemma valid_epath_transfer_to_swap_fixed :
-  forall e e' elist u p v,
-    swap_reconnects_removed_edge_fixed e e' elist ->
-    valid_epath g u p v ->
-    Forall (fun x => In x elist) p ->
-    exists p, valid_epath g u p v /\ Forall (fun x => In x (swap_cons e e' elist)) p.
-Proof.
-  intros e e' elist u p v Hreconn Hpath.
-  revert u v Hpath.
-  induction p as [|a p IH]; intros u v Hpath Hfor.
-  - apply valid_epath_nil_inv in Hpath.
-    subst v.
-    exists nil.
-    split; [exact (valid_epath_empty g u) | constructor].
-  - inversion Hfor; subst.
-    apply valid_epath_cons_inv in Hpath.
-    destruct Hpath as [v0 [Hstep Hrest]].
-    destruct (eq_dec_E a e') as [Heq | Hneq].
-    + destruct Heq. 
-      pose proof Hreconn u v0 Hstep as [q [Hqpath Hqfor]].
-      destruct (IH v0 v Hrest H2) as [p' [Hp'path Hp'for]].
-      exists (q ++ p').
-      split; [eapply valid_epath_app; eauto | apply Forall_app; auto].
-    + destruct (IH v0 v Hrest H2) as [p' [Hp'path Hp'for]].
-      exists (a :: p').
-      split; [eapply valid_epath_cons; eauto | constructor; auto]. 
-      apply swap_cons_contains_old; auto. 
-Qed.
-
-Lemma Forall_rev_any :
-  forall (A : Type) (Q : A -> Prop) (l : list A),
-    Forall Q l ->
-    Forall Q (rev l).
-Proof.
-  intros A Q l Hfor.
-  rewrite Forall_forall.
-  intros x Hinx.
-  apply Forall_forall with (x := x) in Hfor.
-  - exact Hfor.
-  - apply in_rev.
-    exact Hinx.
-Qed.
-
-Lemma chosen_path_disconnects_after_removal_from_spanning_tree :
-  forall elist e e',
-    NoDup elist ->
-    is_spanning_tree elist ->
-    chosen_path_disconnects_after_removal e e' elist.
-Proof.
-  intros elist e e' Hnd_elist Hspan.
-  unfold chosen_path_disconnects_after_removal.
-  intros u v p1 p2 y1 y2 Hstep_new Hpre Hstep_old Hpost Hnd_path Hfor_path Hreach_removed.
-  destruct Hspan as [_ [_ Hacyc]].
-  destruct Hreach_removed as [q [Hqpath Hqfor_removed]].
-  pose proof (Nodup_split_constructors p1 p2 e' Hnd_path) as [Hnotin1 Hnotin2].
-  apply Forall_app in Hfor_path.
-  destruct Hfor_path as [Hfor1 Hfor_rest].
-  inversion Hfor_rest as [|e0 p2' He'in_path Hfor2]; subst e0 p2'.
-  assert (Hfor1_neq : Forall (fun x => In x elist /\ x <> e') p1).
-  { eapply Forall_edge_set_neq_of_notin; eauto. }
-  assert (Hfor2_neq : Forall (fun x => In x elist /\ x <> e') p2).
-  { eapply Forall_edge_set_neq_of_notin; eauto. }
-  assert (Hqfor_neq : Forall (fun x => In x elist /\ x <> e') q).
-  { eapply Forall_remove_once_old_neq; eauto. }
-  assert (Hmid_path : valid_epath g y2 (p2 ++ rev q ++ p1) y1).
-  {
-    rewrite app_assoc.
-    eapply valid_epath_app.
-    - eapply valid_epath_app.
-      + exact Hpost.
-      + apply valid_epath_rev.
-        exact Hqpath.
-    - exact Hpre.
-  }
-  assert (Hmid_for_neq : Forall (fun x => In x elist /\ x <> e') (p2 ++ rev q ++ p1)).
-  {
-    rewrite app_assoc.
-    rewrite Forall_app.
-    split.
-    - rewrite Forall_app.
-      split.
-      + exact Hfor2_neq.
-      + apply Forall_rev_any.
-        exact Hqfor_neq.
-    - exact Hfor1_neq.
-  }
-  destruct (valid_epath_simple_preserve_Forall
-              (fun x => In x elist /\ x <> e') y2 (p2 ++ rev q ++ p1) y1
-              Hmid_path Hmid_for_neq)
-    as [q' [[Hq'_nd Hq'_path] Hq'_for_neq]].
-  assert (Hq'_for : Forall (fun x => In x elist) q').
-  {
-    rewrite Forall_forall in *.
-    intros x Hinx.
-    destruct (Hq'_for_neq x Hinx) as [Hx _].
-    exact Hx.
-  }
-  assert (~ In e' q') as Hq'_notin.
-  {
-    intro Hin.
-    rewrite Forall_forall in Hq'_for_neq.
-    destruct (Hq'_for_neq e' Hin) as [_ Hneq].
-    exact (Hneq eq_refl).
-  }
-  apply Hacyc.
-  exists y1, (e' :: q').
-  split.
-  - discriminate.
-  - split.
-    + split.
-      * eapply valid_epath_cons; eauto.
-      * constructor; auto.
-    + constructor; auto.
-Qed.
-
-Lemma swap_reconnects_removed_edge_from_path_split :
-  forall e e' elist u v p1 p2 y1 y2,
-    step_aux g e u v ->
-    valid_epath g u p1 y1 ->
-    step_aux g e' y1 y2 ->
-    valid_epath g y2 p2 v ->
-    NoDup (p1 ++ e' :: p2) ->
-    Forall (fun x => In x elist) (p1 ++ e' :: p2) -> 
-    exists p, valid_epath g y1 p y2 /\ Forall (fun x => In x (swap_cons e e' elist)) p.
-Proof.
-  intros e e' elist u v p1 p2 y1 y2 Hstep_new Hpre Hstep_old Hpost Hnodup Hfor.
-  pose proof (Nodup_split_constructors p1 p2 e' Hnodup) as [Hnotin1 Hnotin2].
-  apply Forall_app in Hfor.
-  destruct Hfor as [Hfor1 Hforrest].
-  inversion Hforrest as [|x xs Hfor_e' Hfor2]; subst.
-  assert (Forall (fun x => In x (swap_cons e e' elist)) p1) as Hfor1_swap.
-  {
-    rewrite Forall_forall.
-    intros a Ha.
-    apply swap_cons_contains_old.
-    - intro Heq.
-      apply Hnotin1.
-      subst a.
-      exact Ha.
-    - apply Forall_forall with (x := a) in Hfor1; auto.
-  }
-  assert (Forall (fun x => In x (swap_cons e e' elist)) p2) as Hfor2_swap.
-  {
-    rewrite Forall_forall.
-    intros a Ha.
-    apply swap_cons_contains_old.
-    - intro Heq.
-      apply Hnotin2.
-      subst a.
-      exact Ha.
-    - apply Forall_forall with (x := a) in Hfor2; auto.
-  }
-  assert (exists puy1, valid_epath g u puy1 y1 /\ Forall (fun x => In x (swap_cons e e' elist)) puy1) as Huy1.
-  { eapply valid_epath_Forall_reachable_in_eset; eauto. }
-  assert (exists p2y2, valid_epath g y2 p2y2 v /\ Forall (fun x => In x (swap_cons e e' elist)) p2y2) as Hy2v.
-  { eapply valid_epath_Forall_reachable_in_eset; eauto. }
-  assert (exists p1y1, valid_epath g y1 p1y1 u /\ Forall (fun x => In x (swap_cons e e' elist)) p1y1) as Hy1u.
-  { destruct Huy1 as [puy1 [Huy1path Huy1for]].
-    exists (rev puy1).
-    split; [apply valid_epath_rev; exact Huy1path | apply Forall_rev_any; exact Huy1for]. }
-  assert (exists p2v, valid_epath g v p2v y2 /\ Forall (fun x => In x (swap_cons e e' elist)) p2v) as Hvy2.
-  { destruct Hy2v as [p2y2 [Hy2vpath Hy2vfor]].
-    exists (rev p2y2).
-    split; [apply valid_epath_rev; exact Hy2vpath | apply Forall_rev_any; exact Hy2vfor]. }
-  assert (exists puv, valid_epath g u puv v /\ Forall (fun x => In x (swap_cons e e' elist)) puv) as Huv.
-  {
-    exists (e :: nil).
-    split; [eapply valid_epath_single; eauto | constructor].
-    apply swap_cons_contains_new.
-    constructor.
-  }
-  destruct Hy1u as [p1y1 [Hy1upath Hy1ufor]].
-  destruct Huv as [puv [Huvpath Huvfor]].
-  destruct Hvy2 as [p2v [Hvy2path Hvy2for]].
-  exists (p1y1 ++ puv ++ p2v).
-  split. 
-  * eapply valid_epath_app; [eauto|eapply valid_epath_app; eauto]. 
-  * apply Forall_app; split; [|apply Forall_app; split]; auto.
-Qed.
-
-Lemma swap_reconnects_removed_edge_fixed_from_path_split :
-  forall e e' elist u v p1 p2 y1 y2,
-    step_aux g e u v ->
-    valid_epath g u p1 y1 ->
-    step_aux g e' y1 y2 ->
-    valid_epath g y2 p2 v ->
-    NoDup (p1 ++ e' :: p2) ->
-    Forall (fun x => In x elist) (p1 ++ e' :: p2) ->
-    swap_reconnects_removed_edge_fixed e e' elist.
-Proof.
-  intros e e' elist u v p1 p2 y1 y2 Hstep_new Hpre Hstep_old Hpost Hnodup Hfor u' v' Hstep_old'.
-  pose proof (swap_reconnects_removed_edge_from_path_split e e' elist u v p1 p2 y1 y2
-                Hstep_new Hpre Hstep_old Hpost Hnodup Hfor) as Hreach.
-  pose proof (step_aux_unique_undirected g e' y1 y2 u' v' g_valid Hstep_old Hstep_old') as Huniq.
-  destruct Huniq as [[Hu' Hv'] | [Hu' Hv']].
-  - subst u' v'.
-    exact Hreach.
-  - subst u' v'. 
-    destruct Hreach as [p [Hpath' Hfor']]. 
-    exists (rev p); split; 
-    [apply valid_epath_rev; exact Hpath' | 
-    apply Forall_rev_any; exact Hfor'].
-Qed.
-
-Lemma swap_connectivity_from_reconnect_fixed :
-  forall e e' elist,
-    is_spanning_tree elist ->
-    swap_reconnects_removed_edge_fixed e e' elist ->
-    spans_all_vertices (swap_cons e e' elist).
-Proof.
-  intros e e' elist [_ [Hspan _]] Hreconn u v Huvalid Hvvalid.
-  pose proof (Hspan u v Huvalid Hvvalid) as Holdreach.
-  destruct Holdreach as [p [Hpath Hfor]].
-  eapply valid_epath_transfer_to_swap_fixed; eauto.
-Qed.
-
-Lemma cycle_in_swap_must_use_new :
-  forall e e' elist x p,
-    acyclic_eset elist ->
-    p <> nil ->
-    is_simple_epath g x p x ->
-    Forall (fun x => In x (swap_cons e e' elist)) p ->
-    In e p.
-Proof.
-  intros e e' elist x p Hacyc Hpnonempty [Hnodup Hpath] Hfor.
-  destruct (classic (In e p)) as [Hin | Hnotin]; auto.
-  exfalso.
-  apply Hacyc.
-  exists x, p.
-  split; [exact Hpnonempty |].
-  split; [split; assumption |].
-  eapply Forall_forall.
-  intros a Ha.
-  eapply (remove_once_in_elim _ e').
-  eapply (edge_in_swap_not_new_removed e).
-  - rewrite Forall_forall in *; auto.
-  - unfold not; intros; subst; auto.
-Qed.
-
-Lemma swap_acyclicity_from_new_edge_cycle_free_fixed :
-  forall e e' elist,
-    acyclic_eset elist ->
-    swap_keeps_new_edge_cycle_free_fixed e e' elist ->
-    acyclic_eset (swap_cons e e' elist).
-Proof.
-  intros e e' elist Hold_acyc Hcyclefree.
-  unfold acyclic_eset.
-  intros [x [p [Hpnonempty [[Hpath Hnodup] Hfor]]]].
-  pose proof (cycle_in_swap_must_use_new e e' elist x p Hold_acyc Hpnonempty (conj Hpath Hnodup) Hfor) as Hin.
-  apply in_split in Hin.
-  destruct Hin as [p1 [p2 Hp]].
-  subst p. 
-  apply valid_epath_app_inv in Hpath as [u [Hpre Hsuf]].
-  apply valid_epath_cons_inv in Hsuf as [v [Hstep Hpost]].
-  assert (~ In e (p2 ++ p1)) as Hnotin_rest.
-  {
-    pose proof (Nodup_split_constructors p1 p2 e Hnodup) as [Hnotin1 Hnotin2].
-    rewrite in_app_iff; tauto.
-  }
-  assert (Forall (fun x => In x (remove_once e' elist)) (p2 ++ p1)) as Hfor_removed.
-  {
-    apply Forall_app.
-    apply Forall_app in Hfor.
-    destruct Hfor as [Hleft Hright].
-    inversion Hright; subst.
-    split.
-    - eapply Forall_swap_removed_if_not_new; eauto.
-      intros Hinp2.
-      apply Hnotin_rest.
-      rewrite in_app_iff; auto.
-    - eapply Forall_swap_removed_if_not_new; eauto.
-      intros Hinp1.
-      apply Hnotin_rest.
-      rewrite in_app_iff; auto.
-  }
-  pose proof (valid_epath_app _ _ _ _ _ _ Hpost Hpre) as Hcycle_rest.
-  pose proof (valid_epath_Forall_reachable_in_eset
-                (fun x => In x (remove_once e' elist)) v (p2 ++ p1) u
-                Hcycle_rest Hfor_removed) as Hreach_removed.
-  exfalso.
-  eapply (Hcyclefree u v); eauto. 
-  destruct Hreach_removed as [p' [Hpath' Hfor']].
-  exists (rev p'); split; [apply valid_epath_rev; exact Hpath' | apply Forall_rev_any; exact Hfor'].
-Qed.
-
-Lemma swap_spanning_tree_from_fixed_graph_side :
-  forall e e' elist,
-    evalid g e ->
-    is_spanning_tree elist ->
-    swap_reconnects_removed_edge_fixed e e' elist ->
-    swap_keeps_new_edge_cycle_free_fixed e e' elist ->
-    is_spanning_tree (swap_cons e e' elist).
-Proof.
-  intros e e' elist Hevalid Hspan Hreconn Hcyclefree.
-  unfold is_spanning_tree in *.
-  destruct Hspan as [Holdvalid [Hconn Holdacyc]].
-  split.
-  - intros x Hin.
-    eapply swap_cons_evalid; eauto.
-  - split.
-    + eapply swap_connectivity_from_reconnect_fixed.
-      * split; [exact Holdvalid | split; [exact Hconn | exact Holdacyc]].
-      * exact Hreconn.
-    + eapply swap_acyclicity_from_new_edge_cycle_free_fixed.
-      * exact Holdacyc.
-      * exact Hcyclefree.
-Qed.
-
-(* 原本无环，加上e后有环，则该环一定包含边e *)
-Lemma cycle_must_use_new_edge :
-  forall l e x p,
-    acyclic_eset l ->
-    p <> nil ->
-    is_simple_epath g x p x ->
-    Forall (fun x => In x (e :: l)) p ->
-    In e p.
+Lemma tree_addEdge_have_circuit: 
+  forall i h u v e, 
+    gvalid i ->
+    tree i -> 
+    vvalid i u -> vvalid i v -> ~ evalid i e ->
+    addEdge i h u v e -> 
+    exists p, is_simple_epath h u p u /\ In e p /\ p <> nil.
 Proof. 
-  intros.
-  destruct (classic (In e p)) as [Hin | Hnotin]; auto.
-  exfalso. 
-  apply H. 
-  exists x, p; split; [|split]; auto. 
-  eapply Forall_in_cons; eauto. 
+  intros i h u v e Hvalid Htree Hu Hv He Hadd. 
+  pose proof Hadd as [Hvvalid Hevalid Hstep_aux]. 
+  pose proof tree_connected i Htree u v Hu Hv.
+  apply reachable_valid_epath in H as [p Hpath]. 
+  eapply valid_epath_simple in Hpath.
+  2:{ intros; eapply step_aux_unique_undirected; try apply Hvalid; eauto. }
+  destruct Hpath as [q [Hqsimple Hqnodup]]. 
+  exists (q ++ [e]); split; [|split];
+  [split | apply in_app_iff; right; simpl; auto | symmetry; apply app_cons_not_nil].
+  * eapply valid_epath_snoc with (v:=v); eauto.
+    + eapply addEdge2_valid_epath; eauto.
+    + apply Hstep_aux; right; split; auto. 
+  * apply Nodup_app_comm. 
+    simpl; constructor; auto. 
+    assert (forall a, In a q -> evalid i a). {
+      intros a Hin. 
+      apply in_split in Hin as [l1 [l2 Hp]]; subst. 
+      apply valid_epath_app_inv in Hqsimple as [b [Hl1 Hrest]].
+      apply valid_epath_cons_inv in Hrest as [c [Hstep Hl2]].
+      eapply step_evalid; eauto.
+    }
+    unfold not; intros; apply He; auto. 
 Qed.
 
-(* 环p在边集e::l上，并且包含边e，则存在一条l上的另一条路径连通e的两个顶点 *)
-Lemma cycle_gives_old_path_between_new_edge_endpoints :
-  forall l e x p,
-    is_simple_epath g x p x ->
-    Forall (fun x => In x (e :: l)) p ->
-    In e p ->
-    exists y1 y2 q,
-      step_aux g e y1 y2 /\
-      valid_epath g y2 q y1 /\
-      Forall (fun x => In x l) q.
+
+Lemma addEdge2_replace_edge_connected:
+  forall y1 h i u v e x y a p,
+    gvalid y1 ->
+    gvalid h ->
+    tree y1 -> 
+    vvalid y1 u ->  
+    vvalid y1 v ->
+    addEdge y1 h u v e ->
+    ~ evalid i a -> 
+    addEdge i h x y a ->
+    is_simple_epath h u p u ->
+    In a p ->
+    connected i.
 Proof.
-  intros s e x p [Hpath Hnodup] Hforall Hin.
-  apply in_split in Hin.
-  destruct Hin as [p1 [p2 Hp]].
-  subst p. 
-  apply valid_epath_app_inv in Hpath as [y1 [Hpre Hsuf]].
-  apply valid_epath_cons_inv in Hsuf as [y2 [Hstep Hpost]].
-  pose proof (Nodup_split_constructors p1 p2 e Hnodup) as [Hnotin1 Hnotin2].
-  rewrite Forall_app in Hforall.
-  destruct Hforall as [Hforall1 Hforall2].
-  inversion Hforall2; subst.
-  exists y1, y2, (p2 ++ p1).
-  split.
-  - exact Hstep.
-  - split; [eapply valid_epath_app|
-    rewrite Forall_app; split; eapply Forall_in_cons]; eauto.
+  intros y1 h i u v e x y a p Hvalid_y1 Hvalid_h Htree_y1 Hu Hv Hadd2 Hanoitini Hi Hp Hina s t Hs Ht.
+  assert (Hs_y1 : vvalid y1 s) by (erewrite <- (addEdge2_vvalid_iff y1 h u v e); eauto; apply Hi; eauto).
+  assert (Ht_y1 : vvalid y1 t) by (erewrite <- (addEdge2_vvalid_iff y1 h u v e); eauto; apply Hi; eauto).
+
+  destruct (reachable_valid_epath _ _ _ (tree_connected _ Htree_y1 _ _ Hs_y1 Ht_y1)) as [q Hqpath].
+  eapply valid_epath_simple in Hqpath as [q' [Hq'path Hq'nodup]].
+  2:{ intros; eapply step_aux_unique_undirected; try apply Hvalid_y1; eauto. }
+
+  destruct (classic (In a q')) as [Hinaq | Hnotinaq].
+  - apply in_split in Hinaq as [q1 [q2]]; subst.
+    apply valid_epath_app_inv in Hq'path as [z [Hpre Hrest]].
+    apply valid_epath_cons_inv in Hrest as [w [Hstep_a Hpost]]. 
+    eapply addEdge2_old_step in Hstep_a as Hstep_a_h; eauto. 
+    eapply addEdge2_new_step_uv in Hi as Hstep_a_new; eauto. 
+    eapply step_aux_unique_undirected in Hstep_a_h as [[]|[]]; eauto; subst z w.
+    + eapply addEdge2_cycle_without_new_edge_simple in Hina as [alt [[Halt_path _] _]]; eauto.
+      eapply valid_epath_reachable.
+      eapply valid_epath_app; [|eapply valid_epath_app].
+      * eapply addEdge2_valid_epath_new_to_old; [exact Hi|eapply addEdge2_valid_epath with (g1:=y1); eauto|].
+        intros ?; destruct (Nodup_split_constructors q1 q2 a Hq'nodup) as [Hnotin1 _]; contradiction.
+      * exact Halt_path.
+      * eapply addEdge2_valid_epath_new_to_old; [exact Hi|eapply addEdge2_valid_epath with (g1:=y1); eauto|].
+        intros ?; destruct (Nodup_split_constructors q1 q2 a Hq'nodup) as [_ Hnotin2]; contradiction.
+    + eapply addEdge2_cycle_without_new_edge_simple in Hina as [alt [[Halt_path _] _]]; eauto.
+      eapply valid_epath_reachable.
+      eapply valid_epath_app; [|eapply valid_epath_app].
+      * eapply addEdge2_valid_epath_new_to_old; [exact Hi|eapply addEdge2_valid_epath with (g1:=y1); eauto|].
+        intros ?; destruct (Nodup_split_constructors q1 q2 a Hq'nodup) as [Hnotin1 _]; contradiction.
+      * apply valid_epath_rev. exact Halt_path.
+      * eapply addEdge2_valid_epath_new_to_old; [exact Hi|eapply addEdge2_valid_epath with (g1:=y1); eauto|].
+        intros ?; destruct (Nodup_split_constructors q1 q2 a Hq'nodup) as [_ Hnotin2]; contradiction.
+  - eapply valid_epath_reachable.
+    eapply addEdge2_valid_epath_new_to_old; [exact Hi| |exact Hnotinaq].
+    eapply addEdge2_valid_epath with (g1:=y1); eauto. 
+  Unshelve. all: auto.
 Qed.
+
+Lemma addEdge2_delete_circuit_no_circuit:
+  forall y1 h i u v e x y a p,
+    gvalid y1 ->
+    gvalid h ->
+    tree y1 -> 
+    ~ evalid y1 e ->
+    addEdge y1 h u v e ->
+    ~ evalid i a ->
+    addEdge i h x y a ->
+    is_simple_epath h u p u ->
+    In e p ->
+    In a p ->
+    a <> e ->
+    ~ exists z q, q <> nil /\ is_simple_epath i z q z.
+Proof.
+  intros y1 h i u v e x y a p Hvalid_y1 Hvalid_h Htree_y1 He Hadd2 Ha Hi Hp Hein Hina Hane [z [q [Hqne Hq]]].
+  assert (Hq_h : is_simple_epath h z q z) by (destruct Hq as [Hqpath Hqnodup]; split; auto; eapply addEdge2_valid_epath; eauto).
+  destruct (classic (In e q)) as [Heinq | Hnotinq].
+  - eapply addEdge2_cycle_without_new_edge_simple in Hein as [p_old [Hp_old Hp_mem]]; eauto.
+    eapply addEdge2_cycle_without_new_edge_simple in Heinq as [q_old [Hq_old Hq_mem]]; eauto.
+    assert (Hpq : p_old = q_old) by (eapply tree_one_simple_epath with (g:= y1); eauto).
+    assert (Hain_pold : In a p_old) by (apply Hp_mem; split; auto).
+    assert (Hnotin_q : ~ In a q) by (eapply addEdge2_edge_not_in_old_path; eauto; apply Hq).
+    assert (Hnotin_qold : ~ In a q_old) by (intro Hain; apply Hq_mem in Hain as [Hainq _]; contradiction).
+    subst q_old. contradiction.
+  - eapply tree_no_curcuit; eauto.
+    exists z, q; split; auto.
+    destruct Hq as [Hqpath Hqnodup].
+    split; auto.
+    eapply addEdge2_valid_epath_new_to_old ; eauto. 
+    apply Hq_h.
+Qed.
+
+Lemma addEdge2_delete_circuit_tree:
+  forall y1 h i u v e x y a p,
+    gvalid y1 ->
+    gvalid h ->
+    tree y1 -> 
+    (vvalid y1 u /\ vvalid y1 v /\ ~ evalid y1 e) ->
+    addEdge y1 h u v e -> 
+    ~ evalid i a ->
+    addEdge i h x y a ->
+    is_simple_epath h u p u ->
+    In e p ->
+    In a p ->
+    a <> e ->
+    tree i.
+Proof.
+  intros.
+  apply tree_decide.
+  - eapply addEdge2_replace_edge_connected with (y1:=y1); eauto; tauto.
+  - eapply addEdge2_delete_circuit_no_circuit with (y1:=y1); eauto; tauto.
+Qed.
+
+Lemma circuit_have_pair_cross_edge: 
+  forall i h u v e p, 
+    gvalid h ->
+    vvalid i u -> ~ vvalid i v -> step_aux h e u v -> 
+    In e p -> 
+    is_simple_epath h u p u ->
+    exists x y a, vvalid i x /\ ~ vvalid i y /\ step_aux h a x y /\ In a p /\ a <> e.
+Proof.
+  intros i h u v e p Hvalid_h Hu Hv Hstep_e Hin [Hpath Hnodup].
+  apply in_split in Hin as [p1 [p2 Hp]].
+  subst p.
+  apply valid_epath_app_inv in Hpath as [z [Hpre Hrest]].
+  apply valid_epath_cons_inv in Hrest as [w [Hstep_in Hpost]]. 
+  eapply step_aux_unique_undirected in Hstep_e as [[Hzu Hwv] | [Hwu Hzv]]; eauto; subst.
+  - pose proof (valid_epath_rev h v p2 u Hpost) as Hrev. 
+    eapply valid_epath_cross with (P := vvalid i) in Hrev
+    as [x [y [a [Hx [Hy [Hstep Hina]]]]]]; eauto.
+    exists x, y, a; repeat split; auto.
+    + rewrite in_app_iff; right; simpl; right; apply in_rev; auto. 
+    + destruct (Nodup_split_constructors p1 p2 e Hnodup) as [_ Hnotin].
+      intro Heq; subst; apply Hnotin; apply in_rev; auto. 
+  - eapply valid_epath_cross with (P := vvalid i) in Hpre
+    as [x [y [a [Hx [Hy [Hstep Hina]]]]]]; eauto.
+    exists x, y, a; repeat split; auto.
+    + rewrite in_app_iff; left; auto.
+    + destruct (Nodup_split_constructors p1 p2 e Hnodup) as [Hnotin _].
+      intro Heq; subst; contradiction.
+Qed.
+
+
+Theorem prim_step: 
+  forall g1 g2 u v e, 
+    gvalid g1 /\ tree g1 /\ (exists y1, is_mst r y1 /\ subgraph2 g1 y1) -> 
+    step_aux r e u v -> 
+    vvalid g1 u -> ~ vvalid g1 v ->
+    addEdge g1 g2 u v e -> 
+    min_object_of_subset Z_op_le (fun e => exists u v, vvalid g1 u /\ ~ vvalid g1 v /\ step_aux r e u v) (weight r) e ->
+    (exists y2, is_mst r y2 /\ subgraph2 g2 y2). 
+Proof. 
+  intros g1 g2 u v e [Hgvalid1 [Htree [y1 [Hmst Hsubgraph]]]] Hrstep Hu Hv Hadd Hmin. 
+  destruct (classic (evalid y1 e)).
+  - exists y1; split; auto. 
+    split. 
+    { 
+      intros x Hx. 
+      apply Hadd in Hx as [|[|]]; subst. 
+      + apply Hsubgraph; auto. 
+      + apply Hmst. 
+        eapply step_vvalid1; eauto. 
+      + apply Hmst. 
+        eapply step_vvalid2; eauto.  
+    } 
+    {
+      intros x y a Hstep.
+      destruct Hadd as [Hvvalid Hevalid Hstep_aux].
+      apply Hstep_aux in Hstep as [Hold | [Heq [[Hx Hy] | [Hx Hy]]]]; subst.
+      + apply Hsubgraph; auto.
+      + eapply mst_edge_step with (r:=r); eauto.
+      + apply step_sym. eapply mst_edge_step with (r:=r); eauto.
+    }
+  - (* 当新增加的边e不在原来的被包含在的最小生成树中时 *)
+    (* 将这条边e增加到最小生成树y1中去，y1 + e = h *) 
+    assert (Huy1: vvalid y1 u) by (apply Hsubgraph; auto).
+    assert (Hvy1: vvalid y1 v) by (apply Hmst; eapply step_vvalid2; eauto). 
+    assert (exists h, gvalid h /\ addEdge y1 h u v e) as [h [Hvalid Hadd2]].
+    {
+      apply addEdge_valid; auto. 
+      apply Hmst.
+    } 
+    (* 则 h 中有一个简单回路 p ，包含跨边e *)
+    assert (exists p, is_simple_epath h u p u /\ In e p /\ p <> nil) as [p [Hp [Heinp Hpne]]]. 
+    {
+      eapply tree_addEdge_have_circuit. 
+      6: apply Hadd2. 
+      all: try apply Hmst; try auto. 
+      eapply step_vvalid1; eauto. 
+      eapply step_vvalid2; eauto. 
+    } 
+    (* p 中包含另外一条跨边 a *)
+    assert (exists x y a, vvalid g1 x /\ ~ vvalid g1 y /\ step_aux h a x y /\ In a p /\ a <> e) as [x [y [a [Hx [Hy [Hstep Hin]]]]]].
+    {
+      eapply circuit_have_pair_cross_edge with (v := v); eauto; 
+      try (try destruct Hadd; tauto). 
+      destruct Hadd2 as [_ _ Hstep_aux]. 
+      apply Hstep_aux; right; auto.
+    }
+    (* 将 a 从 h 中删除，y1 + e - a = i *)
+    assert (exists i, gvalid i /\ addEdge i h x y a /\ (vvalid i x /\ vvalid i y /\ ~ evalid i a)) as [i [Hvalidi [Hi [Hvx [Hvy Hnotina]]]]]. {
+      apply addEdge_valid_inv; auto. 
+      * eapply step_vvalid1; eauto.
+      * eapply step_vvalid2; eauto.
+      * eapply step_evalid; eauto.
+    }
+    
+    
+    (* i 是新的满足条件的最小生成树 *)
+    exists i; split; [split; [split; [|split]|]|]. 
+
+    (* i gvalid *)
+    + apply Hvalidi. 
+
+
+    (* i 是 树 *)
+    + eapply (addEdge2_delete_circuit_tree y1 h i u v e x y a p). 
+      all: try tauto.
+      all: try apply Hmst. 
+
+
+    (* i 是 原图的子图 *)
+    + destruct Hmst as [Hy1_legal Hy1_min].
+      destruct Hy1_legal as [_ [_ Hsubeq_y1]].
+      destruct Hsubeq_y1 as [Hy1_vertex Hy1_step].
+      split.
+      * intros z.
+        rewrite <- Hy1_vertex.
+        erewrite <- (addEdge2_vvalid_iff i h x y a); eauto.
+        apply addEdge2_vvalid_iff with (u := u) (v := v) (e := e); auto.  
+      * intros z w b Hstep_i. 
+        eapply addEdge2_old_step in Hstep_i as Hstep_h; try apply Hi; eauto.
+        destruct Hadd2 as [_ _ Hstep_h_iff].
+        apply Hstep_h_iff in Hstep_h as [Hstep_y1 | [Hb [[] | []]]]; subst; auto.
+        apply step_sym; auto. 
+
+    (* i 的权值小于等于 y1 的权值 *)
+    + intros b Hb.
+      eapply Z_op_le_trans with (y:= total_weight r y1); 
+      [|apply Hmst; auto]. 
+      pose proof Hadd2 as Hadd2'. 
+      pose proof Hi as Hi'. 
+
+      apply addEdge2_elist_permutation in Hadd2; auto. 
+      2:{ apply Hmst. } 
+
+      apply addEdge2_elist_permutation in Hi; auto.
+
+      set (sumE := fun l => fold_right Z_op_plus (Some 0%Z) (map (weight r) l)).
+      assert (Hperm_sum : forall l1 l2, Permutation l1 l2 -> sumE l1 = sumE l2).
+      {
+        intros l1 l2 Hperm.
+        induction Hperm; subst sumE; simpl; auto.
+        - rewrite IHHperm; auto.
+        - rewrite !Z_op_plus_assoc.
+          rewrite (Z_op_plus_comm (weight r x0) (weight r y0)).
+          reflexivity.
+        - rewrite IHHperm1, IHHperm2; auto.
+      }
+      assert (Hh_y1 : total_weight r h = Z_op_plus (weight r e) (total_weight r y1)).
+      {
+        unfold total_weight. 
+        pose proof (Hperm_sum _ _ Hadd2). 
+        unfold sumE in H0. 
+        (* rewrite H0. *)
+        simpl in H0. 
+        apply H0.
+      }
+      assert (Hh_i : total_weight r h = Z_op_plus (weight r a) (total_weight r i)).
+      {
+        unfold total_weight.
+        pose proof (Hperm_sum _ _ Hi). 
+        unfold sumE in H0. 
+        rewrite H0.
+        simpl; reflexivity.
+      }
+      destruct Hmst as [[Hy1_valid [_ Hsubeq_y1]] _].
+      destruct Hsubeq_y1 as [_ Hy1_step].
+      assert (Hstep_y1 : step_aux y1 a x y) by (eapply addEdge2_keep_step; eauto; tauto).
+      assert (Hin_a_y1 : In a (bijective_listE y1)).
+      { apply bijective_edges; auto. eapply step_evalid; eauto. }
+      assert (Hwea : Z_op_le (weight r e) (weight r a)).
+      {
+        destruct Hmin as [_ Hmin_sound].
+        apply Hmin_sound.
+        exists x, y.
+        repeat split; auto.
+      }
+      assert (Hnone_in_sum :
+        forall l, In a l -> weight r a = None -> sumE l = None).
+      {
+        intros l.
+        induction l as [|c l IH]; intros Hinc Hwa; simpl in *; [contradiction|].
+        destruct Hinc as [Hc | Hinc].
+        - subst. unfold sumE; simpl. rewrite Hwa. reflexivity.
+        - apply IH in Hwa; auto. unfold sumE; simpl. 
+          unfold sumE in Hwa; simpl in Hwa. 
+          rewrite Hwa. apply Z_op_plus_none_r.
+      }
+      destruct (weight r a) as [wa|] eqn:Hwa.
+      * destruct (weight r e) as [we|] eqn:Hwe; simpl in Hwea; [|contradiction].
+        rewrite Hh_y1 in Hh_i.
+        destruct (total_weight r i) as [wi|] eqn:Hwi;
+        destruct (total_weight r y1) as [wy|] eqn:Hwy;
+        simpl in *; try discriminate; auto.
+        inversion Hh_i; subst; lia.
+      * assert (Hy1_none : total_weight r y1 = None).
+        {
+          unfold total_weight.
+          apply Hnone_in_sum; auto.
+        }
+        rewrite Hy1_none.
+        apply Z_op_le_none_r.
+
+    (* g2 是 i 的子图 *)
+    + split.
+      {
+        intros z Hz. 
+        apply Hadd in Hz as [Hz_g1 | [Hz_u | Hz_v]]; subst.
+        + apply Hsubgraph in Hz_g1.
+          erewrite <- (addEdge2_vvalid_iff i h x y a); eauto.
+          erewrite (addEdge2_vvalid_iff y1 h u v e); eauto.
+        + erewrite <- (addEdge2_vvalid_iff i h x y a); eauto.
+          erewrite (addEdge2_vvalid_iff y1 h u v e); eauto.
+        + erewrite <- (addEdge2_vvalid_iff i h x y a); eauto. 
+          erewrite (addEdge2_vvalid_iff y1 h u v e); eauto.
+      }
+      {
+        intros z w b Hstep_g2.
+        destruct Hadd as [_ _ Hstep_g2_iff].
+        apply Hstep_g2_iff in Hstep_g2 as [Hstep_g1 | [Hb [[Hz Hw] | [Hz Hw]]]].
+        * assert (Hstep_y1 : step_aux y1 b z w) by (apply Hsubgraph; auto).
+          assert (Hstep_h : step_aux h b z w) by (eapply addEdge2_old_step with (g1:=y1); eauto).
+          destruct (classic (b = a)) as [Hba | Hba]; 
+          [|eapply addEdge2_keep_step; eauto].
+          subst; exfalso.
+          eapply step_aux_unique_undirected in Hstep as [[] | []]; eauto; subst; 
+          apply Hy; [eapply step_vvalid2; eauto | eapply step_vvalid1; eauto].
+        * subst b z w.
+          assert (Hstep_h : step_aux h e u v) by (eapply addEdge2_new_step_uv; eauto).
+          eapply addEdge2_keep_step; eauto; symmetry; tauto.
+        * subst b z w.
+          assert (Hstep_h : step_aux h e v u) by (eapply addEdge2_new_step_vu; eauto).
+          eapply addEdge2_keep_step; eauto.
+          intro Heq; subst; apply Hin; auto. 
+      }
+Qed.
+
 
 End prim.

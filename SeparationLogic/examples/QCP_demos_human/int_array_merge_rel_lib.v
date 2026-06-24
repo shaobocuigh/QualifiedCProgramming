@@ -19,6 +19,7 @@ Local Open Scope list.
 From FP Require Import SetsFixedpoints.
 From MonadLib Require Import MonadLib.
 Import StateRelMonad.
+From MonadLib.Examples Require Export mergesort.
 Export MonadNotation.
 Local Open Scope monad.
 

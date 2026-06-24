@@ -484,37 +484,11 @@ Section loop_unfold.
 Context {Σ: Type}.
 
   Lemma whileb_unfold: forall (cond: (program Σ bool)) (body : program Σ unit), 
-  whileb cond body == (x <- cond ;;
+  while cond body == (x <- cond ;;
                       match x with
-                      | true => body ;; (whileb cond body)
+                      | true => body ;; (while cond body)
                       | false => ret tt
                       end).
-  Proof.
-    intros.
-    unfold whileb.
-    apply (Lfix_fixpoint' (whileb_f cond body)).
-    unfold whileb_f.
-    mono_cont_auto.
-  Qed.
-
-  Lemma whileretb_unfold: forall {A: Type} (cond: (A -> (program Σ bool))) (body : A -> (program Σ A))  (a: A), 
-      whileretb cond body == fun a => (x <- (cond a);; 
-                              match x with 
-                              | true => y <- body a ;; whileretb cond body y
-                              | false => ret a
-                              end).
-  Proof.
-    intros.
-    unfold whileretb.
-    apply (Lfix_fixpoint' (whileretb_f cond body)).
-    unfold whileretb_f.
-    mono_cont_auto.
-  Qed.
-
-  Lemma while_unfold: forall (cond: Σ -> Prop) (body : program Σ unit), 
-    while cond body == choice 
-                         (assume cond;; body;; while cond body)
-                         (assume (fun s => ~ cond s);; ret tt).
   Proof.
     intros.
     unfold while.
@@ -523,16 +497,42 @@ Context {Σ: Type}.
     mono_cont_auto.
   Qed.
 
-  Lemma whileret_unfold: forall {A: Type} (cond: A -> Σ -> Prop) (body : A -> (program Σ A)), 
-    whileret cond body == 
-    fun a => 
-      choice (assume (fun s => cond a s);; a' <- body a;; whileret cond body a') 
-             (assume (fun s => ~ cond a s);; ret a).
+  Lemma whileretb_unfold: forall {A: Type} (cond: (A -> (program Σ bool))) (body : A -> (program Σ A))  (a: A), 
+      whileret cond body == fun a => (x <- (cond a);; 
+                              match x with 
+                              | true => y <- body a ;; whileret cond body y
+                              | false => ret a
+                              end).
   Proof.
     intros.
     unfold whileret.
     apply (Lfix_fixpoint' (whileret_f cond body)).
     unfold whileret_f.
+    mono_cont_auto.
+  Qed.
+
+  Lemma while_unfold: forall (cond: Σ -> Prop) (body : program Σ unit), 
+    whileP cond body == choice 
+                         (assume cond;; body;; whileP cond body)
+                         (assume (fun s => ~ cond s);; ret tt).
+  Proof.
+    intros.
+    unfold whileP.
+    apply (Lfix_fixpoint' (whileP_f cond body)).
+    unfold whileP_f.
+    mono_cont_auto.
+  Qed.
+
+  Lemma whileret_unfold: forall {A: Type} (cond: A -> Σ -> Prop) (body : A -> (program Σ A)), 
+    whileretP cond body == 
+    fun a => 
+      choice (assume (fun s => cond a s);; a' <- body a;; whileretP cond body a') 
+             (assume (fun s => ~ cond a s);; ret a).
+  Proof.
+    intros.
+    unfold whileretP.
+    apply (Lfix_fixpoint' (whileretP_f cond body)).
+    unfold whileretP_f.
     mono_cont_auto.
   Qed.
 
@@ -561,7 +561,103 @@ Context {Σ: Type}.
     mono_cont_auto.
   Qed.
 
-  Lemma forset_unfold_aux {A: Prop}
+  Lemma repeat_break_noin_unfold:
+    forall {B} (body: program Σ (CntOrBrk unit B)),
+    repeat_break_noin body ==
+      x <- body;;
+      match x with
+      | by_continue _ => repeat_break_noin body
+      | by_break b0 => ret b0
+      end.
+  Proof.
+    intros.
+    unfold repeat_break_noin.
+    apply (Lfix_fixpoint' (repeat_break_f_noinput body)).
+    unfold repeat_break_f_noinput.
+    mono_cont_auto.
+  Qed.
+
+  Lemma range_iter_unfold_aux:
+    forall {A: Type} (hi: Z) (body: Z -> A -> program Σ A),
+    (fun '(lo, a) => range_iter lo hi body a) ==
+    fun '(lo, a) => choice
+      (assume!! (lo < hi)%Z;;
+       b <- body lo a;;
+       range_iter (lo + 1)%Z hi body b)
+      (assume!! (lo >= hi)%Z;;
+       ret a).
+  Proof.
+    intros. unfold range_iter.
+    assert ((fun '(lo, a) => Lfix (range_iter_f hi body) (lo, a))
+      == Lfix (range_iter_f hi body)).
+    constructor; destruct a; easy.
+    rewrite H.
+    apply (Lfix_fixpoint' (range_iter_f hi body)).
+    unfold range_iter_f.
+    mono_cont_auto.
+  Qed.
+
+  Lemma range_iter_unfold:
+    forall {A: Type} (hi: Z) (body: Z -> A -> program Σ A) lo a,
+    range_iter lo hi body a ==
+    choice
+      (assume!! (lo < hi)%Z;;
+       b <- body lo a;;
+       range_iter (lo + 1)%Z hi body b)
+      (assume!! (lo >= hi)%Z;;
+       ret a).
+  Proof.
+    intros.
+    pose proof (range_iter_unfold_aux hi body).
+    hnf in H.
+    specialize (H (lo, a)).
+    auto.
+  Qed.
+
+  Lemma range_iter_break_unfold_aux:
+    forall {A B: Type} (hi: Z) (body: Z -> A -> program Σ (CntOrBrk A B)),
+    (fun '(lo, a) => range_iter_break lo hi body a) ==
+    fun '(lo, a) => choice
+      (assume!! (lo < hi)%Z;;
+       b <- body lo a;;
+       match b with
+       | by_continue a' => range_iter_break (lo + 1)%Z hi body a'
+       | by_break b' => break b'
+       end)
+      (assume!! (lo >= hi)%Z;;
+       continue a).
+  Proof.
+    intros. unfold range_iter_break.
+    assert ((fun '(lo, a) => Lfix (range_iter_break_f hi body) (lo, a))
+      == Lfix (range_iter_break_f hi body)).
+    constructor; destruct a; easy.
+    rewrite H.
+    apply (Lfix_fixpoint' (range_iter_break_f hi body)).
+    unfold range_iter_break_f.
+    mono_cont_auto.
+  Qed.
+
+  Lemma range_iter_break_unfold:
+    forall {A B: Type} (hi: Z) (body: Z -> A -> program Σ (CntOrBrk A B)) lo a,
+    range_iter_break lo hi body a ==
+    choice
+      (assume!! (lo < hi)%Z;;
+       b <- body lo a;;
+       match b with
+       | by_continue al => range_iter_break (lo + 1)%Z hi body al
+       | by_break br => break br
+       end)
+      (assume!! (lo >= hi)%Z;;
+       continue a).
+  Proof.
+    intros.
+    pose proof (range_iter_break_unfold_aux hi body).
+    hnf in H.
+    specialize (H (lo, a)).
+    auto.
+  Qed.
+
+  Lemma forset_unfold_aux {A: Type}
     (body: A -> program Σ unit):
     Lfix (forset_f body) == fun universe =>
     choice (a <- get (fun _ a => a ∈ universe);; 
@@ -575,7 +671,7 @@ Context {Σ: Type}.
     mono_cont_auto.
   Qed.
 
-  Lemma forset_unfold {A: Prop}
+  Lemma forset_unfold {A: Type}
     (universe: A -> Prop)
     (body: A -> program Σ unit):
     forset universe body ==

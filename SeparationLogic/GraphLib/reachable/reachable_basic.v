@@ -91,6 +91,27 @@ Proof.
   transitivity_n1 y; auto.
 Qed.
 
+Lemma reachable_trans: forall x y z,
+  reachable g x y ->
+  reachable g y z ->
+  reachable g x z.
+Proof.
+  intros x y z Hxy Hyz.
+  unfold reachable in *.
+  transitivity y; auto.
+Qed.
+
+Lemma reachable_step_not_reachable:
+  forall s x y,
+    reachable g s x ->
+    ~ reachable g s y ->
+    ~ step g x y.
+Proof.
+  intros s x y Hsx Hnot Hstep.
+  apply Hnot.
+  eapply reachable_step_reachable; eauto.
+Qed.
+
 Lemma reachable_1n: forall x y,
   reachable g x y ->
   (exists z, step g x z /\ reachable g z y) \/ x = y.
@@ -105,4 +126,3 @@ Proof.
 Qed.
 
 End reachable.
-

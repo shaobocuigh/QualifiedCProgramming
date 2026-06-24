@@ -327,7 +327,7 @@ Proof.
 	  cancel (b_pre # Ptr |-> b_pre_v).
 	  cancel (store_tree b_pre_v 0 tr_low_level_spec).
 	  split_pure_spatial.
-	  + apply derivable1_refl.
+	  + cancel.
 	  + split_pures.
 	    * dump_pre_spatial.
 	      simpl.
@@ -613,7 +613,7 @@ Proof.
 	  sep_apply (store_ptb_app (&((b_v_2) # "tree" ->ₛ "right")) b b_pre b_v_2 fa 0 (RH b_v_key b_v_value l0 :: nil) pt0_2).
 	  cancel.
 	  simpl.
-	  apply derivable1_refl.
+	  cancel.
 	- repeat match goal with
 	  | H: (combine_tree pt0_2 (tree_delete x_pre tr0_2)) = (tree_delete x_pre tr_low_level_spec) |- _ => rewrite <- H
 	  | H: tr0_2 = make_tree l0 b_v_key b_v_value r0 |- _ => rewrite H
@@ -646,7 +646,7 @@ Proof.
 	  sep_apply (store_ptb_app (&((b_v_2) # "tree" ->ₛ "left")) b b_pre b_v_2 fa 0 (LH b_v_key b_v_value r0 :: nil) pt0_2).
 	  cancel.
 	  simpl.
-	  apply derivable1_refl.
+	  cancel.
 	- repeat match goal with
 	  | H: (combine_tree pt0_2 (tree_delete x_pre tr0_2)) = (tree_delete x_pre tr_low_level_spec) |- _ => rewrite <- H
 	  | H: tr0_2 = make_tree l0 b_v_key b_v_value r0 |- _ => rewrite H
@@ -686,8 +686,8 @@ Proof.
 	rewrite <- PreH2.
 	rewrite Htr0.
 	simpl.
-	apply derivable1_refl.
-Qed. 
+	cancel.
+Qed.
 
 Lemma proof_of_Delete_return_wit_2 : Delete_return_wit_2.
 Proof.
@@ -702,42 +702,27 @@ Proof.
 	- sep_apply store_ptb_store_tree.
 	  Intros p_root.
 	  Exists p_root.
-	  rewrite <- PreH8.
-	  rewrite PreH12.
-	  assert (Heqkey : x_pre = b_v_key) by lia.
-	  subst x_pre.
-	  rewrite PreH13.
-	  rewrite PreH14.
-	  unfold tree_delete.
-	  destruct (Key.dec b_v_key b_v_key) as [[Hlt | Hgt] | Heq].
-	  + exfalso.
-	    Key.order.
-	  + exfalso.
-	    Key.order.
-	  + simpl.
-	    assert (Hkey_eq : ptr_callee_key =
-	      match tr0_left with
-	      | empty => tr0_key
-	      | make_tree _ _ _ _ => min_key b_v_key tr0_left
-	      end).
-	    {
-	      rewrite PreH14 in PreH1.
-	      simpl in PreH1.
-	      exact PreH1.
-	    }
-	    assert (Hvalue_eq : ptr_callee_value =
-	      match tr0_left with
-	      | empty => tr0_value
-	      | make_tree _ _ _ _ => min_value b_v_value tr0_left
-	      end).
-	    {
-	      rewrite PreH14 in PreH2.
-	      simpl in PreH2.
-	      exact PreH2.
-	    }
-	    rewrite Hkey_eq.
-	    rewrite Hvalue_eq.
-	    apply derivable1_refl.
+	  cancel.
+	  assert (combine_tree pt0 (make_tree l1 ptr_callee_key ptr_callee_value (delete_min tr0)) = tree_delete x_pre tr_low_level_spec).
+	  {
+		rewrite <- PreH8.
+		rewrite PreH12.
+		assert (Heqkey : x_pre = b_v_key) by lia.
+		subst x_pre.
+		rewrite PreH13.
+		rewrite PreH14.
+		unfold tree_delete.
+		destruct (Key.dec b_v_key b_v_key) as [[Hlt | Hgt] | Heq].
+		+ exfalso.
+		Key.order.
+		+ exfalso.
+		Key.order.
+		+ rewrite PreH1 , PreH2.
+		  rewrite PreH14.
+		  auto.
+	  }
+	  rewrite H.
+	  cancel.
 Qed.
 
 Lemma proof_of_Delete_return_wit_3 : Delete_return_wit_3.
@@ -770,7 +755,7 @@ Proof.
 	    * exfalso.
 	      Key.order.
 	    * simpl.
-	      apply derivable1_refl.
+	      cancel.
 Qed.
 
 Lemma proof_of_Delete_return_wit_5 : Delete_return_wit_5.
@@ -810,7 +795,7 @@ Proof.
 	    * exfalso.
 	      Key.order.
 	    * simpl.
-	      apply derivable1_refl.
+	      cancel.
 Qed.
 
 Lemma proof_of_Delete_return_wit_4 : Delete_return_wit_4.
@@ -843,7 +828,7 @@ Proof.
 	    * exfalso.
 	      Key.order.
 	    * simpl.
-	      apply derivable1_refl.
+	      cancel.
 Qed.
 
 Lemma proof_of_Delete_derive_high_level_spec_by_low_level_spec : Delete_derive_high_level_spec_by_low_level_spec.

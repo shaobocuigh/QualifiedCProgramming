@@ -59,15 +59,11 @@ Proof.
   pose proof @sllseg_sll cnf_list_cell store_cnf_list_cell "cnf_list" "next" as Hsllseg_sll1.
   unfold sll_cnf_list.
   specialize (Hsllseg_sll1 retval_4 y ((- p2_pre :: - p3_pre :: 0 :: nil) :: nil) clist).
-  pose proof derivable1_sepcon_comm as Hsep_comm.
-  pose proof derivable1_sepcon_assoc1 as Hsep_assoc.
   entailer!.
   sep_apply Hsllseg_sll1.
   clear Hsllseg_sll1.
   pose proof @sllseg_sll cnf_list_cell store_cnf_list_cell "cnf_list" "next" as Hsllseg_sll2.
   specialize (Hsllseg_sll2 retval_3 retval_4 ((p2_pre :: p3_pre :: 0 :: nil) :: nil)(((- p2_pre :: - p3_pre :: 0 :: nil) :: nil) ++ clist)).
-  repeat rewrite Hsep_assoc.
-  rewrite (Hsep_comm (sll store_cnf_list_cell "cnf_list" "next" retval_4 (((- p2_pre :: - p3_pre :: 0 :: nil) :: nil) ++ clist)) _).
   sep_apply Hsllseg_sll2.
   clear Hsllseg_sll2.
   unfold iff2cnf_unary.

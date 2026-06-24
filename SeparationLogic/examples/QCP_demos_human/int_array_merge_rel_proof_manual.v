@@ -326,12 +326,6 @@ Proof.
   easy.
 Qed.
 
-Lemma proof_of_mergeSort_partial_solve_wit_1_pure : mergeSort_partial_solve_wit_1_pure.
-Proof. 
-  pre_process.
-Qed.
-
-
 Lemma proof_of_mergeSort_derive_low_level_spec_aux_by_low_level_spec : mergeSort_derive_low_level_spec_aux_by_low_level_spec.
 Proof. 
   pre_process.

@@ -79,7 +79,6 @@ Proof.
   Exists ptr_2; Exists size_2; Exists cap_2.
   replace (Zabs n) with (Zabs m) by lia.
   rewrite PreH8, PreH5.
-  rewrite derivable1_sepcon_comm.
   entailer!.
 Qed.
 
@@ -154,7 +153,6 @@ Proof.
   sep_apply (mpd_store_Z_to_mpd_store_Z_compact b_pre__mp_d (Zabs m) bn PreH4).
   sep_apply UIntArray.undef_seg_merge_to_undef_seg.
   replace (Zabs retval) with retval by lia.
-  rewrite derivable1_sepcon_comm.
   entailer!.
   - unfold same_sign; left; lia.
   - lia.

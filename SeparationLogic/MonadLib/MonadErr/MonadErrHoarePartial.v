@@ -121,6 +121,22 @@ Theorem Hoare_nrm_conseq {Σ A: Type}:
     Hoare_nrm P1 f Q1.
 Proof. firstorder. Qed.
 
+Lemma Hoare_nrm_spec_derivation {Σ A L: Type}:
+  forall (P: Σ -> Prop) (c: program Σ A) (Q: A -> Σ -> Prop)
+         (SpecP: L -> Σ -> Prop) (SpecQ: L -> A -> Σ -> Prop),
+    (forall l, Hoare_nrm (SpecP l) c (SpecQ l)) ->
+    (forall s0 a s1,
+        P s0 ->
+        (forall l, SpecP l s0 -> SpecQ l a s1) ->
+        Q a s1) ->
+    Hoare_nrm P c Q.
+Proof.
+  unfold Hoare_nrm; intros * Hspec Hderive a s0 s1 HP Hrun.
+  apply Hderive with (s0 := s0); auto.
+  intros l Hpre.
+  eapply Hspec; eauto.
+Qed.
+
 Lemma Hoare_nrm_cons_pre {B Σ: Type} : 
   forall (P P': Σ -> Prop) (c: program Σ B) (Q: B -> Σ -> Prop),
     (forall σ, P' σ -> P σ) ->
@@ -331,6 +347,19 @@ Proof.
   eapply Hc; eauto.
 Qed.
 
+Lemma Hoare_nrm_assertS_bind_intro {A Σ: Type}:
+  forall (P: Σ -> Prop) (P': Σ -> Prop) (c: program Σ A) (Q: A -> Σ -> Prop),
+    Hoare_nrm P c Q ->
+    Hoare_nrm P (assertS P';; c) Q.
+Proof.
+  unfold Hoare_nrm; intros P P' c Q Hc a σ1 σ2 HP Hrun.
+  unfold bind, MonadErr.bind in Hrun; simpl in Hrun.
+  unfold nrm_nrm in Hrun.
+  destruct Hrun as [u [σmid [[Hσ _] Hc']]].
+  subst σmid.
+  eapply Hc; eauto.
+Qed.
+
 Lemma Hoare_nrm_assertS_bind {A Σ: Type}:
   forall (P: Σ -> Prop) (Q: Σ -> Prop) (c: program Σ A) (R: A -> Σ -> Prop),
     (forall s, P s -> Q s) ->
@@ -365,6 +394,15 @@ Lemma Hoare_nrm_conj {A Σ: Type}:
     Hoare_nrm P c R ->
     Hoare_nrm P c (fun a σ => Q a σ /\ R a σ).
 Proof. firstorder. Qed.
+
+Lemma Hoare_nrm_Hoare_conj {A Σ: Type}:
+  forall (P: Σ -> Prop) (c: program Σ A) (Q: A -> Σ -> Prop) (R: A -> Σ -> Prop),
+    Hoare_nrm P c Q ->
+    Hoare P c R ->
+    Hoare P c (fun a σ => Q a σ /\ R a σ).
+Proof.
+  unfold Hoare_nrm, Hoare; firstorder.
+Qed.
 
 Lemma Hoare_nrm_pre_ex {Σ A: Type}:
   forall (X: Type) (P: X -> Σ -> Prop) f (Q: A -> Σ -> Prop),
@@ -633,6 +671,63 @@ Proof.
     intros []; simpl.
     eapply Hoare_nrm_cons_pre; [| apply HW].
     intros; tauto.
+  - eapply Hoare_nrm_assumeS_bind.
+    apply Hoare_nrm_ret; intros; tauto.
+Qed.
+
+Lemma Hoare_nrm_while {Σ: Type}
+  (cond: program Σ bool) (body : program Σ unit) (P: Σ -> Prop):
+  Hoare_nrm P cond (fun _ s => P s) ->
+  Hoare_nrm P body (fun _ s => P s) ->
+  Hoare_nrm P (while cond body) (fun _ s => P s).
+Proof.
+  intros Hcond Hbody.
+  unfold while.
+  apply Hoare_nrm_BW_fix_prog.
+  intros W HW.
+  unfold while_f.
+  eapply Hoare_nrm_bind; [apply Hcond |].
+  intros x; destruct x.
+  - eapply Hoare_nrm_bind; [apply Hbody |].
+    intros []. apply HW.
+  - apply Hoare_nrm_ret; intros; tauto.
+Qed.
+
+Lemma Hoare_nrm_whileret {Σ A: Type}
+  (cond: A -> program Σ bool) (body : A -> program Σ A)
+  (P: A -> Σ -> Prop) (a: A):
+  (forall a, Hoare_nrm (P a) (cond a) (fun _ s => P a s)) ->
+  (forall a, Hoare_nrm (P a) (body a) P) ->
+  Hoare_nrm (P a) (whileret cond body a) P.
+Proof.
+  intros Hcond Hbody.
+  unfold whileret.
+  apply Hoare_nrm_BW_fix with (P:= P) (Q:= fun _:A => P).
+  intros W HW a0.
+  unfold whileret_f.
+  eapply Hoare_nrm_bind; [apply Hcond |].
+  intros x; destruct x.
+  - eapply Hoare_nrm_bind; [apply Hbody |].
+    intros a1. apply HW.
+  - apply Hoare_nrm_ret; intros; tauto.
+Qed.
+
+Lemma Hoare_nrm_whileretP {Σ A: Type}
+  (cond: A -> Σ -> Prop) (body : A -> program Σ A)
+  (P: A -> Σ -> Prop) (a: A):
+  (forall a, Hoare_nrm (fun s => cond a s /\ P a s) (body a) P) ->
+  Hoare_nrm (P a) (whileretP cond body a) (fun a s => P a s /\ ~ cond a s).
+Proof.
+  intros Hbody.
+  unfold whileretP.
+  apply Hoare_nrm_BW_fix with (P:= P) (Q:= fun (_:A) (b:A) s => P b s /\ ~ cond b s).
+  intros W HW a0.
+  unfold whileretP_f.
+  eapply Hoare_nrm_choice.
+  - eapply Hoare_nrm_assumeS_bind.
+    eapply Hoare_nrm_bind.
+    + eapply Hoare_nrm_cons_pre; [| apply Hbody]. intros; tauto.
+    + intros a1. apply HW.
   - eapply Hoare_nrm_assumeS_bind.
     apply Hoare_nrm_ret; intros; tauto.
 Qed.

@@ -17,7 +17,9 @@ Local Open Scope sets.
 Local Open Scope string_scope.
 Local Open Scope list.
 Import naive_C_Rules.
-Require Import SimpleC.EE.QCP_demos_human.sll_merge_rel_lib.
+From MonadLib Require Export MonadLib.
+From MonadLib.StateRelMonad Require Export StateRelMonad.
+Export MonadNotation.
 Local Open Scope monad.
 From AUXLib Require Import int_auto Axioms Feq Idents ListLib VMap relations.
 From FP Require Import PartialOrder_Setoid BourbakiWitt.
@@ -133,6 +135,9 @@ Lemma proof_of_mergeSort_safety_wit_6 : mergeSort_safety_wit_6.
 Proof. Admitted. 
 
 Lemma proof_of_mergeSort_return_wit_1 : mergeSort_return_wit_1.
+Proof. Admitted. 
+
+Lemma proof_of_mergeSort_partial_solve_wit_1_pure : mergeSort_partial_solve_wit_1_pure.
 Proof. Admitted. 
 
 Lemma proof_of_mergeSort_partial_solve_wit_1 : mergeSort_partial_solve_wit_1.

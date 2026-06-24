@@ -6,7 +6,7 @@ Require Import Coq.Classes.RelationClasses.
 Require Import Coq.micromega.Psatz.
 Require Import Coq.Sorting.Permutation.
 From SetsClass Require Import SetsClass.
-From AUXLib Require Import ListLib.
+Require Import ListLib.Base.Positional ListLib.Base.Inductive ListLib.General.Length.
 Require Import MonadLib.MonadErr.StateRelMonadErr.
 
 

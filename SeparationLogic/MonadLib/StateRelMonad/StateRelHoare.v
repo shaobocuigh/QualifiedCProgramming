@@ -974,37 +974,76 @@ end.
 
 (** Hoare rules for loops *)
 
-Theorem Hoare_while {Σ: Type} (cond: Σ -> Prop) 
+Theorem Hoare_whileP {Σ: Type} (cond: Σ -> Prop)
   (body : program Σ unit) (P: Σ -> Prop):
   Hoare (fun s => cond s /\ P s) body (fun _ s => P s) ->
-  Hoare P (while cond body) (fun _ s => P s /\ ~ cond s).
+  Hoare P (whileP cond body) (fun _ s => P s /\ ~ cond s).
 Proof.
   intros.
-  unfold while.
+  unfold whileP.
   apply Hoare_fix'.
-  intros; unfold while_f.
+  intros; unfold whileP_f.
   hoare_auto; [| tauto].
   hoare_bind H; simpl; auto.
 Qed.
 
-Theorem Hoare_whileret {Σ A: Type} (cond: A -> Σ -> Prop) 
+Theorem Hoare_whileretP {Σ A: Type} (cond: A -> Σ -> Prop)
   (body : A -> program Σ A) (P: A -> Σ -> Prop) (a: A):
   (forall a, Hoare (fun s => cond a s /\ P a s) (body a) P) ->
-  Hoare (P a) (whileret cond body a) (fun a s => P a s /\ ~ cond a s).
+  Hoare (P a) (whileretP cond body a) (fun a s => P a s /\ ~ cond a s).
 Proof.
   intros.
-  unfold whileret.
+  unfold whileretP.
   match goal with
   | |- Hoare _ _ ?P => apply Hoare_fix with (Q:= fun _ => P)
   end.
   intros.
-  unfold whileret_f.
+  unfold whileretP_f.
   hoare_auto.
   2:tauto.
   hoare_bind (H a0).
   apply H0.
 Qed.
-    
+
+(* bool-conditioned while: the loop condition is itself a monadic computation
+   that must preserve the invariant P. *)
+Theorem Hoare_while {Σ: Type}
+  (cond: program Σ bool) (body : program Σ unit) (P: Σ -> Prop):
+  Hoare P cond (fun _ s => P s) ->
+  Hoare P body (fun _ s => P s) ->
+  Hoare P (while cond body) (fun _ s => P s).
+Proof.
+  intros.
+  unfold while.
+  apply Hoare_fix'.
+  intros W HW.
+  unfold while_f.
+  eapply Hoare_bind; [eapply H |].
+  intros x; destruct x.
+  - eapply Hoare_bind; [eapply H0 |].
+    intros []. apply HW.
+  - apply Hoare_ret'; auto.
+Qed.
+
+Theorem Hoare_whileret {Σ A: Type}
+  (cond: A -> program Σ bool) (body : A -> program Σ A)
+  (P: A -> Σ -> Prop) (a: A):
+  (forall a, Hoare (P a) (cond a) (fun _ s => P a s)) ->
+  (forall a, Hoare (P a) (body a) P) ->
+  Hoare (P a) (whileret cond body a) P.
+Proof.
+  intros.
+  unfold whileret.
+  apply Hoare_fix with (P:= P) (Q:= fun _:A => P).
+  intros W HW a0.
+  unfold whileret_f.
+  eapply Hoare_bind; [eapply H |].
+  intros x; destruct x.
+  - eapply Hoare_bind; [eapply H0 |].
+    intros a1. apply HW.
+  - apply Hoare_ret'; auto.
+Qed.
+
 Theorem Hoare_repeat_break {Σ A B: Type}:
   forall (body: A -> program Σ (CntOrBrk A B))
          (P: A -> Σ -> Prop)
@@ -1043,6 +1082,158 @@ Proof.
   intros.
   apply Hoare_repeat_break.
   intros; apply Hoare_sum; auto.  
+Qed.
+
+Lemma Hoare_repeat_break_noin {Σ B: Type}:
+  forall (body: program Σ (CntOrBrk unit B)) (P: Σ -> Prop) (Q: B -> Σ -> Prop),
+    Hoare P body (fun ab σ =>
+      match ab with
+      | by_continue _ => P σ
+      | by_break b => Q b σ
+      end) ->
+    Hoare P (repeat_break_noin body) Q.
+Proof.
+  intros.
+  unfold repeat_break_noin.
+  apply Hoare_fix'.
+  intros.
+  unfold repeat_break_f_noinput.
+  eapply Hoare_bind; [eapply H |].
+  intros x.
+  destruct x.
+  - apply H0.
+  - apply Hoare_ret.
+Qed.
+
+Lemma Hoare_range_iter' {A Σ: Type}:
+  forall (f: Z -> A -> program Σ A) (P: Z -> A -> Σ -> Prop) (lo hi: Z),
+    (lo <= hi)%Z ->
+    (forall i, (lo <= i < hi)%Z -> forall a, Hoare (P i a) (f i a) (fun b => P (i + 1)%Z b)) ->
+    (forall a, Hoare (P lo a) (range_iter lo hi f a) (fun b => P hi b)).
+Proof.
+  intros.
+  unfold range_iter.
+  apply Hoare_conseq_pre with (P2:= fun s => P lo a s /\ (lo <= lo <= hi)%Z).
+  intros; split; [auto| lia].
+  apply Hoare_fix with
+    (P:= fun '(i, a) s => P i a s /\ (lo <= i <= hi)%Z)
+    (a:= (lo, a))
+    (Q:= fun '(_, a) a' s => P hi a' s).
+  clear a.
+  intros; destruct a as [i a].
+  unfold range_iter_f.
+  hoare_auto.
+  2:{
+    assert (i = hi) by lia.
+    subst; tauto.
+  }
+  stateless_intros.
+  specialize (H0 i (ltac:(lia)) a).
+  hoare_bind H0.
+  specialize (H1 ((i + 1)%Z, a0)); simpl in H1.
+  eapply Hoare_conseq_pre.
+  2: apply H1.
+  intros; simpl.
+  split; [auto | lia].
+Qed.
+
+Lemma Hoare_range_iter_break' {A B Σ: Type}:
+  forall (f: Z -> A -> program Σ (CntOrBrk A B)) (P: Z -> A -> Σ -> Prop) (Q: B -> Σ -> Prop) (lo hi: Z),
+    (lo <= hi)%Z ->
+    (forall i, (lo <= i < hi)%Z -> forall a,
+       Hoare (P i a) (f i a) (fun res => match res with
+                                         | by_continue a => P (i + 1)%Z a
+                                         | by_break b => Q b
+                                         end)) ->
+    (forall a, Hoare (P lo a) (range_iter_break lo hi f a)
+                 (fun res σ => match res with
+                               | by_continue a => P hi a σ
+                               | by_break b => Q b σ
+                               end)).
+Proof.
+  intros.
+  apply Hoare_conseq_pre with (P2:= fun s => P lo a s /\ (lo <= lo <= hi)%Z).
+  intros; split; [auto| lia].
+  unfold range_iter_break.
+  apply Hoare_fix with
+    (P:= fun '(i, a) s => P i a s /\ (lo <= i <= hi)%Z)
+    (a:= (lo, a))
+    (Q:= fun '_ res s =>
+      match res with
+      | by_continue a0 => P hi a0 s
+      | by_break b => Q b s
+      end).
+  clear a.
+  intros; destruct a as [i a].
+  unfold range_iter_break_f.
+  hoare_auto.
+  2:{
+    assert (i = hi) by lia.
+    subst; tauto.
+  }
+  stateless_intros.
+  specialize (H0 i (ltac:(lia)) a).
+  eapply Hoare_bind; [eapply H0 |].
+  intros x.
+  destruct x.
+  - specialize (H1 ((i + 1)%Z, a0)); simpl in H1.
+    eapply Hoare_conseq_pre.
+    2: apply H1.
+    intros; simpl.
+    split; [auto | lia].
+  - unfold break.
+    unfold Hoare, ret; simpl; unfold StateRelMonad.ret; sets_unfold; intros.
+    destruct H5; subst; auto.
+Qed.
+
+Lemma Hoare_range_iter {A Σ: Type}:
+  forall (f: Z -> A -> program Σ A)
+         (Q: Σ -> Prop) (P: Z -> A -> Σ -> Prop) (lo hi: Z),
+    (lo <= hi)%Z ->
+    forall a,
+      (forall σ, Q σ -> P lo a σ) ->
+      (forall i, (lo <= i < hi)%Z -> forall a, Hoare (P i a) (f i a) (P (i + 1)%Z)) ->
+      Hoare Q (range_iter lo hi f a) (P hi).
+Proof.
+  intros.
+  eapply Hoare_conseq_pre; [ | apply (Hoare_range_iter' f P lo hi H H1)].
+  auto.
+Qed.
+
+Lemma Hoare_range_iter_break {A B Σ: Type}:
+  forall (f: Z -> A -> program Σ (CntOrBrk A B))
+         (P: Z -> A -> Σ -> Prop)
+         (Q1: Σ -> Prop)
+         (Q2: B -> Σ -> Prop) (lo hi: Z),
+    (lo <= hi)%Z ->
+    forall a,
+      (forall σ, Q1 σ -> P lo a σ) ->
+      (forall i, (lo <= i < hi)%Z -> forall a,
+         Hoare (P i a) (f i a) (fun res => match res with
+                                           | by_continue a => P (i + 1)%Z a
+                                           | by_break b => Q2 b
+                                           end)) ->
+      Hoare Q1
+            (range_iter_break lo hi f a)
+            (fun res σ => match res with
+                          | by_continue a => P hi a σ
+                          | by_break b => Q2 b σ
+                          end).
+Proof.
+  intros.
+  eapply Hoare_conseq_pre; [ | apply (Hoare_range_iter_break' f P Q2 lo hi H H1)].
+  auto.
+Qed.
+
+Lemma range_iter_no_iter {A Σ: Type}:
+  forall (f: Z -> A -> program Σ A) (P: A -> Σ -> Prop) (lo hi: Z),
+    (hi < lo)%Z ->
+    (forall a, Hoare (P a) (range_iter lo hi f a) P).
+Proof.
+  intros.
+  rewrite range_iter_unfold.
+  hoare_auto.
+  lia.
 Qed.
 
 (** P: Set -> Prop, require Prop P is proper *)

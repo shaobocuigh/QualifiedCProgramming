@@ -85,8 +85,8 @@ Proof.
   Intros l1.
   Intros l2.
   Exists (l1 ++ l2)%list.
-  rewrite (logic_equiv_sepcon_comm (sllseg y z l2) (sllseg x y l1)).
-  apply (sllseg_sllseg x y z l1 l2).
+  sep_apply (sllseg_sllseg x y z l1 l2).
+  cancel.
 Qed.
 
 Lemma lseg_listrep : forall (x y : addr), 
@@ -97,6 +97,6 @@ Proof.
   Intros l1.
   Intros l2.
   Exists (l1 ++ l2)%list.
-  rewrite (logic_equiv_sepcon_comm (sll y l2) (sllseg x y l1)).
-  apply (sllseg_sll x y l1 l2).
+  sep_apply (sllseg_sll x y l1 l2).
+  cancel.
 Qed.

@@ -38,33 +38,6 @@ Proof.
     exact PreH1.
 Qed.
 
-Lemma proof_of_merge_entail_wit_2 : merge_entail_wit_2.
-Proof.
-  pre_process.
-  sep_apply_l_atomic (sll_not_zero x l1_2).
-  * dump_pre_spatial. exact PreH2.
-  * Intros x_next. Intros x_data. Intros l1_new.
-    sep_apply_l_atomic (sll_not_zero y l2_2).
-    - dump_pre_spatial. exact PreH1.
-    - Intros y_next. Intros y_data. Intros l2_new.
-      Exists y_next. Exists x_next. Exists y_data. Exists l2_new.
-      Exists x_data. Exists l1_new. Exists l1_2. Exists l2_2. Exists l3_2.
-      repeat (split_pure_spatial || split_pures).
-      + cancel (&((x) # "list" ->ₛ"data") # Int |-> x_data).
-        cancel (&((y) # "list" ->ₛ"data") # Int |-> y_data).
-        cancel (&((x) # "list" ->ₛ"next") # Ptr |-> x_next).
-        cancel (sll x_next l1_new).
-        cancel (&((y) # "list" ->ₛ"next") # Ptr |-> y_next).
-        cancel (sll y_next l2_new).
-        cancel (t # Ptr |->_).
-        cancel (sllbseg (&( "ret")) t l3_2).
-      + dump_pre_spatial. exact PreH3.
-      + dump_pre_spatial. exact PreH2.
-      + dump_pre_spatial. exact PreH1.
-      + dump_pre_spatial. exact H.
-      + dump_pre_spatial. exact H0.
-Qed.
-
 Lemma proof_of_merge_entail_wit_3_1 : merge_entail_wit_3_1.
 Proof.
   pre_process.
@@ -411,11 +384,6 @@ Proof.
 Qed.
 
 Lemma proof_of_merge_sort3_partial_solve_wit_3_pure : merge_sort3_partial_solve_wit_3_pure.
-Proof.
-  pre_process.
-Qed.
-
-Lemma proof_of_merge_sort3_partial_solve_wit_4_pure : merge_sort3_partial_solve_wit_4_pure.
 Proof.
   pre_process.
 Qed.

@@ -31,7 +31,7 @@ Proof.
 	  cancel (b_pre # Ptr |-> b_pre_v).
 	  cancel (store_tree b_pre_v tr_low_level_spec).
 	  split_pure_spatial.
-	  + apply derivable1_refl.
+	  + cancel.
 	  + dump_pre_spatial.
 	    reflexivity.
 	- split_pures.
@@ -71,7 +71,7 @@ Proof.
 	  cancel (&(b_v # "tree" ->ₛ "value") # Int |-> v).
 	  cancel (&(b_v # "tree" ->ₛ "left") # Ptr |-> pl).
 	  cancel (store_tree pr r0).
-	  apply derivable1_sepcon_comm.
+	  cancel.
 	- dump_pre_spatial.
 	  exact PreH2.
 	- dump_pre_spatial.
@@ -115,7 +115,7 @@ Proof.
 	  + Intros p_root.
 	    Exists p_root.
 	    rewrite PreH7.
-	    apply derivable1_refl.
+	    cancel.
 Qed.
 
 Lemma proof_of_insert_return_wit_2 : insert_return_wit_2.
@@ -136,7 +136,7 @@ Proof.
 	    Intros b_pre_v.
 	    Exists b_pre_v.
 	    rewrite PreH5.
-	    apply derivable1_refl.
+	    cancel.
 	- reflexivity.
 Qed.
 
@@ -152,7 +152,7 @@ Proof.
 	  + sep_apply (store_ptb_app (&(b_v_2 # "tree" ->ₛ "right")) b b_pre
 	      (RH p_key p_value l0 :: nil) pt0_2).
 	    simpl.
-	    apply derivable1_refl.
+	    cancel.
 	  + lia.
 	  + exact PreH6.
 	- dump_pre_spatial.
@@ -179,7 +179,7 @@ Proof.
 	  + sep_apply (store_ptb_app (&(b_v_2 # "tree" ->ₛ "left")) b b_pre
 	      (LH p_key p_value r0 :: nil) pt0_2).
 	    simpl.
-	    apply derivable1_refl.
+	    cancel.
 	  + lia.
 	  + exact PreH5.
 	- dump_pre_spatial.
@@ -211,7 +211,7 @@ Proof.
 	  unfold Bst.store_map.
 	  Exists (tree_insert x_pre value_pre tr).
 	  split_pure_spatial.
-	  + apply derivable1_sepcon_comm.
+	  + cancel.
 	  + split_pures.
 	    * dump_pre_spatial.
 	      eapply insert_SearchTree; eauto.

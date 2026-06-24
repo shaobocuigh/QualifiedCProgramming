@@ -42,7 +42,7 @@ Proof.
 	  cancel (&(b_pre # "tree" ->ₛ "value") # Int |-> v).
 	  cancel (&(b_pre # "tree" ->ₛ "left") # Ptr |-> pl).
 	  cancel (store_tree pr r0).
-	  apply derivable1_sepcon_comm.
+	  cancel.
 	+ dump_pre_spatial.
 	  tauto.
 	+ dump_pre_spatial.
@@ -70,7 +70,7 @@ Proof.
 	  cancel (&(b # "tree" ->ₛ "value") # Int |-> value_pre).
 	  cancel (&(b # "tree" ->ₛ "left") # Ptr |-> b_left).
 	  cancel (store_tree b_right r0).
-	  apply derivable1_sepcon_comm.
+	  cancel.
 	+ dump_pre_spatial.
 	  assumption.
 	+ dump_pre_spatial.
@@ -91,7 +91,7 @@ Proof.
 	  cancel (&(b # "tree" ->ₛ "value") # Int |-> b_value).
 	  cancel (&(b # "tree" ->ₛ "left") # Ptr |-> b_left).
 	  cancel (store_tree retval (tree_insert x_pre value_pre r0)).
-	  apply derivable1_sepcon_comm.
+	  cancel.
 	+ dump_pre_spatial.
 	  tauto.
 	+ dump_pre_spatial.
@@ -160,7 +160,7 @@ Proof.
 	  unfold Bst.store_map.
 	  Exists (tree_insert x_pre value_pre tr).
 	  repeat (split_pure_spatial || split_pures).
-	  + apply derivable1_refl.
+	  + cancel.
 	  + dump_pre_spatial.
 	    eapply insert_SearchTree; eauto.
 	  + dump_pre_spatial.

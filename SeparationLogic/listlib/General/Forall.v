@@ -4,8 +4,6 @@ Require Import Lia.
 Import ListNotations.
 Require Import ListLib.Base.Positional.
 
-Locate Forall2.
-
 Lemma Forall2_split {A B : Type}: 
   forall (P : A -> B -> Prop) (n : nat) (xs: list A) (ys: list B),
   Forall2 P xs ys ->

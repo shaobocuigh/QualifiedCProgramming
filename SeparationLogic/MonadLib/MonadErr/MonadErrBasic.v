@@ -67,6 +67,7 @@ Arguments MonadErr.err {Σ}%_type_scope [A]%_type_scope m.
 |}.
 
 Notation program := MonadErr.M.
+Notation MONAD := (program unit).
 
 Hint Unfold MonadErr.bind MonadErr.ret : monad_unfold.
 
@@ -143,10 +144,22 @@ Context {Σ: Type}.
   {|
     nrm := fun s1 a s2 =>  a = s1 /\ s1 = s2 ;
     err := ∅;
-  |}. 
-  
+  |}.
+
+  Definition If (cond: Σ -> Prop) (c: program Σ unit): program Σ unit :=
+    choice
+      (test cond;; c)
+      (test (fun s => ~ cond s)).
+
+  Definition if_else {A: Type} (cond: Σ -> Prop)
+                     (c1 c2: program Σ A): program Σ A :=
+    choice
+      (test cond;; c1)
+      (test (fun s => ~ cond s);; c2).
+
 End monadop.
 
+Notation "'skip'" := (ret tt) (at level 50).
 Notation "'assume!!' P" := (testPure P) (at level 50).
 Notation "'assume' P" := (test P) (at level 50).
 

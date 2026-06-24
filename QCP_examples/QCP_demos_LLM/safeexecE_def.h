@@ -4,16 +4,17 @@
                (return : {Sigma} {A} -> A -> program Sigma A) 
                (bind: {Sigma} {A} {B} ->  program Sigma A -> (A -> program Sigma B) -> program Sigma B)
                (applyf: {A} {B} -> (A -> B) -> A -> B)
-               (equiv: {T} -> T -> T -> Prop)
+               (tt: unit)
+               (ATrue: {A} -> A -> Prop)
                */
 
 /*@ Printing Coq Name program := MonadErr.M */
 /*@ Printing Strategy Name program := MonadErr.M */
 /*@ Printing Strategy No @ bind */
 
-/*@ Extern Coq (constr_loop_from: {A} -> A -> list A -> Z -> list Z -> Z -> program unit (list Z))*/
-
-/*@ Import Coq Require Import SimpleC.EE.QCP_demos_LLM.kmp_rel_lib */
+/*@ Import Coq From MonadLib Require Export MonadLib */
+/*@ Import Coq From MonadLib.MonadErr Require Export StateRelMonadErr */
+/*@ Import Coq Export MonadNotation */
 /*@ Import Coq Local Open Scope monad */
 /*@ Import Coq From AUXLib Require Import int_auto Axioms Feq Idents ListLib VMap relations */
 /*@ Import Coq From FP Require Import PartialOrder_Setoid BourbakiWitt */

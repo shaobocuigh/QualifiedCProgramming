@@ -264,11 +264,6 @@ Proof.
   pre_process. 
 Qed. 
 
-Lemma proof_of_merge_sort3_partial_solve_wit_6_pure : merge_sort3_partial_solve_wit_6_pure.
-Proof. 
-  pre_process.
-Qed. 
-
 Lemma proof_of_merge_sort3_derive_low_level_spec_aux_by_low_level_spec : merge_sort3_derive_low_level_spec_aux_by_low_level_spec.
 Proof.
   pre_process.

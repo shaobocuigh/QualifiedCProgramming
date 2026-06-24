@@ -80,7 +80,9 @@ description: 默认使用脚本化隔离 Codex worker，并在 Windows 下只通
 4. 目标涉及 `safeExec`、monad 或 refinement 时，再读 `docs/refinement-proof-tactics.md`
 5. 目标涉及数组、字符数组、C 字符串或字符串字面量时，读 `../annotation-filling/docs/builtin-array-string-support.md`
 6. 需要找风格对照时，读 `docs/reference-cases.md`
+7. `../verification-orchestrator/docs/forbidden_lemma.md`（forbidden lemma 列表，validate/merge 与 verify 阶段必须参考）
 7. `vc-proving` 默认使用 `scripts/split_manual_goals.py`、`prepare_agent_concurrent.py`、`run_agent_concurrent.py`、`validate_and_merge.py`、`migrate_helpers_to_lib.py`、`verify_manual_goals.py`、`checkpoint_round.py` 和 `apply_partial_proof_packet.py`；若本轮已记录 Codex worker 环境不可恢复，则允许改用 proving scratch 上的串行 fallback，但不得切回 main 接管 proof search。
+8. 在执行 `validate_and_merge.py` 和 `verify_manual_goals.py` 时，必须参考 `../verification-orchestrator/docs/forbidden_lemma.md`，检查 worker 产出的 proof 是否使用了 forbidden lemma；若命中，必须在合并前修正，不得将含 forbidden lemma 的证明合并进 scratch manual 或 `task_local_scratch_lib`。
 
 ## 工作步骤
 
@@ -92,7 +94,7 @@ description: 默认使用脚本化隔离 Codex worker，并在 Windows 下只通
 6. 默认使用 `vc-checking` 输出的 `witness_group_plan` 创建 proof group：每个 group 一份 worker-local manual 和一份组内 `worker_helper_scratch_lib`，组内多个 witness 可共享 helper；只有在没有 group plan 时，才按 witness 名称排序后用 fallback chunk-size 分组。
 7. `prepare_agent_concurrent.py` 必须为 base / group workdir 创建只读 `case_deps/` overlay、worker-local `_CoqProject` 和 `worker_helper_scratch_lib`，并把 proof pattern notes 写入 worker `AGENTS.md`。
 8. `run_agent_concurrent.py` 在存在 checkpoint 或 reuse index 时，必须先执行 proof reuse prepass；direct reuse 只有在 hash / frozen-prefix / compile gate 全部通过时才可把 witness 从 worker scope 移除，否则只能退化为 proof-pattern reference 供 worker 学习。
-9. `validate_and_merge.py` 负责合并 worker 结果，`migrate_helpers_to_lib.py` 负责把 audited helper imports / lemmas 迁入 `task_local_scratch_lib`；`verify_manual_goals.py` 负责最终结构检查与必要的 compile gate。
+9. `validate_and_merge.py` 负责合并 worker 结果并扫描 forbidden lemma（按 `../verification-orchestrator/docs/forbidden_lemma.md`），`migrate_helpers_to_lib.py` 负责把 audited helper imports / lemmas 迁入 `task_local_scratch_lib`；`verify_manual_goals.py` 负责最终结构检查、forbidden lemma 复查与必要的 compile gate。若 forbidden lemma 扫描命中，必须在合并前退回对应 worker 修正，不得将含 forbidden lemma 的 proof 合并进 scratch manual 或 `task_local_scratch_lib`。
 10. 若 `run_agent_concurrent.py` 因 Codex CLI 缺失、认证失败、transport / backend 不可达或 worker 会话不可恢复而无法产出可用结果，应在同一轮记录阻塞证据和已消耗时间后切换到串行 fallback；fallback 仍需保持分粒度计时和 helper migration 约束。
 11. 在整个 proving 过程中必须保持 formal 文件边界：witness proof 留在 scratch manual，reusable helper 先进入 `worker_helper_scratch_lib` 或 merged scratch，再迁入 `task_local_scratch_lib`；在所有目标 witness 完成之前不要改动正式 `common_case_formal_lib`。
 12. 若证明推进暴露 annotation 层问题、要求改写冻结前缀、要求新增 forbidden top-level 定义、或要求导入不在 allowlist 内的依赖，必须返回 `blocked` 或回退到 annotation，而不是继续扩张证明文件职责。

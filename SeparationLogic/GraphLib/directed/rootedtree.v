@@ -8,14 +8,31 @@ Require Import Coq.Logic.Classical.
 Require Import Coq.Lists.List.
 Require Import Lia.
 
-Class RootedTree (G V E: Type) {pg: Graph G V E} {gv: GValid G}:=
-{
-  root: G -> V;
-  root_is_valid: forall g, gvalid g -> vvalid g (root g);
-  root_is_root: forall g x, gvalid g -> vvalid g x -> reachable g (root g) x;
-  root_no_father: forall g x, gvalid g -> ~ step g x (root g);
-  father_eunique: forall g x1 x2 e1 e2 y, 
-    gvalid g -> step_aux g e1 x1 y -> step_aux g e2 x2 y -> e1 = e2;
+Class Forest (G V E : Type)
+  {pg : Graph G V E} {gv : GValid G}
+  {stepvalid : StepValid G V E}
+  {step_aux_unique : StepUniqueDirected G V E} := {
+  father_eunique : forall g x1 x2 e1 e2 y,
+    gvalid g ->
+    step_aux g e1 x1 y ->
+    step_aux g e2 x2 y ->
+    e1 = e2;
+
+  no_reachable_back_edge :
+    forall g x y,
+      gvalid g ->
+      reachable g x y ->
+      ~ step g y x;
+}.
+
+Class RootedTree (G V E : Type)
+  {pg : Graph G V E} {gv : GValid G}
+  {stepvalid : StepValid G V E}
+  {step_aux_unique : StepUniqueDirected G V E}
+  {forest : Forest G V E} := {
+  root : G -> V;
+  root_is_valid : forall g, gvalid g -> vvalid g (root g);
+  root_is_root : forall g x, gvalid g -> vvalid g x -> reachable g (root g) x;
 }.
 
 Section ROOTEDTREE.
@@ -24,7 +41,8 @@ Context {G V E: Type}
         {gv: GValid G}
         {stepvalid: StepValid G V E}
         {step_aux_unique: StepUniqueDirected G V E}
-        {rootedtree: @RootedTree G V E pg gv}
+        {forest: Forest G V E}
+        (* {rootedtree: RootedTree G V E} *)
         {g: G}
         {gvalid: gvalid g}.
 
@@ -99,48 +117,19 @@ Lemma offspring_partial_order: forall x y,
   offspring g y x -> 
   x = y.
 Proof.
-  intros.
-  destruct_equality_impl x y.
-  eapply reachable_vvalid in H as H1; eauto.
-  destruct H1 as [xvalid _].
-  apply root_is_root in xvalid as H1; auto.
-  clear neq_xy xvalid. 
-  revert y H H0.
-  unfold reachable in H1.
-  remember (root g) as r.
-  induction_n1 H1; intros; auto.
-  - unfold offspring, reachable in H0.
-    induction_n1 H0; subst; auto.
-    exfalso. 
-    eapply root_no_father; eauto.
-  - destruct_equality_impl x y. 
-    eapply one_reachable_down_up in H2 as H4; eauto.
-    eapply step_reachable_reachable in H2 as H5; eauto.
-    eapply IHrt in H4; eauto.
-    subst r0. symmetry.
-    eapply IHrt; eauto.
+  intros. 
+  destruct (classic (x = y)); [auto|]. 
+  apply real_offspring in H1 as [z [Hstep Hoff]]; auto. 
+  exfalso; eapply (no_reachable_back_edge _ z x); eauto. 
+  transitivity y; auto.
 Qed.
 
 Lemma no_edge_refl : forall x y, 
   step g x y -> ~ step g y x.
 Proof.
   intros.
-  pose proof H as H0.
-  destruct H as [e ?].
-  eapply step_vvalid1 in H as x_vvalid; eauto.
-  eapply root_is_root in x_vvalid as H1; eauto.
-  clear H e x_vvalid.
-  revert y H0. 
-  unfold reachable in H1.
-  remember (root g) as r.
-  induction_n1 H1.
-  - intros; unfold not; intros. 
-    eapply root_no_father with (x:=y); eauto.
-    subst x; auto.
-  - unfold not; intros.
-    eapply father_vunique in H; eauto.
-    subst y.
-    eapply IHrt; eauto.
+  eapply no_reachable_back_edge; eauto. 
+  apply step_rt; auto.
 Qed.
 
 
@@ -311,16 +300,6 @@ Proof.
            unfold not; intros; subst w; auto.
 Qed.
 
-Lemma nearest_coancester_exist: forall y z,
-  vvalid g y -> vvalid g z ->
-  exists x, nearest_common_ancester x y z.
-Proof.
-  intros. 
-  apply root_is_root in H as H1; auto.
-  apply root_is_root in H0 as H2; auto.
-  eapply nearest_coancester_exist'; eauto.
-Qed.
-
 Lemma nearest_coancester_symmetric: forall x y z,
   nearest_common_ancester x y z -> nearest_common_ancester x z y.
 Proof.
@@ -398,7 +377,8 @@ Qed.
 
 Section TREEINDUCTION.
 
-Context {fg: FiniteGraph G V E}.
+Context {fg: FiniteGraph G V E}
+        {rootedtree: RootedTree G V E}.
 
 Notation thelistV := (graph_basic.listV g).
 

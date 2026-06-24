@@ -686,13 +686,10 @@ Proof.
         exact H.
       * dump_pre_spatial.
         exact H0.
-      * rewrite (logic_equiv_sepcon_comm
-          (store_tree p_fa p_gfa (make_tree tr k v t))
-          (p2_fa # Ptr |-> p_fa ** store_ptb p2_fa p2_root p_gfa p_root_fa pt)).
-        rewrite (logic_equiv_sepcon_comm
-          (p2_fa # Ptr |-> p_fa)
-          (store_ptb p2_fa p2_root p_gfa p_root_fa pt)).
-        apply (IHpt p2_root p2_fa p_fa p_gfa p_root_fa (make_tree tr k v t)).
+      * sep_apply (IHpt p2_root p2_fa p_fa p_gfa p_root_fa (make_tree tr k v t)).
+        Intros p_root.
+        Exists p_root.
+        cancel.
     + simpl.
       Intros p2_fa.
       Intros p_bro.
@@ -703,11 +700,8 @@ Proof.
         exact H.
       * dump_pre_spatial.
         exact H0.
-      * rewrite (logic_equiv_sepcon_comm
-          (store_tree p_fa p_gfa (make_tree t k v tr))
-          (p2_fa # Ptr |-> p_fa ** store_ptb p2_fa p2_root p_gfa p_root_fa pt)).
-        rewrite (logic_equiv_sepcon_comm
-          (p2_fa # Ptr |-> p_fa)
-          (store_ptb p2_fa p2_root p_gfa p_root_fa pt)).
-        apply (IHpt p2_root p2_fa p_fa p_gfa p_root_fa (make_tree t k v tr)).
+      * sep_apply (IHpt p2_root p2_fa p_fa p_gfa p_root_fa (make_tree t k v tr)).
+        Intros p_root.
+        Exists p_root.
+        cancel.
 Qed.

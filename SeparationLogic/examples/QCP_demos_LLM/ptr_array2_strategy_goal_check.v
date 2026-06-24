@@ -1,0 +1,5 @@
+From SimpleC.EE.QCP_demos_LLM Require Import ptr_array2_strategy_goal ptr_array2_strategy_proof.
+
+Module ptr_array2_Strategy_Correctness : ptr_array2_Strategy_Correct.
+  Include ptr_array2_strategy_proof.
+End ptr_array2_Strategy_Correctness.

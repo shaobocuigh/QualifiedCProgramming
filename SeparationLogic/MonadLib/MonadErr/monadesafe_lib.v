@@ -408,9 +408,9 @@ Section exec_rules.
     apply H1;auto.
   Qed.
 
-  Lemma safeExec_update' : forall (f: Σ -> Σ) (P: Σ -> Prop) (X: unit -> Σ -> Prop), 
+  Lemma safeExec_update' : forall (f: Σ -> Σ) (P: Σ -> Prop) (X: unit -> Σ -> Prop),
     safeExec P (update' f) X -> safeExec (fun s => exists s0, s = f s0 /\ P s0) (ret tt) X.
-  Proof. 
+  Proof.
     unfold safeExec, safe. intros.
     destructs H.
     exists (f σₕ).
@@ -419,6 +419,21 @@ Section exec_rules.
     sets_unfold in H0.
     rewrite wp_ret.
     apply H0;auto.
+  Qed.
+
+  Lemma safeExec_update : forall (R: Σ -> Σ -> Prop) (P: Σ -> Prop) (X: unit -> Σ -> Prop),
+    (forall s, P s -> exists s', R s s') ->
+    safeExec P (update R) X -> safeExec (fun s => exists s0, R s0 s /\ P s0) (ret tt) X.
+  Proof.
+    unfold safeExec, safe. intros R P X Hex H.
+    destructs H.
+    destruct (Hex σₕ H) as [σₕ' HR].
+    exists σₕ'.
+    split; [ exists σₕ; auto | ].
+    rewrite wp_update in H0.
+    sets_unfold in H0.
+    rewrite wp_ret.
+    apply H0; auto.
   Qed.
 
   Lemma safeExec_assert_aux: forall (Q: Prop) P (X: unit -> Σ -> Prop),
@@ -577,6 +592,16 @@ Section exec_rules.
     apply safeExec_get;auto.
   Qed.
 
+  Lemma safeExec_get'_bind {A B: Type} (f: Σ -> A) (a: A) (P: Σ -> Prop) (c: A -> program Σ B) X:
+    (forall s, P s -> a = f s) ->
+    safeExec P (a0 <- get' f;; c a0) X -> safeExec P (c a) X.
+  Proof.
+    intros * H.
+    eapply safeExec_bind_reta with (a:= a); auto.
+    intros *.
+    apply safeExec_get'; auto.
+  Qed.
+
   Lemma safeExec_update'_bind {B: Type} (f: Σ -> Σ) (P: Σ -> Prop) (c:program Σ B) X:
     safeExec P (update' f;; c) X ->
     safeExec (fun s => exists s0, s = f s0 /\ P s0) c X.
@@ -586,6 +611,18 @@ Section exec_rules.
     exact H.
     intros *.
     apply safeExec_update';auto.
+  Qed.
+
+  Lemma safeExec_update_bind {B: Type} (R: Σ -> Σ -> Prop) (P: Σ -> Prop) (c: program Σ B) X:
+    (forall s, P s -> exists s', R s s') ->
+    safeExec P (update R;; c) X ->
+    safeExec (fun s => exists s0, R s0 s /\ P s0) c X.
+  Proof.
+    intros * Hex H.
+    eapply safeExec_bind_reta with (a:= tt) in H.
+    exact H.
+    intros *.
+    apply safeExec_update; auto.
   Qed.
 
 
@@ -734,23 +771,28 @@ Ltac abs_ret_step :=
 
 Ltac safe_step H := prog_nf in H;
   match type of H with
-  | safeExec _ ((assert _) ;;  _) _ => apply safeExec_assert_seq in H; destruct H as [? H]; try safe_step H
-  | safeExec _ ((assume!! _ ) ;;  _) _ => apply safeExec_test_bind in H; [try safe_step H | auto]
-  | safeExec _ ((assume _ ) ;; _) _ => apply safeExec_testst_bind in H; [try safe_step H | auto]
+  | safeExec _ ((assert _) ;;  _) _ =>
+      apply safeExec_assert_seq in H; destruct H as [? H]; prog_nf in H; try safe_step H
+  | safeExec _ ((assume!! _ ) ;;  _) _ =>
+      apply safeExec_test_bind in H; [prog_nf in H; try safe_step H | auto]
+  | safeExec _ ((assume _ ) ;; _) _ =>
+      apply safeExec_testst_bind in H; [prog_nf in H; try safe_step H | auto]
   | _ => fail 1 "no pattern in hypothesis, expected safeExec/assume or safeExec/assert"
   end.
 
 Ltac safe_choice_l H :=
   prog_nf in H;
   match type of H with
-  | safeExec _ (choice _ _) _ => apply safeExec_choice_l in H;try safe_step H
+  | safeExec _ (choice _ _) _ =>
+      apply safeExec_choice_l in H; prog_nf in H; try safe_step H
   | _ => fail 1 "no pattern in hypothesis, expected safeExec/choice"
   end.
 
 Ltac safe_choice_r H :=
   prog_nf in H;
   match type of H with
-  | safeExec _ (choice _ _) _ => apply safeExec_choice_r in H;try safe_step H
+  | safeExec _ (choice _ _) _ =>
+      apply safeExec_choice_r in H; prog_nf in H; try safe_step H
   | _ => fail 1 "no pattern in hypothesis, expected safeExec/choice"
   end.
 
@@ -806,4 +848,3 @@ Section  safeexec_Hoare_composition_rules.
   Qed.
   
 End  safeexec_Hoare_composition_rules.
-

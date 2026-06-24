@@ -843,6 +843,15 @@ Section  while_monad.
 
   Definition whileret {A: Type}  (cond: (A -> (program Σ bool))) (body : A -> (program Σ A))  := BW_fix (whileret_f cond body).
 
+  Definition whileretP_f {A: Type}  (cond: A -> Σ -> Prop) (body : A -> (program Σ A))
+                     (W :  A -> program Σ A)
+                        : A -> program Σ A :=
+  fun a =>
+    choice (assume (fun s => cond a s);; a' <- body a;; W a')
+           (assume (fun s => ~ cond a s);; ret a).
+
+  Definition whileretP {A: Type}  (cond: A -> Σ -> Prop) (body : A -> (program Σ A))  := BW_fix (whileretP_f cond body).
+
   Definition repeat_break_f {A B: Type} (body: A -> program Σ (CntOrBrk A B)) (W: A -> program Σ B): A -> program Σ B :=
     fun a =>
       x <- body a;;
@@ -896,10 +905,24 @@ Section  while_monad.
       A -> program Σ (CntOrBrk A B) :=
     fun a => BW_fix (range_iter_break_f hi body) (lo, a).
 
-  Definition Repeat_f  (body : (program Σ unit)) 
-                      (W : (program Σ unit)) 
+  Definition forset_f {A: Type}
+    (body: A -> program Σ unit)
+    (W: (A -> Prop) -> program Σ unit) (universe: A -> Prop): program Σ unit :=
+    choice (a <- get (fun _ a => a ∈ universe);;
+            body a;;
+            W (fun x => x ∈ universe /\ x <> a))
+           (assume!! ((universe == ∅)%sets);;
+            ret tt).
+
+  Definition forset {A: Type}
+    (universe: A -> Prop)
+    (body: A -> program Σ unit): program Σ unit :=
+    BW_fix (forset_f body) universe.
+
+  Definition Repeat_f  (body : (program Σ unit))
+                      (W : (program Σ unit))
                           : (program Σ unit) :=
-    W ;; body.
+    body ;; W.
 
   Definition Repeat (body : (program Σ unit))  := BW_fix (Repeat_f body).
 
@@ -1074,6 +1097,50 @@ Qed.
     auto.
   Qed.
 
+  Lemma forset_unfold_aux {A: Type}
+    (body: A -> program Σ unit):
+    BW_fix (forset_f body) == fun universe =>
+    choice (a <- get (fun _ a => a ∈ universe);;
+            body a;;
+            forset (fun x => x ∈ universe /\ x <> a) body)
+           (assume!! ((universe == ∅)%sets);;
+            ret tt).
+  Proof.
+    apply (BW_fixpoint' (forset_f body)).
+    unfold forset_f.
+    mono_cont_auto.
+  Qed.
+
+  Lemma forset_unfold {A: Type}
+    (universe: A -> Prop)
+    (body: A -> program Σ unit):
+    forset universe body ==
+    choice (a <- get (fun _ a => a ∈ universe);;
+            body a;;
+            forset (fun x => universe x /\ x <> a) body)
+           (assume!! ((universe == ∅)%sets);;
+            ret tt).
+  Proof.
+    unfold forset.
+    pose proof (forset_unfold_aux body).
+    apply H.
+  Qed.
+
+  Lemma list_iter_nil_unfold {A B: Type}
+    (body: A -> B -> program Σ B) b:
+    list_iter body nil b == ret b.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma list_iter_cons_unfold {A B: Type}
+    (a: A) (universe: list A) (body: A -> B -> program Σ B) b:
+    list_iter body (a :: universe) b ==
+      b0 <- body a b;; list_iter body universe b0.
+  Proof.
+    reflexivity.
+  Qed.
+
 End  while_monad.
 
 Ltac unfold_loop:=
@@ -1083,7 +1150,8 @@ Ltac unfold_loop:=
   rewrite ?(repeat_break_unfold _ _) ;
   rewrite ?(repeat_break_noin_unfold _) ;
   rewrite ?(range_iter_unfold _ _ _ _) ;
-  rewrite ?(range_iter_break_unfold _ _ _ _) .
+  rewrite ?(range_iter_break_unfold _ _ _ _) ;
+  rewrite ?(forset_unfold _ _) .
 
 Ltac unfold_loop_in H :=
   rewrite ?(while_unfold _ _) in H;
@@ -1092,7 +1160,8 @@ Ltac unfold_loop_in H :=
   rewrite ?(repeat_break_unfold _ _) in H;
   rewrite ?(repeat_break_noin_unfold _) in H;
   rewrite ?(range_iter_unfold _ _ _ _) in H;
-  rewrite ?(range_iter_break_unfold _ _ _ _) in H.
+  rewrite ?(range_iter_break_unfold _ _ _ _) in H;
+  rewrite ?(forset_unfold _ _) in H.
 
 
 Tactic Notation "unfold_loop" "in" hyp(H) :=

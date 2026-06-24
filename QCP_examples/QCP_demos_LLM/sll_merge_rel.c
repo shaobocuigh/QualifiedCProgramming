@@ -11,6 +11,8 @@
                (split_rel: list Z -> program unit ((list Z) * (list Z)))
                (reversepair: ((list Z) * (list Z)) -> program unit ((list Z) * (list Z)))
                (mergesortrec: list Z -> program unit (list Z))
+               (mergesortrec_loc1: list Z -> list Z -> program unit (list Z))
+               (mergesortrec_loc2: list Z -> list Z -> program unit (list Z))
                (gmergesortrec: list Z -> program unit (list Z))
                (mergesortrec_loc0: ((list Z) * (list Z)) -> program unit (list Z))
                (gmergesortrec_loc0: ((list Z) * (list Z)) -> program unit (list Z))
@@ -18,6 +20,8 @@
                (Permutation: list Z -> list Z -> Prop)
                (incr: list Z -> Prop)
                 */
+
+/*@ Import Coq Require Import SimpleC.EE.QCP_demos_LLM.sll_merge_rel_lib */
 
 struct list *merge(struct list *x, struct list *y)
 /*@ With s1 s2 X

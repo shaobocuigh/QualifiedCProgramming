@@ -1614,7 +1614,6 @@ Proof.
   Exists ((data ++ 1 :: nil)%list).
   sep_apply (UIntArray.seg_single ptr (Zlength data) 1).
   sep_apply (UIntArray.seg_to_full ptr (Zlength data) (Zlength data + 1) (1 :: nil)).
-  rewrite derivable1_sepcon_comm.
   sep_apply (UIntArray.full_merge_to_full ptr (Zlength data) (Zlength data + 1) data (1 :: nil)).
   rewrite Zlength_app.
   simpl.

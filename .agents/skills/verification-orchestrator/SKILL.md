@@ -135,6 +135,7 @@ description: 为单个验证 case 维护 phase、固定 phase subagent 合同、
 4. `docs/artifact-templates.md`
 5. `docs/delegation-contracts.md`
 6. `docs/invalidation-rules.md`
+7. `docs/forbidden_lemma.md`（forbidden lemma 列表 — vc-proving 和 final-check 都必须参考）
 
 ## 编排步骤
 

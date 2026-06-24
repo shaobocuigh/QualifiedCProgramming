@@ -12,6 +12,7 @@
                (gmergesortrec: list Z -> program unit (list Z))
                (gmergesortrec_loc0: ((list Z) * (list Z)) -> program unit (list Z))
                (gmergesortrec_loc1: list Z -> list Z -> program unit (list Z))
+               (mergesortrec_loc2: list Z -> list Z -> program unit (list Z))
                 */
 
 

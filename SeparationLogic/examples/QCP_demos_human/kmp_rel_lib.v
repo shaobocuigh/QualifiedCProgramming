@@ -50,10 +50,22 @@ Definition match_loop_from {A: Type} (default: A) patn text vnext i j :=
 
 Definition match_loop_from_after {A: Type} (default: A) patn text vnext i :=
   fun j =>
-    choice (assume!! (j = Zlength patn);;
-           return Some (i - Zlength patn + 1))
-           (assume!! (j < Zlength patn);;
-           match_loop_from default patn text vnext (i+1) j).
+    res <-
+      choice
+        (assume!! (j = Zlength patn);;
+         break (i - Zlength patn + 1))
+        (assume!! (j < Zlength patn);;
+         continue j);;
+    res' <-
+      match res with
+      | by_continue j =>
+          range_iter_break (i+1) (Zlength text) (match_body default patn text vnext) j
+      | by_break r => break r
+      end;;
+    match res' with
+    | by_continue _ => return None
+    | by_break r => return (Some r)
+    end.
 
 Lemma first_occur_nonneg {A:Type}: forall (patn text: list A) z,
   patn <> nil ->

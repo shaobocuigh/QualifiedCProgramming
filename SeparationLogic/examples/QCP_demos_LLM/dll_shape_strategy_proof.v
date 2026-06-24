@@ -116,7 +116,6 @@ Proof.
   elim_emp.
   subst m.
   sep_apply_l_atomic (dllseg_shape_len1 s y n x H0).
-  rewrite (logic_equiv_sepcon_comm (dllseg_shape s y s n) (dllseg_shape p q y s)).
   sep_apply_l_atomic (dllseg_dllseg_shape p s n q y s).
   cancel.
 Qed.

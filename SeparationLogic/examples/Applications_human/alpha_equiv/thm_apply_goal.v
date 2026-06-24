@@ -16,7 +16,9 @@ Local Open Scope sets.
 Local Open Scope string_scope.
 Local Open Scope list.
 Import naive_C_Rules.
-Require Import SimpleC.EE.QCP_demos_human.sll_merge_rel_lib.
+From MonadLib Require Export MonadLib.
+From MonadLib.StateRelMonad Require Export StateRelMonad.
+Export MonadNotation.
 Local Open Scope monad.
 From AUXLib Require Import int_auto Axioms Feq Idents ListLib VMap relations.
 From FP Require Import PartialOrder_Setoid BourbakiWitt.
@@ -1354,12 +1356,12 @@ forall (target_pre: Z) (thm_pre: Z) (X_low_level_spec: ((term * (@list term)) ->
   **  (sllbseg_term_list ( &( "check_list" ) ) ( &( "check_list" ) ) l )
 ) \/
 (
-forall (target_pre: Z) (thm_pre: Z) (targ_low_level_spec: term) (theo_low_level_spec: term) ,
+forall (target_pre: Z) (thm_pre: Z) (X_low_level_spec: ((term * (@list term)) -> (unit -> Prop))) (targ_low_level_spec: term) (theo_low_level_spec: term) (PreH1 : (safeExec ATrue (check_rel (theo_low_level_spec) (targ_low_level_spec)) X_low_level_spec )) ,
   (store_term thm_pre theo_low_level_spec )
   **  (store_term target_pre targ_low_level_spec )
 |--
   EX (t: term)  (l: (@list term)) ,
-  “ (equiv (check_rel (theo_low_level_spec) (targ_low_level_spec)) (check_from_mid_rel (t) (targ_low_level_spec) (l)) ) ”
+  “ (safeExec ATrue (check_from_mid_rel (t) (targ_low_level_spec) (l)) X_low_level_spec ) ”
   &&  (store_term thm_pre t )
   **  (store_term target_pre targ_low_level_spec )
   **  (sllbseg_term_list ( &( "check_list" ) ) ( &( "check_list" ) ) l )
@@ -1384,7 +1386,7 @@ forall (target_pre: Z) (X_low_level_spec: ((term * (@list term)) -> (unit -> Pro
   **  ((&((retval)  # "term_list" ->ₛ "next")) # Ptr  |-> 0)
 ) \/
 (
-forall (target_pre: Z) (targ_low_level_spec: term) (tail_ptr: Z) (t_2: term) (l_2: (@list term)) (retval_2: Z) (retval_3: Z) (retval: Z) (pc: Z) (pa: Z) (c: Z) (r: term) (tr: term) (PreH1 : (t_2 = (TermApply ((TermApply ((TermConst (CImpl) (c))) (r))) (tr)))) (PreH2 : (retval <> 0)) (PreH3 : (retval_3 <> 0)) (PreH4 : (retval_2 = 0)) (PreH5 : (retval_2 = (term_alpha_eqn (t_2) (targ_low_level_spec)))) ,
+forall (target_pre: Z) (X_low_level_spec: ((term * (@list term)) -> (unit -> Prop))) (targ_low_level_spec: term) (tail_ptr: Z) (t_2: term) (l_2: (@list term)) (retval_2: Z) (retval_3: Z) (retval: Z) (pc: Z) (pa: Z) (c: Z) (r: term) (tr: term) (PreH1 : (t_2 = (TermApply ((TermApply ((TermConst (CImpl) (c))) (r))) (tr)))) (PreH2 : (retval <> 0)) (PreH3 : (retval_3 <> 0)) (PreH4 : (retval_2 = 0)) (PreH5 : (retval_2 = (term_alpha_eqn (t_2) (targ_low_level_spec)))) (PreH6 : (safeExec ATrue (check_from_mid_rel (t_2) (targ_low_level_spec) (l_2)) X_low_level_spec )) ,
   (store_term pa r )
   **  (store_term pc tr )
   **  ((&((retval)  # "term_list" ->ₛ "element")) # Ptr  |-> pa)
@@ -1393,7 +1395,7 @@ forall (target_pre: Z) (targ_low_level_spec: term) (tail_ptr: Z) (t_2: term) (l_
   **  ((tail_ptr) # Ptr  |-> retval)
 |--
   EX (t: term)  (l: (@list term)) ,
-  “ (equiv (check_from_mid_rel (t_2) (targ_low_level_spec) (l_2)) (check_from_mid_rel (t) (targ_low_level_spec) (l)) ) ”
+  “ (safeExec ATrue (check_from_mid_rel (t) (targ_low_level_spec) (l)) X_low_level_spec ) ”
   &&  (store_term pc t )
   **  (store_term target_pre targ_low_level_spec )
   **  (sllbseg_term_list ( &( "check_list" ) ) &((retval)  # "term_list" ->ₛ "next") l )
@@ -1411,12 +1413,12 @@ forall (target_pre: Z) (X_low_level_spec: ((term * (@list term)) -> (unit -> Pro
   **  (sll_term_list check_list l )
 ) \/
 (
-forall (target_pre: Z) (targ_low_level_spec: term) (t_2: term) (l_2: (@list term)) (retval: Z) (check_list: Z) (PreH1 : (retval <> 0)) (PreH2 : (retval = (term_alpha_eqn (t_2) (targ_low_level_spec)))) ,
+forall (target_pre: Z) (X_low_level_spec: ((term * (@list term)) -> (unit -> Prop))) (targ_low_level_spec: term) (t_2: term) (l_2: (@list term)) (retval: Z) (check_list: Z) (PreH1 : (retval <> 0)) (PreH2 : (retval = (term_alpha_eqn (t_2) (targ_low_level_spec)))) (PreH3 : (safeExec ATrue (check_from_mid_rel (t_2) (targ_low_level_spec) (l_2)) X_low_level_spec )) ,
   (sll_term_list check_list l_2 )
   **  (store_term target_pre targ_low_level_spec )
 |--
   EX (t: term)  (l: (@list term)) ,
-  “ (equiv (check_from_mid_rel (t_2) (targ_low_level_spec) (l_2)) (return ((makepair (t) (l)))) ) ”
+  “ (safeExec ATrue (return ((makepair (t) (l)))) X_low_level_spec ) ”
   &&  (store_term target_pre targ_low_level_spec )
   **  (sll_term_list check_list l )
 ).
@@ -1433,12 +1435,12 @@ forall (target_pre: Z) (X_low_level_spec: ((term * (@list term)) -> (unit -> Pro
   **  (sll_term_list 0 l )
 ) \/
 (
-forall (target_pre: Z) (targ_low_level_spec: term) (t_2: term) (l_2: (@list term)) (retval: Z) (retval_2: Z) (PreH1 : (retval_2 = 0)) (PreH2 : (retval = 0)) (PreH3 : (retval = (term_alpha_eqn (t_2) (targ_low_level_spec)))) ,
+forall (target_pre: Z) (X_low_level_spec: ((term * (@list term)) -> (unit -> Prop))) (targ_low_level_spec: term) (t_2: term) (l_2: (@list term)) (retval: Z) (retval_2: Z) (PreH1 : (retval_2 = 0)) (PreH2 : (retval = 0)) (PreH3 : (retval = (term_alpha_eqn (t_2) (targ_low_level_spec)))) (PreH4 : (safeExec ATrue (check_from_mid_rel (t_2) (targ_low_level_spec) (l_2)) X_low_level_spec )) ,
   (store_imply_res retval_2 (sep_impl (t_2)) )
   **  (store_term target_pre targ_low_level_spec )
 |--
   EX (t: term)  (l: (@list term)) ,
-  “ (equiv (check_from_mid_rel (t_2) (targ_low_level_spec) (l_2)) (return ((makepair (t) (l)))) ) ”
+  “ (safeExec ATrue (return ((makepair (t) (l)))) X_low_level_spec ) ”
   &&  (store_term target_pre targ_low_level_spec )
   **  (sll_term_list 0 l )
 ).
@@ -1905,7 +1907,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
   **  (store_solve_res retval sr )
 ) \/
 (
-forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t_2: term) (retval_2: Z) (retval: Z) (v: Z) (res_type: Z) (PreH1 : (0 <= INT_MAX)) (PreH2 : (0 >= INT_MIN)) (PreH3 : (retval_2 = 0)) (PreH4 : (res_type = 0)) (PreH5 : (v = 0)) (PreH6 : (retval <> 0)) (PreH7 : (thm_pre <> 0)) ,
+forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t_2: term) (retval_2: Z) (retval: Z) (v: Z) (res_type: Z) (PreH1 : (0 <= INT_MAX)) (PreH2 : (0 >= INT_MIN)) (PreH3 : (retval_2 = 0)) (PreH4 : (res_type = 0)) (PreH5 : (v = 0)) (PreH6 : (retval <> 0)) (PreH7 : (thm_pre <> 0)) (PreH8 : (safeExec ATrue (thm_app_rel (t_2) (l) (g)) X )) ,
   ((&((retval)  # "solve_res" ->ₛ "type")) # Int  |-> 0)
   **  ((&((retval)  # "solve_res" ->ₛ "d" .ₛ "ans")) # Int  |-> 0)
   **  (sll_var_sub_list lis_pre l )
@@ -1913,7 +1915,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t
   **  (store_term goal_pre g )
 |--
   EX (t: term)  (sr: solve_res) ,
-  “ (equiv (thm_app_rel (t_2) (l) (g)) (return (sr)) ) ”
+  “ (safeExec ATrue (return (sr)) X ) ”
   &&  (store_term thm_pre t )
   **  (sll_var_sub_list lis_pre l )
   **  (store_term goal_pre g )
@@ -1938,7 +1940,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
   **  (store_solve_res retval sr )
 ) \/
 (
-forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t_2: term) (retval_2: Z) (retval: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (0 <= INT_MAX)) (PreH3 : (1 >= INT_MIN)) (PreH4 : (0 >= INT_MIN)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t_2 l pq st )) (PreH7 : (retval_2 <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (retval_3 <> 0)) ,
+forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t_2: term) (retval_2: Z) (retval: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (0 <= INT_MAX)) (PreH3 : (1 >= INT_MIN)) (PreH4 : (0 >= INT_MIN)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t_2 l pq st )) (PreH7 : (retval_2 <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (safeExec ATrue (thm_app_rel (t_2) (l) (g)) X )) (PreH13 : (retval_3 <> 0)) ,
   (store_term retval_2 st )
   **  (store_term goal_pre g )
   **  (store_partial_quant thm_pre retval_2 pq )
@@ -1947,7 +1949,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t
   **  (sll_var_sub_list lis_pre l )
 |--
   EX (t: term)  (sr: solve_res) ,
-  “ (equiv (thm_app_rel (t_2) (l) (g)) (return (sr)) ) ”
+  “ (safeExec ATrue (return (sr)) X ) ”
   &&  (store_term thm_pre t )
   **  (sll_var_sub_list lis_pre l )
   **  (store_term goal_pre g )
@@ -1973,7 +1975,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
   **  (store_solve_res retval sr )
 ) \/
 (
-forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t_2: term) (retval_2: Z) (retval: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (t_3: term) (l_2: (@list term)) (retval_5: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (retval_4 <> 0)) (PreH4 : (v_2 = 0)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t_2 l pq st )) (PreH7 : (retval_2 <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (retval_3 = 0)) ,
+forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t_2: term) (retval_2: Z) (retval: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (t_3: term) (l_2: (@list term)) (retval_5: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (safeExec ATrue (applyf (get_list) ((makepair (t_3) (l_2)))) X )) (PreH4 : (retval_4 <> 0)) (PreH5 : (v_2 = 0)) (PreH6 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH7 : (thm_subst_allres_rel t_2 l pq st )) (PreH8 : (retval_2 <> 0)) (PreH9 : (res_type = 0)) (PreH10 : (v = 0)) (PreH11 : (retval <> 0)) (PreH12 : (thm_pre <> 0)) (PreH13 : (retval_3 = 0)) ,
   (store_term goal_pre g )
   **  (sll_term_list retval_5 l_2 )
   **  (store_term retval_2 st )
@@ -1983,7 +1985,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t
   **  (sll_var_sub_list lis_pre l )
 |--
   EX (t: term)  (sr: solve_res) ,
-  “ (equiv (applyf (get_list) ((makepair (t_3) (l_2)))) (return (sr)) ) ”
+  “ (safeExec ATrue (return (sr)) X ) ”
   &&  (store_term thm_pre t )
   **  (sll_var_sub_list lis_pre l )
   **  (store_term goal_pre g )
@@ -2191,7 +2193,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
   &&  “ ((term_alpha_eqn (st) (g)) = 0) ”
 ) \/
 (
-forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t: term) (retval: Z) (retval_2: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (retval_4 <> 0)) (PreH4 : (v_2 = 0)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t l pq st )) (PreH7 : (retval <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval_2 <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (retval_3 = 0)) ,
+forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t: term) (retval: Z) (retval_2: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (retval_4 <> 0)) (PreH4 : (v_2 = 0)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t l pq st )) (PreH7 : (retval <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval_2 <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (safeExec ATrue (thm_app_rel (t) (l) (g)) X )) (PreH13 : (retval_3 = 0)) ,
   (store_term retval st )
   **  (store_term retval_4 st )
   **  ((( &( "thm_ins_c" ) )) # Ptr  |-> retval_4)
@@ -2210,7 +2212,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t
 ).
 
 Definition thm_apply_partial_solve_wit_8_pure_split_goal_1 := 
-forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t: term) (retval: Z) (retval_2: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (retval_4 <> 0)) (PreH4 : (v_2 = 0)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t l pq st )) (PreH7 : (retval <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval_2 <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (retval_3 = 0)) ,
+forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t: term) (retval: Z) (retval_2: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (retval_4 <> 0)) (PreH4 : (v_2 = 0)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t l pq st )) (PreH7 : (retval <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval_2 <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (safeExec ATrue (thm_app_rel (t) (l) (g)) X )) (PreH13 : (retval_3 = 0)) ,
   (store_term retval st )
   **  (store_term retval_4 st )
   **  ((( &( "thm_ins_c" ) )) # Ptr  |-> retval_4)
@@ -2250,6 +2252,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
   &&  “ (v = 0) ” 
   &&  “ (retval_2 <> 0) ” 
   &&  “ (thm_pre <> 0) ” 
+  &&  “ (safeExec ATrue (thm_app_rel (t) (l) (g)) X ) ” 
   &&  “ (retval_3 = 0) ”
   &&  (store_term retval st )
   **  (store_term retval_4 st )
@@ -2263,7 +2266,6 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
 Definition thm_apply_partial_solve_wit_8 := thm_apply_partial_solve_wit_8_pure -> thm_apply_partial_solve_wit_8_aux.
 
 Definition thm_apply_partial_solve_wit_9_pure := 
-(
 forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t: term) (retval: Z) (retval_2: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (PreH1 : (safeExec ATrue (bind ((check_rel (st) (g))) (get_list)) X )) (PreH2 : (retval_4 <> 0)) (PreH3 : (v_2 = 0)) (PreH4 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH5 : (thm_subst_allres_rel t l pq st )) (PreH6 : (retval <> 0)) (PreH7 : (res_type = 0)) (PreH8 : (v = 0)) (PreH9 : (retval_2 <> 0)) (PreH10 : (thm_pre <> 0)) (PreH11 : (retval_3 = 0)) ,
   (store_term retval st )
   **  (store_term retval_4 st )
@@ -2279,46 +2281,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
   **  ((( &( "goal" ) )) # Ptr  |-> goal_pre)
   **  ((( &( "lis" ) )) # Ptr  |-> lis_pre)
 |--
-  “ (safeExec ATrue (bind ((check_rel (st) (g))) (get_list)) X ) ” 
-  &&  “ (equiv (check_rel (st) (g)) (check_rel (st) (g)) ) ” 
-  &&  “ (equiv get_list get_list ) ”
-) \/
-(
-forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t: term) (retval: Z) (retval_2: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (retval_4 <> 0)) (PreH4 : (v_2 = 0)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t l pq st )) (PreH7 : (retval <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval_2 <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (retval_3 = 0)) ,
-  (store_term retval st )
-  **  (store_term retval_4 st )
-  **  ((( &( "thm_ins_c" ) )) # Ptr  |-> retval_4)
-  **  ((( &( "res" ) )) # Ptr  |-> retval_2)
-  **  ((&((retval_2)  # "solve_res" ->ₛ "d" .ₛ "list")) # Ptr  |-> v_2)
-  **  (store_term goal_pre g )
-  **  ((( &( "thm_ins" ) )) # Ptr  |-> retval)
-  **  ((( &( "thm" ) )) # Ptr  |-> thm_pre)
-  **  (store_partial_quant thm_pre retval pq )
-  **  ((&((retval_2)  # "solve_res" ->ₛ "type")) # Int  |-> 1)
-  **  (sll_var_sub_list lis_pre l )
-  **  ((( &( "goal" ) )) # Ptr  |-> goal_pre)
-  **  ((( &( "lis" ) )) # Ptr  |-> lis_pre)
-|--
-  “ (equiv get_list get_list ) ”
-).
-
-Definition thm_apply_partial_solve_wit_9_pure_split_goal_1 := 
-forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (g: term) (l: (@list var_sub)) (t: term) (retval: Z) (retval_2: Z) (v: Z) (res_type: Z) (pq: partial_quant) (st: term) (retval_3: Z) (v_2: Z) (retval_4: Z) (PreH1 : (1 <= INT_MAX)) (PreH2 : (1 >= INT_MIN)) (PreH3 : (retval_4 <> 0)) (PreH4 : (v_2 = 0)) (PreH5 : (retval_3 = (term_alpha_eqn (st) (g)))) (PreH6 : (thm_subst_allres_rel t l pq st )) (PreH7 : (retval <> 0)) (PreH8 : (res_type = 0)) (PreH9 : (v = 0)) (PreH10 : (retval_2 <> 0)) (PreH11 : (thm_pre <> 0)) (PreH12 : (retval_3 = 0)) ,
-  (store_term retval st )
-  **  (store_term retval_4 st )
-  **  ((( &( "thm_ins_c" ) )) # Ptr  |-> retval_4)
-  **  ((( &( "res" ) )) # Ptr  |-> retval_2)
-  **  ((&((retval_2)  # "solve_res" ->ₛ "d" .ₛ "list")) # Ptr  |-> v_2)
-  **  (store_term goal_pre g )
-  **  ((( &( "thm_ins" ) )) # Ptr  |-> retval)
-  **  ((( &( "thm" ) )) # Ptr  |-> thm_pre)
-  **  (store_partial_quant thm_pre retval pq )
-  **  ((&((retval_2)  # "solve_res" ->ₛ "type")) # Int  |-> 1)
-  **  (sll_var_sub_list lis_pre l )
-  **  ((( &( "goal" ) )) # Ptr  |-> goal_pre)
-  **  ((( &( "lis" ) )) # Ptr  |-> lis_pre)
-|--
-  “ (equiv get_list get_list ) ”
+  “ (safeExec ATrue (bind ((check_rel (st) (g))) (get_list)) X ) ”
 .
 
 Definition thm_apply_partial_solve_wit_9_aux := 
@@ -2332,8 +2295,7 @@ forall (goal_pre: Z) (lis_pre: Z) (thm_pre: Z) (X: (solve_res -> (unit -> Prop))
   **  (sll_var_sub_list lis_pre l )
 |--
   “ (safeExec ATrue (bind ((check_rel (st) (g))) (get_list)) X ) ” 
-  &&  “ (equiv (check_rel (st) (g)) (check_rel (st) (g)) ) ” 
-  &&  “ (equiv get_list get_list ) ” 
+  &&  “ (safeExec ATrue (bind ((check_rel (st) (g))) (get_list)) X ) ” 
   &&  “ (retval_4 <> 0) ” 
   &&  “ (v_2 = 0) ” 
   &&  “ (retval_3 = (term_alpha_eqn (st) (g))) ” 
@@ -2434,23 +2396,23 @@ forall (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t: ter
   &&  emp
 ) \/
 (
-forall (g: term) (l: (@list var_sub)) (t: term) (st: term) (pq: partial_quant) (PreH1 : ((term_alpha_eqn (st) (g)) = 0)) (PreH2 : (thm_subst_allres_rel t l pq st )) ,
+forall (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t: term) (st: term) (pq: partial_quant) (PreH1 : ((term_alpha_eqn (st) (g)) = 0)) (PreH2 : (thm_subst_allres_rel t l pq st )) (PreH3 : (safeExec ATrue (thm_app_rel (t) (l) (g)) X )) ,
   TT && emp 
 |--
-  “ (equiv (thm_app_rel (t) (l) (g)) (bind ((check_rel (st) (g))) (get_list)) ) ”
+  “ (safeExec ATrue (bind ((check_rel (st) (g))) (get_list)) X ) ”
   &&  emp
 ).
 
 Definition thm_apply_which_implies_wit_4_split_goal_1 := 
-forall (g: term) (l: (@list var_sub)) (t: term) (st: term) (pq: partial_quant) (PreH1 : ((term_alpha_eqn (st) (g)) = 0)) (PreH2 : (thm_subst_allres_rel t l pq st )) ,
+forall (X: (solve_res -> (unit -> Prop))) (g: term) (l: (@list var_sub)) (t: term) (st: term) (pq: partial_quant) (PreH1 : ((term_alpha_eqn (st) (g)) = 0)) (PreH2 : (thm_subst_allres_rel t l pq st )) (PreH3 : (safeExec ATrue (thm_app_rel (t) (l) (g)) X )) ,
   TT && emp 
 |--
-  “ (equiv (thm_app_rel (t) (l) (g)) (bind ((check_rel (st) (g))) (get_list)) ) ”
+  “ (safeExec ATrue (bind ((check_rel (st) (g))) (get_list)) X ) ”
 .
 
 Definition check_list_gen_derive_low_level_spec_aux_by_low_level_spec := 
 forall (B: Type) ,
-forall (target_pre: Z) (thm_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((term * (@list term)) -> (@program unit B))) (targ_low_level_spec_aux: term) (theo_low_level_spec_aux: term) ,
+forall (target_pre: Z) (thm_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((term * (@list term)) -> (@ StateRelMonad.M  unit B))) (targ_low_level_spec_aux: term) (theo_low_level_spec_aux: term) ,
   “ (safeExec ATrue (bind ((check_rel (theo_low_level_spec_aux) (targ_low_level_spec_aux))) (c_low_level_spec_aux)) X_low_level_spec_aux ) ”
   &&  (store_term thm_pre theo_low_level_spec_aux )
   **  (store_term target_pre targ_low_level_spec_aux )

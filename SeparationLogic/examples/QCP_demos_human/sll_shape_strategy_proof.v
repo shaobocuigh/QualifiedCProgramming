@@ -75,11 +75,8 @@ Proof.
   rewrite <- (logic_equiv_coq_prop_or (q <> 0) (0 <> q)).
   Intros. entailer!.
   pre_process_default.
-  rewrite derivable1_sepcon_comm.
-  rewrite (derivable1_sepcon_comm (lseg p q)).
   sep_apply (lseg_len1 q h z).
-  - rewrite derivable1_sepcon_comm.
-    sep_apply lseg_lseg. entailer!.
+  - sep_apply (lseg_lseg p q z). entailer!.
   - destruct H ; auto.
 Qed.
 

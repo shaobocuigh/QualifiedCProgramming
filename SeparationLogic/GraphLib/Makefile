@@ -17,13 +17,14 @@ DEP_FLAG = -Q $(CURRENT_DIR) GraphLib \
 BASE_FILES = graph_basic.v Syntax.v GraphLib.v
 REACHABLE_FILES = \
 reachable/reachable_basic.v reachable/reachable_restricted.v \
+reachable/bfs_dist.v \
 reachable/path_basic.v reachable/path.v \
 reachable/vpath.v reachable/epath.v \
-reachable/Zweight.v reachable/eweight.v
+reachable/Zweight.v
 DIRECTED_FILES = directed/rootedtree.v directed/dfstree.v
 SUBGRAPH_FILES = subgraph/subgraph.v
 UNDIRECTED_FILES = undirected/undirected_basic.v undirected/tree.v
-EXAMPLES_FILES = examples/floyd.v examples/dijkstra.v examples/prim.v examples/kruskal.v examples/dfs.v examples/tarjan.v 
+EXAMPLES_FILES = examples/floyd.v examples/dijkstra.v examples/prim.v examples/kruskal.v examples/tarjan.v 
 
 FILES = \
  $(BASE_FILES) \

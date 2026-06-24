@@ -34,8 +34,7 @@ Proof.
   Intros.
   entailer!.
   - sep_apply sllbseg_len1; try easy.
-    rewrite derivable1_sepcon_comm.
-    sep_apply sllbseg_sllbseg; easy.
+    sep_apply (sllbseg_sllbseg (&( "res")) p2); easy.
   - inversion PreH1; subst.
     apply upperbound_app; easy.
   - inversion PreH1; subst. 
@@ -49,8 +48,7 @@ Proof.
   Intros. subst. 
   Exists (l1 ++ a::nil). entailer!.
   - sep_apply sllseg_len1; try easy.
-    rewrite derivable1_sepcon_comm.
-    sep_apply sllseg_sllseg; try easy.
+    sep_apply (sllseg_sllseg res node_pre); try easy.
     apply sllseg_0_sll.
   - rewrite app_nil_r. symmetry. 
     apply upperbound_insert_nil; easy.
@@ -64,8 +62,7 @@ Proof.
   - sep_apply sllseg_len1; try easy.
     sep_apply sllseg_len1; try easy.
     sep_apply sllseg_sllseg. simpl app.
-    rewrite (derivable1_sepcon_comm (sllseg node_pre _ _)).
-    sep_apply sllseg_sllseg.
+    sep_apply (sllseg_sllseg res node_pre); try easy.
     sep_apply sllseg_sll.
     rewrite <- app_assoc. reflexivity.
   - symmetry. 
@@ -75,8 +72,9 @@ Qed.
 Lemma proof_of_insertion_which_implies_wit_2 : insertion_which_implies_wit_2.
 Proof.
   pre_process. subst.
-  rewrite derivable1_sepcon_comm.
-  apply sllbseg_2_sllseg.
+  sep_apply sllbseg_2_sllseg.
+  Intros y'. Exists y'.
+  cancel.
 Qed. 
 
 Lemma proof_of_insertion_sort_entail_wit_1 : insertion_sort_entail_wit_1.

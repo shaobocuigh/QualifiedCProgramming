@@ -96,16 +96,11 @@ Proof.
   - repeat split_pures; try solve [dump_pre_spatial; auto; try lia].
     + dump_pre_spatial.
       apply KnapsackCellCorrect_row0_zero; lia.
-    + eapply derivable1_trans.
-      { eapply derivable1_trans.
-        - apply derivable1_sepcon_mono.
-          + apply IntArray.seg_Zlength.
-          + apply derivable1_truep_intros.
-        - apply sepcon_prop_left. }
-      apply coq_prop_imply.
-      intro Hlen.
+    + prop_apply IntArray.seg_Zlength.
+      Intros.
+      dump_pre_spatial.
       eapply KnapsackRowProgress_append_cell;
-        [ rewrite Zlength_app_cons in Hlen; unfold KnapsackCellIndex; lia
+        [ rewrite Zlength_app_cons in H; unfold KnapsackCellIndex; lia
         | exact PreH21
         | lia
         | apply KnapsackCellCorrect_row0_zero; lia ].
@@ -130,16 +125,11 @@ Proof.
       * intros k Hk.
         specialize (PreH24 k ltac:(lia)).
         lia.
-    + eapply derivable1_trans.
-      { eapply derivable1_trans.
-        - apply derivable1_sepcon_mono.
-          + apply IntArray.seg_Zlength.
-          + apply derivable1_truep_intros.
-        - apply sepcon_prop_left. }
-      apply coq_prop_imply.
-      intro Hlen.
+    + prop_apply IntArray.seg_Zlength.
+      Intros.
+      dump_pre_spatial.
       eapply KnapsackRowProgress_append_cell;
-        [ rewrite Zlength_app_cons in Hlen; unfold KnapsackCellIndex; lia
+        [ rewrite Zlength_app_cons in H; unfold KnapsackCellIndex; lia
         | exact PreH22
         | lia
         | apply KnapsackCellCorrect_col0_zero;

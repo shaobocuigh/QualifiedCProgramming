@@ -17,6 +17,7 @@
       (uf_union_after_rank_rx: Z -> Z -> Z -> program uf_state unit)
       (uf_union_after_rank_ry: Z -> Z -> Z -> Z -> program uf_state unit)
       (bump_rank: Z -> program uf_state unit)
+      (equiv: {A} -> A -> A -> Prop)
       (uf_abstract: uf_state -> (Z -> Z) -> Prop)
       (valid: uf_state -> Z -> Prop)
       (merge: (Z -> Prop) -> (Z -> Z) -> Z -> Z -> (Z -> Z) -> Prop)

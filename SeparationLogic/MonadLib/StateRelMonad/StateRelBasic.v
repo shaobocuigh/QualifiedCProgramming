@@ -85,7 +85,7 @@ Section  loop_monad.
   
   Context {Σ: Type}.
 
-Definition whileb_f (cond: (program Σ bool))  (body : (program Σ unit)) 
+Definition while_f (cond: (program Σ bool))  (body : (program Σ unit)) 
                      (W : (program Σ unit)) 
                         : (program Σ unit) :=
   (x <- cond ;; (match x with 
@@ -93,9 +93,9 @@ Definition whileb_f (cond: (program Σ bool))  (body : (program Σ unit))
   | false => ret tt
   end)).
 
-  Definition whileb (cond: (program Σ bool)) (body : program Σ unit)  := Lfix (whileb_f cond body).
+  Definition while (cond: (program Σ bool)) (body : program Σ unit)  := Lfix (while_f cond body).
 
-  Definition whileretb_f {A: Type}  (cond: A -> (program Σ bool)) (body : A -> (program Σ A)) 
+  Definition whileret_f {A: Type}  (cond: A -> (program Σ bool)) (body : A -> (program Σ A)) 
                      (W :  A -> program Σ A) 
                         : A -> program Σ A :=
   fun a => (x <- (cond a) ;; match x with 
@@ -103,24 +103,24 @@ Definition whileb_f (cond: (program Σ bool))  (body : (program Σ unit))
   | false => (ret a)
   end).
 
-  Definition whileretb {A: Type}  (cond: (A -> (program Σ bool))) (body : A -> (program Σ A))  := Lfix (whileretb_f cond body).
+  Definition whileret {A: Type}  (cond: (A -> (program Σ bool))) (body : A -> (program Σ A))  := Lfix (whileret_f cond body).
   
-  Definition while_f (cond: Σ -> Prop)  (body : (program Σ unit)) 
+  Definition whileP_f (cond: Σ -> Prop)  (body : (program Σ unit)) 
                      (W : program Σ unit) 
                         : program Σ unit :=
   choice (assume cond;; body;; W) 
          (assume (fun s => ~ cond s);; ret tt).
   
-  Definition while (cond: Σ -> Prop) (body : program Σ unit)  := Lfix (while_f cond body).
+  Definition whileP (cond: Σ -> Prop) (body : program Σ unit)  := Lfix (whileP_f cond body).
 
-  Definition whileret_f {A: Type}  (cond: A -> Σ -> Prop) (body : A -> (program Σ A)) 
+  Definition whileretP_f {A: Type}  (cond: A -> Σ -> Prop) (body : A -> (program Σ A)) 
                      (W :  A -> program Σ A) 
                         : A -> program Σ A :=
   fun a => 
     choice (assume (fun s => cond a s);; a' <- body a;; W a') 
            (assume (fun s => ~ cond a s);; ret a).
 
-  Definition whileret {A: Type}  (cond: A -> Σ -> Prop) (body : A -> (program Σ A))  := Lfix (whileret_f cond body).
+  Definition whileretP {A: Type}  (cond: A -> Σ -> Prop) (body : A -> (program Σ A))  := Lfix (whileretP_f cond body).
 
   Definition Repeat_f  (body : (program Σ unit)) 
                       (W : program Σ unit) 
@@ -146,6 +146,21 @@ Definition whileb_f (cond: (program Σ bool))  (body : (program Σ unit))
     A -> program Σ B :=
     Lfix (repeat_break_f body).
 
+  Definition repeat_break_f_noinput
+              {Σ B: Type}
+              (body: program Σ (CntOrBrk unit B))
+              (W: program Σ B): program Σ B :=
+    x <- body;;
+    match x with
+    | by_continue _ => W
+    | by_break b => ret b
+    end.
+
+  Definition repeat_break_noin
+              {Σ B: Type}
+              (body: program Σ (CntOrBrk unit B)): program Σ B :=
+    Lfix (repeat_break_f_noinput body).
+
   Definition continue {Σ A B: Type} (a: A):
     program Σ (CntOrBrk A B) :=
     ret (by_continue a).
@@ -153,6 +168,45 @@ Definition whileb_f (cond: (program Σ bool))  (body : (program Σ unit))
   Definition break {Σ A B: Type} (b: B):
     program Σ (CntOrBrk A B) :=
     ret (by_break b).
+
+  Definition range_iter_f {Σ A: Type}
+              (hi: Z)
+              (body: Z -> A -> program Σ A)
+              (W: Z * A -> program Σ A): Z * A -> program Σ A :=
+    fun '(lo, a0) =>
+      choice
+        (assume!! (lo < hi)%Z;;
+         a1 <- body lo a0;;
+         W ((lo + 1)%Z, a1))
+        (assume!! (lo >= hi)%Z;;
+         ret a0).
+
+  Definition range_iter {Σ A: Type}
+              (lo hi: Z)
+              (body: Z -> A -> program Σ A): A -> program Σ A :=
+    fun a => Lfix (range_iter_f hi body) (lo, a).
+
+  Definition range_iter_break_f {Σ A B: Type}
+              (hi: Z)
+              (body: Z -> A -> program Σ (CntOrBrk A B))
+              (W: Z * A -> program Σ (CntOrBrk A B)):
+    Z * A -> program Σ (CntOrBrk A B) :=
+    fun '(lo, a0) =>
+      choice
+        (assume!! (lo < hi)%Z;;
+         ab <- body lo a0;;
+         match ab with
+         | by_continue a1 => W ((lo + 1)%Z, a1)
+         | by_break b => break b
+         end)
+        (assume!! (lo >= hi)%Z;;
+         continue a0).
+
+  Definition range_iter_break {Σ A B: Type}
+              (lo hi: Z)
+              (body: Z -> A -> program Σ (CntOrBrk A B)):
+    A -> program Σ (CntOrBrk A B) :=
+    fun a => Lfix (range_iter_break_f hi body) (lo, a).
 
   Definition forset_f {Σ A: Type}
     (body: A -> program Σ unit)

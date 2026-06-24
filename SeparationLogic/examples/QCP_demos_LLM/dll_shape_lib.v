@@ -69,8 +69,8 @@ Proof.
   Intros l1.
   Intros l2.
   Exists (l1 ++ l2)%list.
-  rewrite (logic_equiv_sepcon_comm (dlistrep y py l2) (dllseg x y px py l1)).
-  apply (dllseg_dlistrep x y px py l1 l2).
+  sep_apply (dllseg_dlistrep x y px py l1 l2).
+  cancel.
 Qed.
 
 Lemma dllseg_shape_len1: forall (x px nx: addr) (a: Z),
@@ -97,8 +97,8 @@ Proof.
   Intros l1.
   Intros l2.
   Exists (l1 ++ l2)%list.
-  rewrite (logic_equiv_sepcon_comm (dllseg y z py pz l2) (dllseg x y px py l1)).
-  apply (dllseg_dllseg x y z px py pz l1 l2).
+  sep_apply (dllseg_dllseg x y z px py pz l1 l2).
+  cancel.
 Qed.
 
 Lemma dllseg_split_head : forall (x px py y: addr),

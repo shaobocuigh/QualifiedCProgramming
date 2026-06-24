@@ -171,20 +171,6 @@ Proof.
   apply Hlookup; lia.
 Qed.
 
-Lemma sepcon_prop_left:
-  forall (P : Prop) Q,
-    naive_C_Rules.derivable1
-      (naive_C_Rules.sepcon (naive_C_Rules.coq_prop P) Q)
-      (naive_C_Rules.coq_prop P).
-Proof.
-  intros P Q.
-  eapply naive_C_Rules.derivable1_trans.
-  - apply naive_C_Rules.derivable1_sepcon_comm.
-  - eapply naive_C_Rules.derivable1_trans.
-    + apply (proj1 (naive_C_Rules.sepcon_prop_equiv Q P)).
-    + apply naive_C_Rules.derivable1_andp_elim1.
-Qed.
-
 Lemma Forall_Z_lt_0_nil:
   forall l, Forall (fun i : Z => 0 <= i < 0) l -> l = nil.
 Proof.

@@ -1377,7 +1377,7 @@ Ltac pre_process :=
     | _ => idtac
   end;
   intros; poly_store_unfold;
-  Rename pre_process_pure ; 
+  Rename pre_process_pure ;
   try (solve [entailer!]).
 
 Ltac aggressive_pre_process :=
@@ -1387,12 +1387,14 @@ Ltac aggressive_pre_process :=
     | _ => idtac
   end;
   intros; poly_store_unfold;
-  Rename pre_process_pure ; 
+  Rename pre_process_pure ;
   try (solve [entailer!]).
 
 Tactic Notation "pre_process_default" := pre_process.
 
 (* ========== LLM-friendly tactics ========== *)
+
+Notation "a '+::' b" := (a ++ (b :: nil)) (at level 19) : list_scope.
 
 (* ----- Goal decomposition and pure export ----- *)
 
@@ -1455,6 +1457,23 @@ Ltac split_pures :=
       _assert_pure B;
       apply _derivable1_andp_intros
   end.
+
+Ltac split_pure_and_solve :=
+  split_pures;
+  try solve [dump_pre_spatial; auto].
+
+Ltac subst_eqs :=
+  repeat first
+    [ progress subst
+    | match goal with
+      | H : @eq (list _)   (_ :: _) (_ :: _) |- _ => injection H; clear H; intros
+      | H : @eq (list _)   nil      (_ :: _) |- _ => discriminate H
+      | H : @eq (list _)   (_ :: _) nil      |- _ => discriminate H
+      | H : @eq (prod _ _) (_ , _)  (_ , _)  |- _ => injection H; clear H; intros
+      | H : @eq (option _) (Some _) (Some _) |- _ => injection H; clear H; intros
+      | H : @eq (option _) None     (Some _) |- _ => discriminate H
+      | H : @eq (option _) (Some _) None     |- _ => discriminate H
+      end ].
 
 (* ----- Pure facts from the precondition ----- *)
 
@@ -1724,6 +1743,69 @@ Tactic Notation "sep_apply_l_atomic" uconstr(t) :=
 Tactic Notation "sep_apply_r_atomic" uconstr(t) :=
   _consume_props_with_subgoal t ltac:(fun tfin =>
     _try_sep_apply_r tfin).
+
+Ltac sep_apply_left H :=
+  (let h := fresh "Hlemma" in pose proof H as h;
+   set_String_name;
+   let rec find_lemmapre_rec h :=
+     lazymatch type of h with
+     | forall x : ?T, _ =>
+         lazymatch type of T with
+         | Prop =>
+             let H' := fresh "H" in
+             cut T; [ intro H'; specialize (h H'); find_lemmapre_rec h | ]
+         | _ =>
+             let _x := fresh "_x" in
+             evar (_x : T); specialize (h _x); subst _x;
+             find_lemmapre_rec h
+         end
+     | ?T -> _ =>
+         lazymatch type of T with
+         | Prop =>
+             let H' := fresh "H" in
+             cut T; [ intro H'; specialize (h H'); find_lemmapre_rec h | ]
+         | _ =>
+             let _x := fresh "_x" in
+             evar (_x : T); specialize (h _x); subst _x;
+             find_lemmapre_rec h
+         end
+     | ?P |-- ?Q => sep_apply_l_aux h; clear h
+     | ?P --||-- ?Q => find_lemmapre_rec (P |-- Q)
+     end in
+   find_lemmapre_rec h);
+  sepcon_assoc_change;
+  subst_all_strings.
+
+Ltac sep_apply_right H :=
+  (let h := fresh "Hlemma" in pose proof H as h;
+   set_String_name;
+   let rec find_lemmapre_rec h :=
+     lazymatch type of h with
+     | forall x : ?T, _ =>
+         lazymatch type of T with
+         | Prop =>
+             let H' := fresh "H" in
+             cut T; [ intro H'; specialize (h H'); find_lemmapre_rec h | ]
+         | _ =>
+             let _x := fresh "_x" in
+             evar (_x : T); specialize (h _x); subst _x;
+             find_lemmapre_rec h
+         end
+     | ?T -> _ =>
+         lazymatch type of T with
+         | Prop =>
+             let H' := fresh "H" in
+             cut T; [ intro H'; specialize (h H'); find_lemmapre_rec h | ]
+         | _ =>
+             let _x := fresh "_x" in
+             evar (_x : T); specialize (h _x); subst _x;
+             find_lemmapre_rec h
+         end
+     | ?P |-- ?Q => sep_apply_r_aux h; clear h
+     | ?P --||-- ?Q => find_lemmapre_rec (P |-- Q)
+     end in
+   find_lemmapre_rec h);
+  subst_all_strings.
 
 (* ----- Experimental / disabled ideas kept for reference ----- *)
 

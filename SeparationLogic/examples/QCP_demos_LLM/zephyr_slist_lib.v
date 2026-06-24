@@ -279,8 +279,8 @@ Lemma snode_chain_snoc : forall ns p q r,
 Proof.
   intros ns p q r Hq.
   sep_apply (snode_chain_singleton q r Hq).
-  rewrite (logic_equiv_sepcon_comm (snode_chain q r [q]) (snode_chain p q ns)).
-  apply (snode_chain_app ns [q] p q r).
+  sep_apply (snode_chain_app ns [q] p q r).
+  cancel.
 Qed.
 
 (* Bridge: a chain ending at NULL is a closed listrep. *)

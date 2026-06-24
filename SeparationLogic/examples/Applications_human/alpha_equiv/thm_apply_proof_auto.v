@@ -17,7 +17,9 @@ Local Open Scope sets.
 Local Open Scope string_scope.
 Local Open Scope list.
 Import naive_C_Rules.
-Require Import SimpleC.EE.QCP_demos_human.sll_merge_rel_lib.
+From MonadLib Require Export MonadLib.
+From MonadLib.StateRelMonad Require Export StateRelMonad.
+Export MonadNotation.
 Local Open Scope monad.
 From AUXLib Require Import int_auto Axioms Feq Idents ListLib VMap relations.
 From FP Require Import PartialOrder_Setoid BourbakiWitt.
@@ -204,6 +206,9 @@ Lemma proof_of_thm_apply_partial_solve_wit_7 : thm_apply_partial_solve_wit_7.
 Proof. Admitted. 
 
 Lemma proof_of_thm_apply_partial_solve_wit_8 : thm_apply_partial_solve_wit_8.
+Proof. Admitted. 
+
+Lemma proof_of_thm_apply_partial_solve_wit_9_pure : thm_apply_partial_solve_wit_9_pure.
 Proof. Admitted. 
 
 Lemma proof_of_thm_apply_partial_solve_wit_9 : thm_apply_partial_solve_wit_9.

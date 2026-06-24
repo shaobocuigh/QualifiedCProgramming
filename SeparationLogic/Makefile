@@ -10,7 +10,8 @@ powershell_list = $(subst $(space),$(comma) ,$(strip $(foreach item,$(1),'$(item
 
 # Platform-specific settings
 ifeq ($(OS),Windows_NT)
-	timeit = @echo $(1) && $(2)
+	print_line = @powershell -NoProfile -Command "[Console]::Out.Write('$(1)' + [char]10)"
+	timeit = $(call print_line,$(1)) && $(2)
 
 define MOVE_FILE
 powershell -NoProfile -Command "Move-Item -Force '$(1)' '$(2)'"
@@ -25,9 +26,10 @@ powershell -NoProfile -Command "Remove-Item -Force -LiteralPath $(call powershel
 endef
 
 define REMOVE_TREE_OUTPUTS
-powershell -NoProfile -Command "Get-ChildItem -Path $(call powershell_list,$(1)) -Recurse -Force -Include *.vo,*.glob,*.vos,*.vok,.*.aux -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue; exit 0"
+powershell -NoProfile -Command "Get-ChildItem -Path $(call powershell_list,$(1)) -Recurse -Force -Include *.vo,*.glob,*.vos,*.vok,.*.aux,.lia.cache -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue; exit 0"
 endef
 else
+	print_line = @printf "%s\n" "$(1)"
 	PYTHON_FOR_TIME := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
 
 	ifneq ($(strip $(PYTHON_FOR_TIME)),)
@@ -49,7 +51,7 @@ rm -f $(1)
 endef
 
 define REMOVE_TREE_OUTPUTS
-find $(1) -type f \( -name '*.vo' -o -name '*.glob' -o -name '*.vos' -o -name '*.vok' -o -name '.*.aux' \) -delete
+find $(1) -type f \( -name '*.vo' -o -name '*.glob' -o -name '*.vos' -o -name '*.vok' -o -name '.*.aux' -o -name '.lia.cache' \) -delete
 endef
 endif
 
@@ -57,11 +59,11 @@ COQC=$(COQBIN)coqc$(SUF)
 COQDEP=$(COQBIN)coqdep$(SUF)
 
 DIRS = \
-	Common auxlibs compcert_lib SeparationLogic sets unifysl StrategyLib fixedpoints MonadLib examples MaxMinLib GraphLib listlib
+	Common auxlibs compcert_lib SeparationLogic sets unifysl StrategyLib fixedpoints MonadLib examples MaxMinLib GraphLib listlib tracelib algorithms coq-record-update
  
-COQ_FLAG = -R SeparationLogic SimpleC.SL -R unifysl Logic -R sets SetsClass -R compcert_lib compcert.lib -R auxlibs AUXLib -R examples SimpleC.EE -R stdlib SimpleC.StdLib -R StrategyLib SimpleC.StrategyLib -R Common SimpleC.Common -R fixedpoints FP -R MonadLib MonadLib -R listlib ListLib -R MaxMinLib MaxMinLib -R GraphLib GraphLib -R SumLib SumLib 
+COQ_FLAG = -R SeparationLogic SimpleC.SL -R unifysl Logic -R sets SetsClass -R compcert_lib compcert.lib -R auxlibs AUXLib -R examples SimpleC.EE -R stdlib SimpleC.StdLib -R StrategyLib SimpleC.StrategyLib -R Common SimpleC.Common -R fixedpoints FP -R MonadLib MonadLib -R listlib ListLib -R MaxMinLib MaxMinLib -R GraphLib GraphLib -R SumLib SumLib -R tracelib TraceLib -R coq-record-update/src RecordUpdate -Q algorithms Algorithms 
 
-DEP_FLAG = -R SeparationLogic SimpleC.SL -R unifysl Logic -R sets SetsClass -R compcert_lib compcert.lib -R auxlibs AUXLib -R examples SimpleC.EE -R stdlib SimpleC.StdLib -R StrategyLib SimpleC.StrategyLib -R Common SimpleC.Common -R fixedpoints FP -R MonadLib MonadLib -R listlib ListLib -R MaxMinLib MaxMinLib -R GraphLib GraphLib -R SumLib SumLib 
+DEP_FLAG = -R SeparationLogic SimpleC.SL -R unifysl Logic -R sets SetsClass -R compcert_lib compcert.lib -R auxlibs AUXLib -R examples SimpleC.EE -R stdlib SimpleC.StdLib -R StrategyLib SimpleC.StrategyLib -R Common SimpleC.Common -R fixedpoints FP -R MonadLib MonadLib -R listlib ListLib -R MaxMinLib MaxMinLib -R GraphLib GraphLib -R SumLib SumLib -R tracelib TraceLib -R coq-record-update/src RecordUpdate -Q algorithms Algorithms 
 
 Common_FILES = \
   CTypes.v COps.v Notations.v
@@ -80,9 +82,10 @@ GraphLib_BASE_FILES = graph_basic.v Syntax.v GraphLib.v
 
 GraphLib_REACHABLE_FILES = \
 	reachable/reachable_basic.v reachable/reachable_restricted.v \
+	reachable/bfs_dist.v \
 	reachable/path_basic.v reachable/path.v \
 	reachable/vpath.v reachable/epath.v \
-	reachable/Zweight.v reachable/eweight.v
+	reachable/Zweight.v
 
 GraphLib_DIRECTED_FILES = directed/rootedtree.v directed/dfstree.v
 
@@ -90,7 +93,7 @@ GraphLib_SUBGRAPH_FILES = subgraph/subgraph.v
 
 GraphLib_UNDIRECTED_FILES = undirected/undirected_basic.v undirected/tree.v
 
-GraphLib_EXAMPLES_FILES = examples/floyd.v examples/dijkstra.v examples/prim.v examples/kruskal.v examples/dfs.v examples/tarjan.v 
+GraphLib_EXAMPLES_FILES = examples/floyd.v examples/dijkstra.v examples/prim.v examples/kruskal.v examples/tarjan.v 
 
 GraphLib_FILES = \
 	$(GraphLib_BASE_FILES) \
@@ -99,6 +102,46 @@ GraphLib_FILES = \
  	$(GraphLib_SUBGRAPH_FILES) \
  	$(GraphLib_UNDIRECTED_FILES) \
  	$(GraphLib_EXAMPLES_FILES)
+
+RecordUpdate_FILES = \
+	src/RecordEta.v src/RecordSet.v src/Lens.v src/RecordUpdate.v
+
+TraceLib_BASE_FILES = \
+	CommonTactics.v TraceBasic.v TraceRecur.v TraceLogic.v GhostCode.v TraceLoop.v MapLib.v TraceLib.v
+
+TraceLib_STATEREL_FILES = \
+	StateRel/StateRelCommonTactics.v \
+	StateRel/StateRelGhostCode.v \
+	StateRel/StateRelTraceBasic.v \
+	StateRel/StateRelTraceRecur.v \
+	StateRel/StateRelTraceLoop.v \
+	StateRel/StateRelTraceLib.v
+
+TraceLib_MONADERR_FILES = \
+	MonadErr/CommonTacticsErr.v \
+	MonadErr/GhostCodeErr.v \
+	MonadErr/TraceBasicErr.v \
+	MonadErr/TraceRecurErr.v \
+	MonadErr/TraceLoopErr.v \
+	MonadErr/TraceLibErr.v
+
+TraceLib_FILES = \
+	$(TraceLib_BASE_FILES) \
+	$(TraceLib_STATEREL_FILES) \
+	$(TraceLib_MONADERR_FILES)
+
+Algorithms_FILES = \
+	MapLib.v Tactics.v \
+	Floyd/Floyd.v \
+	Dijkstra/Dijkstra.v Dijkstra/Dijkstra_trace.v \
+	Prim/Prim.v \
+	Kruskal/Kruskal.v \
+	DFS/DFS.v DFS/DFS_traditional.v DFS/C10909_MonadProg_DFS.v \
+	BFS/BFS.v BFS/BFS_path.v BFS/Go.v \
+	Tarjan/Tarjan.v Tarjan/Tarjan_tactics.v Tarjan/Tarjan_set_tree.v \
+	Tarjan/Tarjan_basics.v Tarjan/Tarjan_basics_ex.v \
+	Tarjan/Tarjan_is_dfn.v Tarjan/Tarjan_no_cross_edge.v Tarjan/Tarjan_is_low.v \
+	Tarjan/Tarjan_bridge_iff.v Tarjan/Tarjan_tarjan.v \
 
 SumLib_FILES = \
 	Sum.v \
@@ -158,7 +201,8 @@ MONAD_FILES = \
 SL_FILES = \
   CommonAssertion.v Assertion.v Mem.v ConAssertion.v \
   NestedCriticalSTS.v CriticalSTS.v \
-  IntLib.v ArrayLib.v ArrayLibCore.v StoreAux.v pocv02.v SeparationLogic.v CNotation.v MapLib.v StringLib.v
+  IntLib.v StoreAux.v pocv02.v SeparationLogic.v CNotation.v MapLib.v StringLib.v \
+  ArrayLib.v ArrayLibCore.v Array2Lib.v Array2LibCore.v PtrArray2Lib.v PtrArray2LibCore.v \
 
 StrategyLib_FILES = \
   DepList.v Mapping.v
@@ -194,7 +238,24 @@ LLM_BENCH_Lib_FILES = \
 	Engineering/string/search_lib.v \
 	Engineering/string/strcat_lib.v \
 	Engineering/string/strcmp_lib.v \
-	Engineering/string/strcpy_lib.v
+	Engineering/string/strcpy_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/list_tail_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/list_append_raw_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_app_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_copy_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_free_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_back_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_back_2_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_twice_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_merge_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_multi_append_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_multi_merge_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_multi_rev_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_rev_append_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_rev_append_twice_rel_lib.v \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_rev_rel_lib.v
 
 APPLICATION_Lib_FILES = \
 	fme/algorithm.v fme/implement.v fme/implement_lemma.v fme/fme_lib.v typeinfer/repr_subst_prop.v typeinfer/sol_prop.v typeinfer/sound_pv.v typeinfer/type_infer_lib.v typeinfer/typeinfer_lib.v \
@@ -209,7 +270,8 @@ QCP_DEMO_EXAMPLE_FILE_NAME = \
 LLM_FRIENDLY_CASES_EXAMPLE_FILE_NAME = \
 	poly_sll sll sll_insert_sort functional_queue dll_queue sll_queue simple_arith/abs simple_arith/add simple_arith/max3 simple_arith/gcd simple_arith/Always_pos simple_arith/div_test simple_arith/exgcd \
 	sum bst_insert bst_insert_rec bst_fp_insert bst_fp_delete swap eval bst_delete_rec bst_delete_rec2 avl_insert sll_auto dll_auto array_auto chars \
-	kmp_rel int_array_merge_rel sll_merge_rel sll_split_while majorityElement sortArray sortArray2 sortArray3 array_cases union_find_err_rel
+	kmp_rel int_array_merge_rel sll_merge_rel sll_split_while majorityElement sortArray sortArray2 sortArray3 array_cases union_find_err_rel \
+	two_d_int_array two_d_int_ptr_array two_d_char_ptr_array
 
 LLM_BENCH_EXAMPLE_FILE_NAME = \
 	Algorithms/coin_change/coin_change \
@@ -234,7 +296,23 @@ LLM_BENCH_EXAMPLE_FILE_NAME = \
 	Engineering/string/strcat \
 	Engineering/string/strcmp \
 	Engineering/string/strcpy \
-	Engineering/string/strlen
+	Engineering/string/strlen \
+	Engineering/glibc_slist/glibc_slist_rel/list_tail_rel \
+	Engineering/glibc_slist/glibc_slist_rel/list_append_raw_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_app_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_copy_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_free_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_back_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_back_2_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_iter_twice_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_merge_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_multi_append_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_multi_merge_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_multi_rev_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_rev_append_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_rev_append_twice_rel \
+	Engineering/glibc_slist/glibc_slist_rel/glibc_slist_rev_rel
 
 LLM_BENCH_STRATEGY_FILE_NAME = \
 	Engineering/string/string
@@ -320,7 +398,8 @@ QCP_DEMO_STRATEGY_FILE_NAME = \
 	common poly_sll sll_shape sll dll_queue functional_queue sll_queue int_array undef_uint_array uint_array array_shape bst bst_fp eval char_array avl dll_shape safeexec safeexecE
 
 LLM_FRIENDLY_CASES_STRATEGY_FILE_NAME = \
-	common poly_sll sll_shape sll dll_queue functional_queue sll_queue int_array undef_uint_array uint_array array_shape bst bst_fp eval char_array avl dll_shape safeexec safeexecE
+	common poly_sll sll_shape sll dll_queue functional_queue sll_queue int_array undef_uint_array uint_array array_shape bst bst_fp eval char_array avl dll_shape safeexec safeexecE \
+	array2 int_ptr_array2 ptr_array2
 
 APPLICATION_STRATEGY_FILE_NAME = \
 	fme/fme typeinfer/typeinfer minigmp/gmp mergeablelist/sll_project
@@ -366,6 +445,9 @@ EXAMPLE = \
 	$(ListLib_FILES:%.v=listlib/%.v) \
 	$(MaxMinLib_FILES:%.v=MaxMinLib/%.v) \
 	$(GraphLib_FILES:%.v=GraphLib/%.v) \
+	$(RecordUpdate_FILES:%.v=coq-record-update/%.v) \
+	$(TraceLib_FILES:%.v=tracelib/%.v) \
+	$(Algorithms_FILES:%.v=algorithms/%.v) \
 	$(SumLib_FILES:%.v=SumLib/%.v) \
 	$(StdLib_FILES:%.v=stdlib/%.v) \
 	$(Sets_FILES:%.v=sets/%.v) \
@@ -384,6 +466,9 @@ CORE_EXAMPLE = \
 	$(ListLib_FILES:%.v=listlib/%.v) \
 	$(MaxMinLib_FILES:%.v=MaxMinLib/%.v) \
 	$(GraphLib_FILES:%.v=GraphLib/%.v) \
+	$(RecordUpdate_FILES:%.v=coq-record-update/%.v) \
+	$(TraceLib_FILES:%.v=tracelib/%.v) \
+	$(Algorithms_FILES:%.v=algorithms/%.v) \
 	$(SumLib_FILES:%.v=SumLib/%.v) \
 	$(StdLib_FILES:%.v=stdlib/%.v) \
 	$(Sets_FILES:%.v=sets/%.v) \
@@ -444,10 +529,10 @@ DEPEND_TARGETS := depend depend-core depend-examples depend-examples-application
 
 $(EXAMPLE:%.v=%.vo): %.vo: %.v
 ifeq ($(TIMING),)
-	@echo "COQC $*.v"
+	$(call print_line,COQC $*.v)
 	@$(COQC) $(COQ_FLAG) $(CURRENT_DIR)/$*.v
 else
-	$(call timeit, "COQC $*.v", $(COQC) $(COQ_FLAG) $(CURRENT_DIR)/$*.v)
+	$(call timeit,COQC $*.v,$(COQC) $(COQ_FLAG) $(CURRENT_DIR)/$*.v)
 endif
 
 	
@@ -457,6 +542,15 @@ all: \
 
 core: \
 	$(CORE_EXAMPLE:%.v=%.vo) \
+
+coq-record-update: \
+	$(RecordUpdate_FILES:%.v=coq-record-update/%.vo)
+
+tracelib: \
+	$(TraceLib_FILES:%.v=tracelib/%.vo)
+
+algorithms: \
+	$(Algorithms_FILES:%.v=algorithms/%.vo)
 
 examples : \
 	$(EXAMPLE:%.v=%.vo) 
@@ -533,8 +627,9 @@ clean:
 	@$(MAKE) clean-deps
 
 clean-core:
-	@$(call REMOVE_TREE_OUTPUTS,Common auxlibs compcert_lib SeparationLogic sets StrategyLib fixedpoints MonadLib MaxMinLib GraphLib SumLib listlib)
+	@$(call REMOVE_TREE_OUTPUTS,Common auxlibs compcert_lib SeparationLogic sets StrategyLib fixedpoints MonadLib MaxMinLib GraphLib SumLib listlib coq-record-update tracelib algorithms)
 	@$(call REMOVE_FILES,$(UNIFY_OUTPUTS))
+	@$(call REMOVE_FILES,coq-record-update/.depend coq-record-update/.Makefile.coq.d tracelib/.depend algorithms/.depend)
 	@$(call REMOVE_FILES,.depend.core .depend.core.tmp .depend.tmp .depend)
 
 clean-examples:
@@ -560,7 +655,7 @@ clean-examples-llm-bench:
 clean-deps:
 	@$(call REMOVE_FILES,.depend.core .depend.core.tmp .depend.examples.applications .depend.examples.applications.tmp .depend.examples.qcp_democases .depend.examples.qcp_democases.tmp .depend.examples.llm_friendly_cases .depend.examples.llm_friendly_cases.tmp .depend.examples.llm_bench .depend.examples.llm_bench.tmp .depend.examples .depend.examples.tmp .depend.tmp .depend)
 
-.PHONY: clean clean-core clean-examples clean-examples-applications clean-examples-qcp-democases clean-examples-llm-friendly-cases clean-examples-llm-bench clean-deps depend depend-core depend-examples depend-examples-applications depend-examples-qcp-democases depend-examples-llm-friendly-cases depend-examples-llm-bench core examples-applications examples-qcp-democases examples-llm-friendly-cases examples-llm-bench
+.PHONY: clean clean-core clean-examples clean-examples-applications clean-examples-qcp-democases clean-examples-llm-friendly-cases clean-examples-llm-bench clean-deps depend depend-core depend-examples depend-examples-applications depend-examples-qcp-democases depend-examples-llm-friendly-cases depend-examples-llm-bench core coq-record-update tracelib algorithms examples-applications examples-qcp-democases examples-llm-friendly-cases examples-llm-bench
 .DEFAULT_GOAL := all
 
 ifeq ($(filter $(DEPEND_TARGETS),$(MAKECMDGOALS)),)

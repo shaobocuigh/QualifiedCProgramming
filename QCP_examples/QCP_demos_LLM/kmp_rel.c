@@ -18,9 +18,20 @@
                (match_loop_from_after: {A} -> A -> list A -> list A -> list Z -> Z -> Z -> program unit (option Z))
                 */
 
+/*@ Extern Coq (constr_loop_from: {A} -> A -> list A -> Z -> list Z -> Z -> program unit (list Z))*/
+
+/*@ Import Coq Require Import SimpleC.EE.QCP_demos_LLM.kmp_rel_lib */
+
 int * malloc_int_array(int n)
   /*@ Require n > 0 && emp
       Ensure exists l, IntArray::full(__return, n, l)
+   */
+  ;
+
+void free_int_array(int *a)
+  /*@ With n l
+      Require IntArray::full(a, n, l)
+      Ensure emp
    */
   ;
 
@@ -182,4 +193,32 @@ int match(char *patn, char *text, int *vnext)
         }
     }
     return -1;
+}
+
+int main(char *patn, char *text)
+/*@ 
+    With patn0 text0 n m
+    Require n > 0 && n < INT_MAX && m < INT_MAX &&
+            CharArray::full(patn, n + 1, app(patn0, cons(0, nil))) *
+            CharArray::full(text, m + 1, app(text0, cons(0, nil)))
+    Ensure ((__return >= 0 && first_occur(patn0, text0, __return)) ||
+            (__return == -1 && no_occurance(patn0, text0))) &&
+            CharArray::full(patn, n + 1, app(patn0, cons(0, nil))) *
+            CharArray::full(text, m + 1, app(text0, cons(0, nil)))
+*/
+{
+    int *vnext = constr(patn) /*@ where (high_level_spec) str = patn0, n = n */;
+    /*@ Assert exists vnext0,
+            is_prefix_func(vnext0, patn0) &&
+            n > 0 && n < INT_MAX && m < INT_MAX &&
+            patn == patn@pre && text == text@pre &&
+            CharArray::full(patn, n + 1, app(patn0, cons(0, nil))) *
+            CharArray::full(text, m + 1, app(text0, cons(0, nil))) *
+            IntArray::full(vnext, n, vnext0)
+    */
+    /*@ Given vnext0 */
+    int r = match(patn, text, vnext)
+        /*@ where (high_level_spec) patn0 = patn0, text0 = text0, vnext0 = vnext0, n = n, m = m */;
+    free_int_array(vnext) /*@ where n = n, l = vnext0 */;
+    return r;
 }

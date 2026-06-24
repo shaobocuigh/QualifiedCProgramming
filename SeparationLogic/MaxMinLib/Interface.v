@@ -3,6 +3,7 @@ Require Import Lia.
 Require Import SetsClass.SetsClass.
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Arith.PeanoNat.
+Require Import Coq.Lists.List.
 Require Import MaxMinLib.MaxMin.
 Require Import Coq.Logic.Classical_Prop.
 
@@ -15,6 +16,63 @@ Section Z.
 Theorem Z_le_total: forall x y, {Z.le x y} + {Z.le y x}.
 Proof. intros. destruct (Z_le_dec x y); [left | right]; lia. Qed.
 
+
+Lemma max_n_in_range: forall (Q: Z -> Prop) (K: Z),
+  (0 <= K)%Z ->
+  (exists n, (0 <= n <= K)%Z /\ Q n) ->
+  exists m, Q m /\ (0 <= m <= K)%Z /\ (forall k, (0 <= k <= K)%Z -> Q k -> k <= m)%Z.
+Proof.
+  intros Q K HK Hexists.
+  remember (Z.to_nat K) as n.
+  revert K Heqn Hexists HK.
+  induction n; intros.
+  - assert (K = 0)%Z by lia. subst.
+    destruct Hexists as [x [[Hlow Hhigh] HP]].
+    assert (x = 0)%Z by lia. subst.
+    exists 0%Z. repeat split; auto; intros; lia.
+  - destruct (classic (Q K)) as [HPK | HNPK].
+    + exists K. repeat split; auto; intros; lia.
+    + assert (Hexists': exists n, (0 <= n <= K - 1)%Z /\ Q n).
+      { destruct Hexists as [x [[Hlx Hhx] HPx]].
+        exists x. split; auto. 
+        destruct (classic (x = K)); subst; [contradiction|lia]. }
+      specialize (IHn (K - 1)%Z). 
+      destruct IHn as [m [HPm [[Hlm Hhm] Hmax]]]; 
+      [lia|auto|lia|].
+      exists m. repeat split; auto; [lia |].
+      intros k Hrange HPk.
+      assert (k < K)%Z by (destruct (Z.eq_dec k K); [subst; contradiction | lia]).
+      apply Hmax; [lia | auto].
+Qed.
+
+Lemma min_n_in_range: forall (Q: Z -> Prop) (K: Z),
+  (0 <= K)%Z ->
+  (exists n, (0 <= n <= K)%Z /\ Q n) ->
+  exists m, Q m /\ (0 <= m <= K)%Z /\ (forall k, (0 <= k <= K)%Z -> Q k -> m <= k)%Z.
+Proof.
+  intros Q K HK Hexists.
+  remember (Z.to_nat K) as n.
+  revert Q K Heqn Hexists HK.
+  induction n; intros.
+  - assert (K = 0)%Z by lia. subst.
+    destruct Hexists as [x [[Hlow Hhigh] HP]].
+    assert (x = 0)%Z by lia. subst.
+    exists 0%Z. repeat split; auto; intros; try lia.
+  - destruct (classic (Q 0%Z)) as [Q0 | NotQ0].
+    + exists 0%Z. split; [|split]; auto; intros; lia.
+    + assert (Hexists': exists n, (0 <= n <= K - 1)%Z /\ (fun x => Q (x + 1)%Z) n).
+      { destruct Hexists as [x [[Hlx Hhx] Qx]].
+        assert (x > 0)%Z by (destruct (Z.eq_dec x 0); [subst; contradiction|lia]).
+        exists (x - 1)%Z. split; [lia|].
+        replace (x - 1 + 1)%Z with x by lia; auto. }
+      specialize (IHn (fun x => Q (x + 1)%Z) (K - 1)%Z).
+      destruct IHn as [m [Qm [[Hlm Hhm] Hmin]]]; [lia|auto|lia|].
+      exists (m + 1)%Z. split; [|split]; auto; [lia|].
+      intros k Hrange Qk.
+      assert (k > 0)%Z by (destruct (Z.eq_dec k 0); [subst; contradiction|lia]).
+      pose proof Hmin (k - 1)%Z ltac:(lia) ltac:(replace (k - 1 + 1)%Z with k by lia; auto) as Hle. 
+      lia.
+Qed.
 
 
 End Z.
@@ -297,5 +355,54 @@ Proof.
   intros. destruct x, y, z; simpl in *; try tauto. lia.
 Qed.
 
+Lemma Z_op_le_min_le_l: 
+  forall x y, Z_op_le (Z_op_min x y) x.
+Proof.
+  intros. destruct x, y; simpl in *; try tauto; lia.
+Qed.
+
+Lemma Z_op_le_min_le_r: 
+  forall x y, Z_op_le (Z_op_min x y) y.
+Proof.
+  intros. destruct x, y; simpl in *; try tauto; lia.
+Qed. 
+
+(* 在满足条件的有限列表中，一定可以选出最小值 *)
+Theorem Z_op_finite_min {A: Type}:
+  forall (f: A -> option Z) (P: A -> Prop) xs x,
+    In x xs -> P x -> (forall y, P y -> In y xs) ->
+    exists m, min_object_of_subset Z_op_le P f m.
+Proof.
+  intros f P xs x Hinx HPx Hsub.
+  revert P x Hinx HPx Hsub.
+  induction xs as [|a xs IH]; intros P x Hinx HPx Hsub; 
+  [contradiction|].
+  destruct (classic (P a)) as [HPa | HPa].
+  + destruct (classic (exists y, In y xs /\ P y)) as [[y [Hiny HPy]] | Hnone].
+    * destruct (IH (fun z => P z /\ In z xs) y Hiny (conj HPy Hiny)) as [m [[HPm Hminxs] Hmin]];
+      [intros; tauto|].
+      destruct (Z_op_le_total (f a) (f m)) as [Ham | Hma].
+      - exists a; split; auto. 
+        intros z HPz.
+        destruct (classic (z = a)); subst; [apply Z_op_le_refl|].
+        apply Z_op_le_trans with (y := f m); auto.
+        apply Hmin; split; auto.
+        specialize (Hsub z HPz) as [|]; subst; auto; contradiction.
+      - exists m; split; auto. 
+        intros z HPz.
+        destruct (classic (z = a)); subst; auto.
+        apply Hmin; split; auto.
+        specialize (Hsub z HPz) as [|]; subst; auto; contradiction. 
+    * exists a; split; auto. 
+      intros z HPz.
+      destruct (Hsub z HPz) as [|]; subst; [apply Z_op_le_refl|].
+      exfalso; apply Hnone; exists z; split; auto. 
+  + assert (In x xs).
+    destruct Hinx as [Hx | Hx]; subst; auto; contradiction. 
+    destruct (IH P x H HPx) as [m [HPm Hmin]]; 
+    [|exists m; split; auto].
+    intros z HPz. 
+    specialize (Hsub z HPz) as [|]; subst; auto; contradiction. 
+Qed.
 
 End Z_op.

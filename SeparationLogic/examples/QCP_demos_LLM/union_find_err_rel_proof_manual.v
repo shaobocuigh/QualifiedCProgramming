@@ -16,7 +16,6 @@ Local Open Scope sets.
 Local Open Scope string.
 Local Open Scope list.
 Import naive_C_Rules.
-Require Import SimpleC.EE.QCP_demos_LLM.kmp_rel_lib.
 Local Open Scope monad.
 From AUXLib Require Import int_auto Axioms Feq Idents ListLib VMap relations.
 From FP Require Import PartialOrder_Setoid BourbakiWitt.
@@ -27,7 +26,7 @@ Local Open Scope sac.
 Lemma proof_of_uf_find_c_entail_wit_1 : uf_find_c_entail_wit_1.
 Proof.
   pre_process.
-  split_pure_spatial; [apply derivable1_refl | idtac].
+  split_pure_spatial; [cancel | idtac].
   split_pures; try (dump_pre_spatial; lia); try (dump_pre_spatial; reflexivity).
   dump_pre_spatial.
   rename PreH5 into Hsafe.
@@ -61,7 +60,7 @@ Qed.
 Lemma proof_of_uf_find_c_entail_wit_2 : uf_find_c_entail_wit_2.
 Proof.
   pre_process.
-  split_pure_spatial; [apply derivable1_refl | idtac].
+  split_pure_spatial; [cancel | idtac].
   rename PreH7 into Hsafe.
   assert (Hvalid_p : valid (uf_state_of n_pre ps_low_level_spec rs_low_level_spec) p).
   {
@@ -141,11 +140,6 @@ Proof.
     prog_nf in Hsafe.
     safe_choice_l Hsafe.
     exact Hsafe.
-Qed.
-
-Lemma proof_of_uf_find_c_partial_solve_wit_2_pure : uf_find_c_partial_solve_wit_2_pure.
-Proof.
-  pre_process.
 Qed.
 
 Lemma proof_of_uf_union_c_entail_wit_1 : uf_union_c_entail_wit_1.
@@ -378,11 +372,6 @@ Proof.
     rewrite uf_state_of_inc_rank_replace by lia.
     rewrite PreH7.
     reflexivity.
-Qed.
-
-Lemma proof_of_uf_union_c_partial_solve_wit_1_pure : uf_union_c_partial_solve_wit_1_pure.
-Proof.
-  pre_process.
 Qed.
 
 Lemma proof_of_uf_union_c_partial_solve_wit_2_pure : uf_union_c_partial_solve_wit_2_pure.

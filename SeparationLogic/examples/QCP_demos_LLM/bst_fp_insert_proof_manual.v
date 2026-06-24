@@ -30,7 +30,7 @@ Proof.
 	  cancel (b_pre # Ptr |-> b_pre_v).
 	  cancel (store_tree b_pre_v 0 tr_low_level_spec).
 	  split_pure_spatial.
-	  + apply derivable1_refl.
+	  + cancel.
 	  + split_pures.
 	    * dump_pre_spatial.
 	      reflexivity.
@@ -93,24 +93,23 @@ Proof.
 	pre_process.
 	subst b_v_father.
 	sep_apply store_tree_make_tree; [ | tauto ..].
-	eapply derivable1_trans with
-	  (store_ptb b b_pre fa 0 pt0 **
-	   b # Ptr |-> b_v **
-	   store_tree b_v fa (make_tree l0 b_v_key value_pre r0)).
-	- cancel (store_ptb b b_pre fa 0 pt0).
-	  cancel (b # Ptr |-> b_v).
-	  cancel (store_tree b_v fa (make_tree l0 b_v_key value_pre r0)).
-	- sep_apply store_ptb_store_tree.
-	rewrite PreH10 in PreH6.
-	simpl in PreH6.
-	simpl.
-	destruct (Key.dec x_pre b_v_key) as [[Hlt | Hgt] | Heq]; try Key.order.
-	Intros b_pre_v.
-	Exists b_pre_v.
-	rewrite Heq.
-	rewrite Heq in PreH6.
-	rewrite <- PreH6.
-	apply derivable1_refl.
+	sep_apply store_ptb_store_tree.
+	Intros p_root.
+	Exists p_root.
+	cancel.
+	assert (combine_tree pt0 (make_tree l0 b_v_key value_pre
+r0) = tree_insert x_pre value_pre
+tr_low_level_spec).
+	{
+		rewrite PreH10 in PreH6.
+		simpl in PreH6.
+		simpl.
+		destruct (Key.dec x_pre b_v_key) as [[Hlt | Hgt] | Heq]; try Key.order.
+		subst.
+		auto.
+	}
+	rewrite H1.
+	cancel.
 Qed.
 
 Lemma proof_of_insert_return_wit_2 : insert_return_wit_2.
@@ -131,7 +130,7 @@ Proof.
 	    Intros b_pre_v.
 	    Exists b_pre_v.
 	    rewrite PreH5.
-	    apply derivable1_refl.
+	    cancel.
 	- reflexivity.
 Qed.
 
@@ -147,7 +146,7 @@ Proof.
 	  + sep_apply (store_ptb_app (&(b_v_2 # "tree" ->ₛ "right")) b b_pre b_v_2 fa 0
 	      (RH b_v_key b_v_value l0 :: nil) pt0_2).
 	    simpl.
-	    apply derivable1_refl.
+	    cancel.
 	  + exact (conj PreH7 PreH8).
 	  + exact PreH5.
 	- dump_pre_spatial.
@@ -174,7 +173,7 @@ Proof.
 	  + sep_apply (store_ptb_app (&(b_v_2 # "tree" ->ₛ "left")) b b_pre b_v_2 fa 0
 	      (LH b_v_key b_v_value r0 :: nil) pt0_2).
 	    simpl.
-	    apply derivable1_refl.
+	    cancel.
 	  + exact (conj PreH6 PreH7).
 	  + exact PreH4.
 	- dump_pre_spatial.
@@ -206,7 +205,7 @@ Proof.
 	  unfold Bst.store_map.
 	  Exists (tree_insert x_pre value_pre tr).
 	  split_pure_spatial.
-	  + apply derivable1_sepcon_comm.
+	  + cancel.
 	  + split_pures.
 	    * dump_pre_spatial.
 	      eapply insert_SearchTree; eauto.

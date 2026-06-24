@@ -5,7 +5,7 @@ Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Arith.Wf_nat.
 Require Import Coq.micromega.Psatz.
 Require Import SetsClass.SetsClass.
-From GraphLib Require Import graph_basic reachable_basic path Zweight.
+From GraphLib Require Import graph_basic reachable_basic reachable_restricted path Zweight.
 From MaxMinLib Require Import MaxMin Interface.
 From ListLib Require Import Base.Inductive Base.Positional General.NoDup.
 
@@ -361,6 +361,26 @@ Proof.
     exists e. eauto. auto.
 Qed.
 
+Lemma valid_epath_reachable_without:
+  forall g u v p e,
+    valid_epath g u p v ->
+    ~ In e p ->
+    reachable_without g e u v.
+Proof.
+  intros g u v p.
+  revert u v.
+  induction p as [|a p IHp]; intros u v e Hvalid Hnotin.
+  - apply valid_epath_nil_inv in Hvalid.
+    subst; reflexivity.
+  - apply valid_epath_cons_inv in Hvalid as [w [Hstep Hrest]].
+    unfold reachable_without.
+    transitivity_1n w.
+    + exists a; split; auto.
+      intro Heq; apply Hnotin; subst; simpl; auto.
+    + apply (IHp w v e); auto.
+      intro Hin; apply Hnotin; simpl; auto.
+Qed.
+
 (* reachable能够被转换为epath *)
 Lemma reachable_valid_epath:
   forall g u v,
@@ -376,6 +396,23 @@ Proof.
     exists (e :: p).
     eapply valid_epath_cons; eauto.
 Qed.
+
+Lemma reachable_without_valid_epath: 
+  forall g u v e, 
+  reachable_without g e u v -> 
+  exists p, valid_epath g u p v /\ ~ In e p.
+Proof. 
+  intros. 
+  unfold reachable_without in H.
+  induction_1n H.
+  - exists nil. split; [apply valid_epath_empty|simpl; auto]. 
+  - destruct IHrt as [p [Hvalid Hnot_in]]. 
+    destruct H0 as [e0 [Hstep Hne]].
+    exists (e0 :: p); split.
+    + eapply valid_epath_cons; eauto.
+    + simpl; unfold not; intros []; auto.
+Qed.
+
 
 Theorem valid_epath_rev
   {undirected:UndirectedGraph G V E}:
@@ -395,6 +432,25 @@ Proof.
     specialize (IHp _ Hpre).
     eapply valid_epath_cons; eauto.
     eapply step_sym; eauto.
+Qed.
+
+Theorem valid_epath_cross:
+  forall P g u v p,
+    P u -> ~ P v ->
+    valid_epath g u p v -> 
+    exists x y a, P x /\ ~ P y /\ step_aux g a x y /\ In a p.
+Proof.
+  intros Q g u v p Hu Hv Hvalid.
+  revert u Hu Hvalid.
+  induction p as [|a p IH]; intros x Hu Hvalid.
+  - apply valid_epath_nil_inv in Hvalid; subst; contradiction.
+  - apply valid_epath_cons_inv in Hvalid as [z [Hstep Hrest]].
+    destruct (classic (Q z)) as [Hz | Hz].
+    + destruct (IH z Hz Hrest) as [x' [y' [b [Hx' [Hy' [Hstep' Hin']]]]]].
+      exists x', y', b; repeat split; auto.
+      simpl; right; auto.
+    + exists x, z, a; repeat split; auto.
+      simpl; left; auto. 
 Qed.
 
 (* epath上的简单路径：不经过重复边 *)
@@ -490,17 +546,29 @@ Proof.
 Qed.
 
 
-
-
-
-
-
-
-
-
-
-
-
+Lemma valid_epath_simple_Forall 
+  (g: G)
+  {step_aux_unique_undirected: forall e x1 y1 x2 y2, step_aux g e x1 y1 -> step_aux g e x2 y2 -> 
+  (x1 = x2 /\ y1 = y2) \/ (x1 = y2 /\ x2 = y1)}:
+  forall eset u p v,
+    valid_epath g u p v ->
+    Forall eset p ->
+    exists q, is_simple_epath g u q v /\ Forall eset q.
+Proof.
+  intros eset u p v H_valid Hfor.
+  remember (length p) as n.
+  revert u p v H_valid Hfor Heqn.
+  induction n using lt_wf_ind; intros u p v H_valid Hfor Heqn.
+  destruct (classic (NoDup p)).
+  - exists p; split; [split|]; auto.
+  - apply Nodup_exists_repetition in H0.
+    destruct H0 as [e [l1 [l2 [l3 H_eq]]]].
+    subst p. 
+    eapply valid_epath_shorten_cycle in H_valid as [q [Hqpath [Hqlt Hsub]]]; eauto.
+    specialize (H (length q) ltac:(lia) u q v Hqpath). 
+    apply H; auto.
+    rewrite Forall_forall in *; auto.
+Qed.
 
 
 (* vset就等于path去掉首尾后的所有点的集合 *)

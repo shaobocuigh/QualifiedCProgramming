@@ -40,18 +40,6 @@ Proof.
   exact PreH2.
 Qed.
 
-Lemma proof_of_split_while_partial_solve_wit_2_pure : split_while_partial_solve_wit_2_pure.
-Proof. 
-  pre_process.
-  subst; entailer!.
-Qed. 
-
-Lemma proof_of_split_while_partial_solve_wit_4_pure : split_while_partial_solve_wit_4_pure.
-Proof. 
-  pre_process.
-  subst; entailer!.
-Qed. 
-
 Lemma proof_of_split_while_return_wit_1 : split_while_return_wit_1.
 Proof.
   pre_process.

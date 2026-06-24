@@ -17,10 +17,13 @@ Local Open Scope string_scope.
 Local Open Scope list.
 Import naive_C_Rules.
 Require Import SimpleC.EE.QCP_demos_human.sll_lib.
-Require Import SimpleC.EE.QCP_demos_human.sll_merge_rel_lib.
+From MonadLib Require Export MonadLib.
+From MonadLib.StateRelMonad Require Export StateRelMonad.
+Export MonadNotation.
 Local Open Scope monad.
 From AUXLib Require Import int_auto Axioms Feq Idents ListLib VMap relations.
 From FP Require Import PartialOrder_Setoid BourbakiWitt.
+Require Import SimpleC.EE.QCP_demos_human.sll_merge_rel_lib.
 Local Open Scope sac.
 From SimpleC.EE.QCP_demos_human Require Import sll_strategy_goal.
 From SimpleC.EE.QCP_demos_human Require Import sll_strategy_proof.
@@ -86,18 +89,18 @@ forall (y_pre: Z) (x_pre: Z) (X: ((@list Z) -> (unit -> Prop))) (s2: (@list Z)) 
   **  (sllbseg ( &( "ret" ) ) ( &( "ret" ) ) l3 )
 ) \/
 (
-forall (s2: (@list Z)) (s1: (@list Z)) ,
+forall (X: ((@list Z) -> (unit -> Prop))) (s2: (@list Z)) (s1: (@list Z)) (PreH1 : (safeExec ATrue (merge_rel (s1) (s2)) X )) ,
   TT && emp 
 |--
-  “ (equiv (merge_rel (s1) (s2)) (merge_from_mid_rel (s1) (s2) ((@nil Z))) ) ”
+  “ (safeExec ATrue (merge_from_mid_rel (s1) (s2) ((@nil Z))) X ) ”
   &&  emp
 ).
 
 Definition merge_entail_wit_1_split_goal_1 := 
-forall (s2: (@list Z)) (s1: (@list Z)) ,
+forall (X: ((@list Z) -> (unit -> Prop))) (s2: (@list Z)) (s1: (@list Z)) (PreH1 : (safeExec ATrue (merge_rel (s1) (s2)) X )) ,
   TT && emp 
 |--
-  “ (equiv (merge_rel (s1) (s2)) (merge_from_mid_rel (s1) (s2) ((@nil Z))) ) ”
+  “ (safeExec ATrue (merge_from_mid_rel (s1) (s2) ((@nil Z))) X ) ”
 .
 
 Definition merge_entail_wit_2_1 := 
@@ -120,14 +123,14 @@ forall (X: ((@list Z) -> (unit -> Prop))) (t: Z) (y: Z) (x: Z) (l1_2: (@list Z))
   **  (sllbseg ( &( "ret" ) ) &((x)  # "list" ->ₛ "next") l3 )
 ) \/
 (
-forall (t: Z) (y: Z) (x: Z) (l1_2: (@list Z)) (l2_2: (@list Z)) (l3_2: (@list Z)) (x_data: Z) (l1_new: (@list Z)) (y_data: Z) (l2_new: (@list Z)) (PreH1 : (x_data <= INT_MAX)) (PreH2 : (x_data >= INT_MIN)) (PreH3 : (x_data < y_data)) (PreH4 : (l2_2 = (cons (y_data) (l2_new)))) (PreH5 : (l1_2 = (cons (x_data) (l1_new)))) (PreH6 : (y <> 0)) (PreH7 : (x <> 0)) ,
+forall (X: ((@list Z) -> (unit -> Prop))) (t: Z) (y: Z) (x: Z) (l1_2: (@list Z)) (l2_2: (@list Z)) (l3_2: (@list Z)) (x_data: Z) (l1_new: (@list Z)) (y_data: Z) (l2_new: (@list Z)) (PreH1 : (x_data <= INT_MAX)) (PreH2 : (x_data >= INT_MIN)) (PreH3 : (x_data < y_data)) (PreH4 : (l2_2 = (cons (y_data) (l2_new)))) (PreH5 : (l1_2 = (cons (x_data) (l1_new)))) (PreH6 : (y <> 0)) (PreH7 : (x <> 0)) (PreH8 : (safeExec ATrue (merge_from_mid_rel (l1_2) (l2_2) (l3_2)) X )) ,
   ((&((x)  # "list" ->ₛ "data")) # Int  |-> x_data)
   **  ((t) # Ptr  |-> x)
   **  (sllbseg ( &( "ret" ) ) t l3_2 )
 |--
   EX (l3: (@list Z)) ,
   “ (y <> 0) ” 
-  &&  “ (equiv (merge_from_mid_rel (l1_2) (l2_2) (l3_2)) (merge_from_mid_rel (l1_new) ((cons (y_data) (l2_new))) (l3)) ) ”
+  &&  “ (safeExec ATrue (merge_from_mid_rel (l1_new) ((cons (y_data) (l2_new))) (l3)) X ) ”
   &&  (sllbseg ( &( "ret" ) ) &((x)  # "list" ->ₛ "next") l3 )
 ).
 
@@ -151,14 +154,14 @@ forall (X: ((@list Z) -> (unit -> Prop))) (t: Z) (y: Z) (x: Z) (l1_2: (@list Z))
   **  (sllbseg ( &( "ret" ) ) &((y)  # "list" ->ₛ "next") l3 )
 ) \/
 (
-forall (t: Z) (y: Z) (x: Z) (l1_2: (@list Z)) (l2_2: (@list Z)) (l3_2: (@list Z)) (x_data: Z) (l1_new: (@list Z)) (y_data: Z) (l2_new: (@list Z)) (PreH1 : (y_data <= INT_MAX)) (PreH2 : (y_data >= INT_MIN)) (PreH3 : (x_data >= y_data)) (PreH4 : (l2_2 = (cons (y_data) (l2_new)))) (PreH5 : (l1_2 = (cons (x_data) (l1_new)))) (PreH6 : (y <> 0)) (PreH7 : (x <> 0)) ,
+forall (X: ((@list Z) -> (unit -> Prop))) (t: Z) (y: Z) (x: Z) (l1_2: (@list Z)) (l2_2: (@list Z)) (l3_2: (@list Z)) (x_data: Z) (l1_new: (@list Z)) (y_data: Z) (l2_new: (@list Z)) (PreH1 : (y_data <= INT_MAX)) (PreH2 : (y_data >= INT_MIN)) (PreH3 : (x_data >= y_data)) (PreH4 : (l2_2 = (cons (y_data) (l2_new)))) (PreH5 : (l1_2 = (cons (x_data) (l1_new)))) (PreH6 : (y <> 0)) (PreH7 : (x <> 0)) (PreH8 : (safeExec ATrue (merge_from_mid_rel (l1_2) (l2_2) (l3_2)) X )) ,
   ((&((y)  # "list" ->ₛ "data")) # Int  |-> y_data)
   **  ((t) # Ptr  |-> y)
   **  (sllbseg ( &( "ret" ) ) t l3_2 )
 |--
   EX (l3: (@list Z)) ,
   “ (x <> 0) ” 
-  &&  “ (equiv (merge_from_mid_rel (l1_2) (l2_2) (l3_2)) (merge_from_mid_rel ((cons (x_data) (l1_new))) (l2_new) (l3)) ) ”
+  &&  “ (safeExec ATrue (merge_from_mid_rel ((cons (x_data) (l1_new))) (l2_new) (l3)) X ) ”
   &&  (sllbseg ( &( "ret" ) ) &((y)  # "list" ->ₛ "next") l3 )
 ).
 
@@ -174,13 +177,13 @@ forall (X: ((@list Z) -> (unit -> Prop))) (y: Z) (x: Z) (l1: (@list Z)) (l2: (@l
   &&  (sll ret s3 )
 ) \/
 (
-forall (y: Z) (x: Z) (l1: (@list Z)) (l2: (@list Z)) (l3: (@list Z)) (ret: Z) (PreH1 : (x = 0)) ,
+forall (X: ((@list Z) -> (unit -> Prop))) (y: Z) (x: Z) (l1: (@list Z)) (l2: (@list Z)) (l3: (@list Z)) (ret: Z) (PreH1 : (x = 0)) (PreH2 : (safeExec ATrue (merge_from_mid_rel (l1) (l2) (l3)) X )) ,
   (sllseg ret y l3 )
   **  (sll x l1 )
   **  (sll y l2 )
 |--
   EX (s3: (@list Z)) ,
-  “ (equiv (merge_from_mid_rel (l1) (l2) (l3)) (return (s3)) ) ”
+  “ (safeExec ATrue (return (s3)) X ) ”
   &&  (sll ret s3 )
 ).
 
@@ -196,13 +199,13 @@ forall (X: ((@list Z) -> (unit -> Prop))) (y: Z) (x: Z) (l1: (@list Z)) (l2: (@l
   &&  (sll ret s3 )
 ) \/
 (
-forall (y: Z) (x: Z) (l1: (@list Z)) (l2: (@list Z)) (l3: (@list Z)) (ret: Z) (PreH1 : (y = 0)) (PreH2 : (x <> 0)) ,
+forall (X: ((@list Z) -> (unit -> Prop))) (y: Z) (x: Z) (l1: (@list Z)) (l2: (@list Z)) (l3: (@list Z)) (ret: Z) (PreH1 : (y = 0)) (PreH2 : (x <> 0)) (PreH3 : (safeExec ATrue (merge_from_mid_rel (l1) (l2) (l3)) X )) ,
   (sllseg ret x l3 )
   **  (sll x l1 )
   **  (sll y l2 )
 |--
   EX (s3: (@list Z)) ,
-  “ (equiv (merge_from_mid_rel (l1) (l2) (l3)) (return (s3)) ) ”
+  “ (safeExec ATrue (return (s3)) X ) ”
   &&  (sll ret s3 )
 ).
 
@@ -384,18 +387,18 @@ forall (q_pre: Z) (p_pre: Z) (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list 
   **  (sll q_pre_v s2 )
 ) \/
 (
-forall (x_pre: Z) (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (PreH1 : (x_pre = 0)) ,
+forall (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list Z)) -> (unit -> Prop))) (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (PreH1 : (x_pre = 0)) (PreH2 : (safeExec ATrue (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) X_low_level_spec )) ,
   (sll x_pre l_low_level_spec )
 |--
-  “ (equiv (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) (return ((maketuple (l1_low_level_spec) (l2_low_level_spec)))) ) ”
+  “ (safeExec ATrue (return ((maketuple (l1_low_level_spec) (l2_low_level_spec)))) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition split_rec_return_wit_1_split_goal_1 := 
-forall (x_pre: Z) (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (PreH1 : (x_pre = 0)) ,
+forall (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list Z)) -> (unit -> Prop))) (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (PreH1 : (x_pre = 0)) (PreH2 : (safeExec ATrue (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) X_low_level_spec )) ,
   (sll x_pre l_low_level_spec )
 |--
-  “ (equiv (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) (return ((maketuple (l1_low_level_spec) (l2_low_level_spec)))) ) ”
+  “ (safeExec ATrue (return ((maketuple (l1_low_level_spec) (l2_low_level_spec)))) X_low_level_spec ) ”
 .
 
 Definition split_rec_return_wit_2 := 
@@ -414,18 +417,18 @@ forall (q_pre: Z) (p_pre: Z) (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list 
   **  (sll q_pre_v s2 )
 ) \/
 (
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (s1_2: (@list Z)) (s2_2: (@list Z)) (PreH1 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH2 : (x_pre <> 0)) ,
+forall (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list Z)) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (s1_2: (@list Z)) (s2_2: (@list Z)) (PreH1 : (safeExec ATrue (applyf (reversepair) ((maketuple (s1_2) (s2_2)))) X_low_level_spec )) (PreH2 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH3 : (x_pre <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (applyf (reversepair) ((maketuple (s1_2) (s2_2)))) (return ((maketuple (s2_2) (s1_2)))) ) ”
+  “ (safeExec ATrue (return ((maketuple (s2_2) (s1_2)))) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition split_rec_return_wit_2_split_goal_1 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (s1_2: (@list Z)) (s2_2: (@list Z)) (PreH1 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH2 : (x_pre <> 0)) ,
+forall (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list Z)) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (s1_2: (@list Z)) (s2_2: (@list Z)) (PreH1 : (safeExec ATrue (applyf (reversepair) ((maketuple (s1_2) (s2_2)))) X_low_level_spec )) (PreH2 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH3 : (x_pre <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (applyf (reversepair) ((maketuple (s1_2) (s2_2)))) (return ((maketuple (s2_2) (s1_2)))) ) ”
+  “ (safeExec ATrue (return ((maketuple (s2_2) (s1_2)))) X_low_level_spec ) ”
 .
 
 Definition split_rec_partial_solve_wit_1_pure := 
@@ -495,7 +498,8 @@ forall (q_pre: Z) (p_pre: Z) (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list 
   &&  “ (l_low_level_spec = (cons (x_data) (l_new))) ” 
   &&  “ (x_pre <> 0) ” 
   &&  “ (l_low_level_spec = (cons (x_data) (l_new))) ” 
-  &&  “ (x_pre <> 0) ”
+  &&  “ (x_pre <> 0) ” 
+  &&  “ (safeExec ATrue (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) X_low_level_spec ) ”
   &&  ((p_pre) # Ptr  |-> x_pre)
   **  ((&((x_pre)  # "list" ->ₛ "data")) # Int  |-> x_data)
   **  ((&((x_pre)  # "list" ->ₛ "next")) # Ptr  |-> p_pre_v)
@@ -531,6 +535,7 @@ forall (q_pre: Z) (p_pre: Z) (x_pre: Z) (X_low_level_spec: (((@list Z) * (@list 
   **  (sll q_pre_v l2_low_level_spec )
 |--
   “ (safeExec ATrue (bind ((split_rec_rel (l_new) (l2_low_level_spec) ((cons (x_data) (l1_low_level_spec))))) (reversepair)) X_low_level_spec ) ” 
+  &&  “ (safeExec ATrue (bind ((split_rec_rel (l_new) (l2_low_level_spec) ((cons (x_data) (l1_low_level_spec))))) (reversepair)) X_low_level_spec ) ” 
   &&  “ (l_low_level_spec = (cons (x_data) (l_new))) ” 
   &&  “ (x_pre <> 0) ”
   &&  (sll x_next l_new )
@@ -568,18 +573,18 @@ forall (X_low_level_spec: (((@list Z) * (@list Z)) -> (unit -> Prop))) (l2_low_l
   **  (sll t l_new )
 ) \/
 (
-forall (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (p_v: Z) (PreH1 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH2 : (p_v <> 0)) ,
+forall (X_low_level_spec: (((@list Z) * (@list Z)) -> (unit -> Prop))) (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (p_v: Z) (PreH1 : (safeExec ATrue (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) X_low_level_spec )) (PreH2 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH3 : (p_v <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) (bind ((split_rec_rel (l_new) (l2_low_level_spec) ((cons (x_data) (l1_low_level_spec))))) (reversepair)) ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_new) (l2_low_level_spec) ((cons (x_data) (l1_low_level_spec))))) (reversepair)) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition split_rec_which_implies_wit_2_split_goal_1 := 
-forall (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (p_v: Z) (PreH1 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH2 : (p_v <> 0)) ,
+forall (X_low_level_spec: (((@list Z) * (@list Z)) -> (unit -> Prop))) (l2_low_level_spec: (@list Z)) (l1_low_level_spec: (@list Z)) (l_low_level_spec: (@list Z)) (x_data: Z) (l_new: (@list Z)) (p_v: Z) (PreH1 : (safeExec ATrue (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) X_low_level_spec )) (PreH2 : (l_low_level_spec = (cons (x_data) (l_new)))) (PreH3 : (p_v <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (split_rec_rel (l_low_level_spec) (l1_low_level_spec) (l2_low_level_spec)) (bind ((split_rec_rel (l_new) (l2_low_level_spec) ((cons (x_data) (l1_low_level_spec))))) (reversepair)) ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_new) (l2_low_level_spec) ((cons (x_data) (l1_low_level_spec))))) (reversepair)) X_low_level_spec ) ”
 .
 
 (*----- Function merge_sort -----*)
@@ -629,18 +634,18 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
   &&  (sll x_pre l_low_level_spec )
 ) \/
 (
-forall (l_low_level_spec: (@list Z)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (PreH1 : (safeExec ATrue (mergesortrec (l_low_level_spec)) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (mergesortrec (l_low_level_spec)) (bind ((split_rel (l_low_level_spec))) (mergesortrec_loc0)) ) ”
+  “ (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (mergesortrec_loc0)) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort_entail_wit_1_split_goal_1 := 
-forall (l_low_level_spec: (@list Z)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (PreH1 : (safeExec ATrue (mergesortrec (l_low_level_spec)) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (mergesortrec (l_low_level_spec)) (bind ((split_rel (l_low_level_spec))) (mergesortrec_loc0)) ) ”
+  “ (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (mergesortrec_loc0)) X_low_level_spec ) ”
 .
 
 Definition merge_sort_entail_wit_2 := 
@@ -656,18 +661,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (p_call
   **  (sll q_callee_v l2 )
 ) \/
 (
-forall (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v <> 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v <> 0)) (PreH2 : (safeExec ATrue (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) (bind ((mergesortrec (s1))) ((mergesortrec_loc1 (s2)))) ) ”
+  “ (safeExec ATrue (bind ((mergesortrec (s1))) ((mergesortrec_loc1 (s2)))) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort_entail_wit_2_split_goal_1 := 
-forall (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v <> 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v <> 0)) (PreH2 : (safeExec ATrue (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) (bind ((mergesortrec (s1))) ((mergesortrec_loc1 (s2)))) ) ”
+  “ (safeExec ATrue (bind ((mergesortrec (s1))) ((mergesortrec_loc1 (s2)))) X_low_level_spec ) ”
 .
 
 Definition merge_sort_entail_wit_3 := 
@@ -683,18 +688,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (l2_2: 
   **  (sll q_callee_v l2 )
 ) \/
 (
-forall (q_callee_v: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (q_callee_v <> 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((mergesortrec_loc1 (l2_2))) (l0)) X_low_level_spec )) (PreH2 : (q_callee_v <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((mergesortrec_loc1 (l2_2))) (l0)) (bind ((mergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) ) ”
+  “ (safeExec ATrue (bind ((mergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort_entail_wit_3_split_goal_1 := 
-forall (q_callee_v: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (q_callee_v <> 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((mergesortrec_loc1 (l2_2))) (l0)) X_low_level_spec )) (PreH2 : (q_callee_v <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((mergesortrec_loc1 (l2_2))) (l0)) (bind ((mergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) ) ”
+  “ (safeExec ATrue (bind ((mergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) X_low_level_spec ) ”
 .
 
 Definition merge_sort_entail_wit_4 := 
@@ -710,18 +715,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (retval
   **  (sll retval_2 l2 )
 ) \/
 (
-forall (q_callee_v: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (q_callee_v <> 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((mergesortrec_loc2 (l1_2))) (l0)) X_low_level_spec )) (PreH2 : (q_callee_v <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((mergesortrec_loc2 (l1_2))) (l0)) (merge_rel (l1_2) (l0)) ) ”
+  “ (safeExec ATrue (merge_rel (l1_2) (l0)) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort_entail_wit_4_split_goal_1 := 
-forall (q_callee_v: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (q_callee_v <> 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((mergesortrec_loc2 (l1_2))) (l0)) X_low_level_spec )) (PreH2 : (q_callee_v <> 0)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((mergesortrec_loc2 (l1_2))) (l0)) (merge_rel (l1_2) (l0)) ) ”
+  “ (safeExec ATrue (merge_rel (l1_2) (l0)) X_low_level_spec ) ”
 .
 
 Definition merge_sort_return_wit_1 := 
@@ -744,18 +749,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (p_call
   &&  (sll p_callee_v l0 )
 ) \/
 (
-forall (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v = 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v = 0)) (PreH2 : (safeExec ATrue (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) X_low_level_spec )) ,
   (sll q_callee_v s2 )
 |--
-  “ (equiv (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) (return (s1)) ) ”
+  “ (safeExec ATrue (return (s1)) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort_return_wit_2_split_goal_1 := 
-forall (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v = 0)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (q_callee_v = 0)) (PreH2 : (safeExec ATrue (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) X_low_level_spec )) ,
   (sll q_callee_v s2 )
 |--
-  “ (equiv (applyf (mergesortrec_loc0) ((maketuple (s1) (s2)))) (return (s1)) ) ”
+  “ (safeExec ATrue (return (s1)) X_low_level_spec ) ”
 .
 
 Definition merge_sort_partial_solve_wit_1_pure := 
@@ -810,61 +815,26 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
   **  ((( &( "x" ) )) # Ptr  |-> x_pre)
   **  (sll x_pre l_low_level_spec )
 |--
-  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (mergesortrec_loc0)) X_low_level_spec ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv mergesortrec_loc0 mergesortrec_loc0 ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (mergesortrec_loc0)) X_low_level_spec ) ”
 ) \/
 (
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) ,
+forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (PreH1 : (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (mergesortrec_loc0)) X_low_level_spec )) ,
   ((( &( "q" ) )) # Ptr  |-> 0)
   **  ((( &( "p" ) )) # Ptr  |-> 0)
   **  ((( &( "x" ) )) # Ptr  |-> x_pre)
   **  (sll x_pre l_low_level_spec )
 |--
-  “ (equiv mergesortrec_loc0 mergesortrec_loc0 ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv mergesortrec_loc0 mergesortrec_loc0 ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (mergesortrec_loc0)) X_low_level_spec ) ”
 ).
 
 Definition merge_sort_partial_solve_wit_3_pure_split_goal_1 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) ,
+forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (PreH1 : (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (mergesortrec_loc0)) X_low_level_spec )) ,
   ((( &( "q" ) )) # Ptr  |-> 0)
   **  ((( &( "p" ) )) # Ptr  |-> 0)
   **  ((( &( "x" ) )) # Ptr  |-> x_pre)
   **  (sll x_pre l_low_level_spec )
 |--
-  “ (equiv mergesortrec_loc0 mergesortrec_loc0 ) ”
-.
-
-Definition merge_sort_partial_solve_wit_3_pure_split_goal_2 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) ,
-  ((( &( "q" ) )) # Ptr  |-> 0)
-  **  ((( &( "p" ) )) # Ptr  |-> 0)
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-  **  (sll x_pre l_low_level_spec )
-|--
-  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ”
-.
-
-Definition merge_sort_partial_solve_wit_3_pure_split_goal_3 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) ,
-  ((( &( "q" ) )) # Ptr  |-> 0)
-  **  ((( &( "p" ) )) # Ptr  |-> 0)
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-  **  (sll x_pre l_low_level_spec )
-|--
-  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ”
-.
-
-Definition merge_sort_partial_solve_wit_3_pure_split_goal_4 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) ,
-  ((( &( "q" ) )) # Ptr  |-> 0)
-  **  ((( &( "p" ) )) # Ptr  |-> 0)
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-  **  (sll x_pre l_low_level_spec )
-|--
-  “ (equiv mergesortrec_loc0 mergesortrec_loc0 ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (mergesortrec_loc0)) X_low_level_spec ) ”
 .
 
 Definition merge_sort_partial_solve_wit_3_aux := 
@@ -872,8 +842,7 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
   (sll x_pre l_low_level_spec )
 |--
   “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (mergesortrec_loc0)) X_low_level_spec ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv mergesortrec_loc0 mergesortrec_loc0 ) ”
+  &&  “ (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (mergesortrec_loc0)) X_low_level_spec ) ”
   &&  (sll x_pre l_low_level_spec )
   **  (sll 0 (@nil Z) )
   **  (sll 0 (@nil Z) )
@@ -898,6 +867,7 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (p_call
   **  (sll q_callee_v l2 )
 |--
   “ (safeExec ATrue (bind ((mergesortrec (l1))) ((mergesortrec_loc1 (l2)))) X_low_level_spec ) ” 
+  &&  “ (safeExec ATrue (bind ((mergesortrec (l1))) ((mergesortrec_loc1 (l2)))) X_low_level_spec ) ” 
   &&  “ (q_callee_v <> 0) ”
   &&  (sll p_callee_v l1 )
   **  (sll q_callee_v l2 )
@@ -922,6 +892,7 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (retval
   **  (sll q_callee_v l2 )
 |--
   “ (safeExec ATrue (bind ((mergesortrec (l2))) ((mergesortrec_loc2 (l1)))) X_low_level_spec ) ” 
+  &&  “ (safeExec ATrue (bind ((mergesortrec (l2))) ((mergesortrec_loc2 (l1)))) X_low_level_spec ) ” 
   &&  “ (q_callee_v <> 0) ”
   &&  (sll q_callee_v l2 )
   **  (sll retval l1 )
@@ -946,6 +917,7 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (q_callee_v: Z) (retval
   **  (sll retval_2 l2 )
 |--
   “ (safeExec ATrue (merge_rel (l1) (l2)) X_low_level_spec ) ” 
+  &&  “ (safeExec ATrue (merge_rel (l1) (l2)) X_low_level_spec ) ” 
   &&  “ (q_callee_v <> 0) ”
   &&  (sll retval l1 )
   **  (sll retval_2 l2 )
@@ -1016,18 +988,18 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
   &&  (sll x_pre l_low_level_spec )
 ) \/
 (
-forall (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) (PreH4 : (safeExec ATrue (gmergesortrec (l_low_level_spec)) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (gmergesortrec (l_low_level_spec)) (bind ((split_rel (l_low_level_spec))) (gmergesortrec_loc0)) ) ”
+  “ (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (gmergesortrec_loc0)) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort3_entail_wit_1_split_goal_1 := 
-forall (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) (PreH4 : (safeExec ATrue (gmergesortrec (l_low_level_spec)) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (gmergesortrec (l_low_level_spec)) (bind ((split_rel (l_low_level_spec))) (gmergesortrec_loc0)) ) ”
+  “ (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (gmergesortrec_loc0)) X_low_level_spec ) ”
 .
 
 Definition merge_sort3_entail_wit_2 := 
@@ -1045,18 +1017,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@li
   **  (sll q_callee_v l2 )
 ) \/
 (
-forall (l_low_level_spec: (@list Z)) (retval: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (safeExec ATrue (applyf (gmergesortrec_loc0) ((maketuple (s1) (s2)))) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   TT && emp 
 |--
-  “ (equiv (applyf (gmergesortrec_loc0) ((maketuple (s1) (s2)))) (bind ((gmergesortrec (s1))) ((gmergesortrec_loc1 (s2)))) ) ”
+  “ (safeExec ATrue (bind ((gmergesortrec (s1))) ((gmergesortrec_loc1 (s2)))) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort3_entail_wit_2_split_goal_1 := 
-forall (l_low_level_spec: (@list Z)) (retval: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (s1: (@list Z)) (s2: (@list Z)) (PreH1 : (safeExec ATrue (applyf (gmergesortrec_loc0) ((maketuple (s1) (s2)))) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   TT && emp 
 |--
-  “ (equiv (applyf (gmergesortrec_loc0) ((maketuple (s1) (s2)))) (bind ((gmergesortrec (s1))) ((gmergesortrec_loc1 (s2)))) ) ”
+  “ (safeExec ATrue (bind ((gmergesortrec (s1))) ((gmergesortrec_loc1 (s2)))) X_low_level_spec ) ”
 .
 
 Definition merge_sort3_entail_wit_3 := 
@@ -1074,18 +1046,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@li
   **  (sll q_callee_v l2 )
 ) \/
 (
-forall (l_low_level_spec: (@list Z)) (retval: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((gmergesortrec_loc1 (l2_2))) (l0)) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((gmergesortrec_loc1 (l2_2))) (l0)) (bind ((gmergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) ) ”
+  “ (safeExec ATrue (bind ((gmergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort3_entail_wit_3_split_goal_1 := 
-forall (l_low_level_spec: (@list Z)) (retval: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (l2_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((gmergesortrec_loc1 (l2_2))) (l0)) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((gmergesortrec_loc1 (l2_2))) (l0)) (bind ((gmergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) ) ”
+  “ (safeExec ATrue (bind ((gmergesortrec (l2_2))) ((mergesortrec_loc2 (l0)))) X_low_level_spec ) ”
 .
 
 Definition merge_sort3_entail_wit_4 := 
@@ -1103,18 +1075,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@li
   **  (sll retval_3 l2 )
 ) \/
 (
-forall (l_low_level_spec: (@list Z)) (retval: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((mergesortrec_loc2 (l1_2))) (l0)) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((mergesortrec_loc2 (l1_2))) (l0)) (merge_rel (l1_2) (l0)) ) ”
+  “ (safeExec ATrue (merge_rel (l1_2) (l0)) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort3_entail_wit_4_split_goal_1 := 
-forall (l_low_level_spec: (@list Z)) (retval: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (l1_2: (@list Z)) (l0: (@list Z)) (PreH1 : (safeExec ATrue (applyf ((mergesortrec_loc2 (l1_2))) (l0)) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   TT && emp 
 |--
-  “ (equiv (applyf ((mergesortrec_loc2 (l1_2))) (l0)) (merge_rel (l1_2) (l0)) ) ”
+  “ (safeExec ATrue (merge_rel (l1_2) (l0)) X_low_level_spec ) ”
 .
 
 Definition merge_sort3_return_wit_1 := 
@@ -1136,18 +1108,18 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@li
   &&  (sll retval l0 )
 ) \/
 (
-forall (l_low_level_spec: (@list Z)) (retval_2: Z) (l0_2: (@list Z)) (PreH1 : (Permutation l_low_level_spec l0_2 )) (PreH2 : (incr l0_2 )) (PreH3 : (retval_2 <= 8)) (PreH4 : (retval_2 = (Zlength (l_low_level_spec)))) (PreH5 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval_2: Z) (l0_2: (@list Z)) (PreH1 : (Permutation l_low_level_spec l0_2 )) (PreH2 : (incr l0_2 )) (PreH3 : (retval_2 <= 8)) (PreH4 : (retval_2 = (Zlength (l_low_level_spec)))) (PreH5 : ((Zlength (l_low_level_spec)) <= INT_MAX)) (PreH6 : (safeExec ATrue (gmergesortrec (l_low_level_spec)) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (gmergesortrec (l_low_level_spec)) (return (l0_2)) ) ”
+  “ (safeExec ATrue (return (l0_2)) X_low_level_spec ) ”
   &&  emp
 ).
 
 Definition merge_sort3_return_wit_2_split_goal_1 := 
-forall (l_low_level_spec: (@list Z)) (retval_2: Z) (l0_2: (@list Z)) (PreH1 : (Permutation l_low_level_spec l0_2 )) (PreH2 : (incr l0_2 )) (PreH3 : (retval_2 <= 8)) (PreH4 : (retval_2 = (Zlength (l_low_level_spec)))) (PreH5 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval_2: Z) (l0_2: (@list Z)) (PreH1 : (Permutation l_low_level_spec l0_2 )) (PreH2 : (incr l0_2 )) (PreH3 : (retval_2 <= 8)) (PreH4 : (retval_2 = (Zlength (l_low_level_spec)))) (PreH5 : ((Zlength (l_low_level_spec)) <= INT_MAX)) (PreH6 : (safeExec ATrue (gmergesortrec (l_low_level_spec)) X_low_level_spec )) ,
   TT && emp 
 |--
-  “ (equiv (gmergesortrec (l_low_level_spec)) (return (l0_2)) ) ”
+  “ (safeExec ATrue (return (l0_2)) X_low_level_spec ) ”
 .
 
 Definition merge_sort3_partial_solve_wit_1_pure := 
@@ -1241,61 +1213,26 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
   **  (sll x_pre l_low_level_spec )
   **  ((( &( "x" ) )) # Ptr  |-> x_pre)
 |--
-  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (gmergesortrec_loc0)) X_low_level_spec ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv gmergesortrec_loc0 gmergesortrec_loc0 ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (gmergesortrec_loc0)) X_low_level_spec ) ”
 ) \/
 (
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (gmergesortrec_loc0)) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   ((( &( "q" ) )) # Ptr  |-> 0)
   **  ((( &( "p" ) )) # Ptr  |-> 0)
   **  (sll x_pre l_low_level_spec )
   **  ((( &( "x" ) )) # Ptr  |-> x_pre)
 |--
-  “ (equiv gmergesortrec_loc0 gmergesortrec_loc0 ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv gmergesortrec_loc0 gmergesortrec_loc0 ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (gmergesortrec_loc0)) X_low_level_spec ) ”
 ).
 
 Definition merge_sort3_partial_solve_wit_5_pure_split_goal_1 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
+forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (gmergesortrec_loc0)) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   ((( &( "q" ) )) # Ptr  |-> 0)
   **  ((( &( "p" ) )) # Ptr  |-> 0)
   **  (sll x_pre l_low_level_spec )
   **  ((( &( "x" ) )) # Ptr  |-> x_pre)
 |--
-  “ (equiv gmergesortrec_loc0 gmergesortrec_loc0 ) ”
-.
-
-Definition merge_sort3_partial_solve_wit_5_pure_split_goal_2 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
-  ((( &( "q" ) )) # Ptr  |-> 0)
-  **  ((( &( "p" ) )) # Ptr  |-> 0)
-  **  (sll x_pre l_low_level_spec )
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-|--
-  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ”
-.
-
-Definition merge_sort3_partial_solve_wit_5_pure_split_goal_3 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
-  ((( &( "q" ) )) # Ptr  |-> 0)
-  **  ((( &( "p" ) )) # Ptr  |-> 0)
-  **  (sll x_pre l_low_level_spec )
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-|--
-  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ”
-.
-
-Definition merge_sort3_partial_solve_wit_5_pure_split_goal_4 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (retval: Z) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
-  ((( &( "q" ) )) # Ptr  |-> 0)
-  **  ((( &( "p" ) )) # Ptr  |-> 0)
-  **  (sll x_pre l_low_level_spec )
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-|--
-  “ (equiv gmergesortrec_loc0 gmergesortrec_loc0 ) ”
+  “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (gmergesortrec_loc0)) X_low_level_spec ) ”
 .
 
 Definition merge_sort3_partial_solve_wit_5_aux := 
@@ -1303,8 +1240,7 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
   (sll x_pre l_low_level_spec )
 |--
   “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z)))) (gmergesortrec_loc0)) X_low_level_spec ) ” 
-  &&  “ (equiv (split_rel (l_low_level_spec)) (split_rec_rel (l_low_level_spec) ((@nil Z)) ((@nil Z))) ) ” 
-  &&  “ (equiv gmergesortrec_loc0 gmergesortrec_loc0 ) ” 
+  &&  “ (safeExec ATrue (bind ((split_rel (l_low_level_spec))) (gmergesortrec_loc0)) X_low_level_spec ) ” 
   &&  “ (retval > 8) ” 
   &&  “ (retval = (Zlength (l_low_level_spec))) ” 
   &&  “ ((Zlength (l_low_level_spec)) <= INT_MAX) ”
@@ -1316,7 +1252,6 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
 Definition merge_sort3_partial_solve_wit_5 := merge_sort3_partial_solve_wit_5_pure -> merge_sort3_partial_solve_wit_5_aux.
 
 Definition merge_sort3_partial_solve_wit_6_pure := 
-(
 forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@list Z)) (retval: Z) (q_callee_v: Z) (p_callee_v: Z) (l1: (@list Z)) (l2: (@list Z)) (PreH1 : (safeExec ATrue (bind ((gmergesortrec (l1))) ((gmergesortrec_loc1 (l2)))) X_low_level_spec )) (PreH2 : (retval > 8)) (PreH3 : (retval = (Zlength (l_low_level_spec)))) (PreH4 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
   ((( &( "p" ) )) # Ptr  |-> p_callee_v)
   **  (sll p_callee_v l1 )
@@ -1324,29 +1259,7 @@ forall (x_pre: Z) (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level
   **  (sll q_callee_v l2 )
   **  ((( &( "x" ) )) # Ptr  |-> x_pre)
 |--
-  “ (safeExec ATrue (bind ((gmergesortrec (l1))) ((gmergesortrec_loc1 (l2)))) X_low_level_spec ) ” 
-  &&  “ (equiv (gmergesortrec_loc1 (l2)) (gmergesortrec_loc1 (l2)) ) ”
-) \/
-(
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (retval: Z) (q_callee_v: Z) (p_callee_v: Z) (l1: (@list Z)) (l2: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
-  ((( &( "p" ) )) # Ptr  |-> p_callee_v)
-  **  (sll p_callee_v l1 )
-  **  ((( &( "q" ) )) # Ptr  |-> q_callee_v)
-  **  (sll q_callee_v l2 )
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-|--
-  “ (equiv (gmergesortrec_loc1 (l2)) (gmergesortrec_loc1 (l2)) ) ”
-).
-
-Definition merge_sort3_partial_solve_wit_6_pure_split_goal_1 := 
-forall (x_pre: Z) (l_low_level_spec: (@list Z)) (retval: Z) (q_callee_v: Z) (p_callee_v: Z) (l1: (@list Z)) (l2: (@list Z)) (PreH1 : (retval > 8)) (PreH2 : (retval = (Zlength (l_low_level_spec)))) (PreH3 : ((Zlength (l_low_level_spec)) <= INT_MAX)) ,
-  ((( &( "p" ) )) # Ptr  |-> p_callee_v)
-  **  (sll p_callee_v l1 )
-  **  ((( &( "q" ) )) # Ptr  |-> q_callee_v)
-  **  (sll q_callee_v l2 )
-  **  ((( &( "x" ) )) # Ptr  |-> x_pre)
-|--
-  “ (equiv (gmergesortrec_loc1 (l2)) (gmergesortrec_loc1 (l2)) ) ”
+  “ (safeExec ATrue (bind ((gmergesortrec (l1))) ((gmergesortrec_loc1 (l2)))) X_low_level_spec ) ”
 .
 
 Definition merge_sort3_partial_solve_wit_6_aux := 
@@ -1355,7 +1268,7 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@li
   **  (sll q_callee_v l2 )
 |--
   “ (safeExec ATrue (bind ((gmergesortrec (l1))) ((gmergesortrec_loc1 (l2)))) X_low_level_spec ) ” 
-  &&  “ (equiv (gmergesortrec_loc1 (l2)) (gmergesortrec_loc1 (l2)) ) ” 
+  &&  “ (safeExec ATrue (bind ((gmergesortrec (l1))) ((gmergesortrec_loc1 (l2)))) X_low_level_spec ) ” 
   &&  “ (retval > 8) ” 
   &&  “ (retval = (Zlength (l_low_level_spec))) ” 
   &&  “ ((Zlength (l_low_level_spec)) <= INT_MAX) ”
@@ -1382,6 +1295,7 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@li
   **  (sll q_callee_v l2 )
 |--
   “ (safeExec ATrue (bind ((gmergesortrec (l2))) ((mergesortrec_loc2 (l1)))) X_low_level_spec ) ” 
+  &&  “ (safeExec ATrue (bind ((gmergesortrec (l2))) ((mergesortrec_loc2 (l1)))) X_low_level_spec ) ” 
   &&  “ (retval > 8) ” 
   &&  “ (retval = (Zlength (l_low_level_spec))) ” 
   &&  “ ((Zlength (l_low_level_spec)) <= INT_MAX) ”
@@ -1408,6 +1322,7 @@ forall (X_low_level_spec: ((@list Z) -> (unit -> Prop))) (l_low_level_spec: (@li
   **  (sll retval_3 l2 )
 |--
   “ (safeExec ATrue (merge_rel (l1) (l2)) X_low_level_spec ) ” 
+  &&  “ (safeExec ATrue (merge_rel (l1) (l2)) X_low_level_spec ) ” 
   &&  “ (retval > 8) ” 
   &&  “ (retval = (Zlength (l_low_level_spec))) ” 
   &&  “ ((Zlength (l_low_level_spec)) <= INT_MAX) ”
@@ -1433,7 +1348,7 @@ forall (q: Z) (PreH1 : (q = 0)) ,
 
 Definition merge_sort3_derive_low_level_spec_aux_by_low_level_spec := 
 forall (B: Type) ,
-forall (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((@list Z) -> (@program unit B))) (l_low_level_spec_aux: (@list Z)) ,
+forall (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((@list Z) -> (@ StateRelMonad.M  unit B))) (l_low_level_spec_aux: (@list Z)) ,
   “ ((Zlength (l_low_level_spec_aux)) <= INT_MAX) ” 
   &&  “ (safeExec ATrue (bind ((gmergesortrec (l_low_level_spec_aux))) (c_low_level_spec_aux)) X_low_level_spec_aux ) ”
   &&  (sll x_pre l_low_level_spec_aux )
@@ -1474,7 +1389,7 @@ EX (l_low_level_spec: (@list Z)) (X_low_level_spec: ((@list Z) -> (unit -> Prop)
 
 Definition merge_sort2_derive_low_level_spec_aux_by_low_level_spec := 
 forall (B: Type) ,
-forall (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((@list Z) -> (@program unit B))) (l_low_level_spec_aux: (@list Z)) ,
+forall (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((@list Z) -> (@ StateRelMonad.M  unit B))) (l_low_level_spec_aux: (@list Z)) ,
   “ (safeExec ATrue (bind ((gmergesortrec (l_low_level_spec_aux))) (c_low_level_spec_aux)) X_low_level_spec_aux ) ”
   &&  (sll x_pre l_low_level_spec_aux )
 |--
@@ -1511,7 +1426,7 @@ EX (l_low_level_spec: (@list Z)) (X_low_level_spec: ((@list Z) -> (unit -> Prop)
 
 Definition merge_sort_derive_low_level_spec_aux_by_low_level_spec := 
 forall (B: Type) ,
-forall (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((@list Z) -> (@program unit B))) (l_low_level_spec_aux: (@list Z)) ,
+forall (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: ((@list Z) -> (@ StateRelMonad.M  unit B))) (l_low_level_spec_aux: (@list Z)) ,
   “ (safeExec ATrue (bind ((mergesortrec (l_low_level_spec_aux))) (c_low_level_spec_aux)) X_low_level_spec_aux ) ”
   &&  (sll x_pre l_low_level_spec_aux )
 |--
@@ -1548,7 +1463,7 @@ EX (l_low_level_spec: (@list Z)) (X_low_level_spec: ((@list Z) -> (unit -> Prop)
 
 Definition split_rec_derive_low_level_spec_aux_by_low_level_spec := 
 forall (B: Type) ,
-forall (q_pre: Z) (p_pre: Z) (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: (((@list Z) * (@list Z)) -> (@program unit B))) (l2_low_level_spec_aux: (@list Z)) (l1_low_level_spec_aux: (@list Z)) (l_low_level_spec_aux: (@list Z)) ,
+forall (q_pre: Z) (p_pre: Z) (x_pre: Z) (X_low_level_spec_aux: (B -> (unit -> Prop))) (c_low_level_spec_aux: (((@list Z) * (@list Z)) -> (@ StateRelMonad.M  unit B))) (l2_low_level_spec_aux: (@list Z)) (l1_low_level_spec_aux: (@list Z)) (l_low_level_spec_aux: (@list Z)) ,
   EX q_pre_v p_pre_v,
   “ (safeExec ATrue (bind ((split_rec_rel (l_low_level_spec_aux) (l1_low_level_spec_aux) (l2_low_level_spec_aux))) (c_low_level_spec_aux)) X_low_level_spec_aux ) ”
   &&  (sll x_pre l_low_level_spec_aux )

@@ -99,13 +99,10 @@ Lemma helper_chararray_full_snoc : forall p n l a,
   |-- CharArray.full p (n + 1) (l ++ a :: nil).
 Proof.
   intros.
-  apply derivable1_trans with
-    (y := CharArray.full p n l **
-          CharArray.full (p + n * sizeof ( CHAR )) (n + 1 - n) (a :: nil)).
-  - replace (n + 1 - n) with 1 by lia.
-    apply derivable1_sepcon_mono;
-      [apply derivable1_refl | apply helper_chararray_point_to_full_single].
-  - exact (CharArray.full_merge_to_full p n (n + 1) l (a :: nil) ltac:(lia)).
+  sep_apply CharArray.seg_single.
+  sep_apply CharArray.seg_to_full.
+  sep_apply (CharArray.full_merge_to_full p n) ; try lia.
+  cancel.
 Qed.
 
 Lemma helper_c_string_nonzero_lt : forall s j,

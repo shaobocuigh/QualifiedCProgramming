@@ -17,10 +17,13 @@ Local Open Scope sets.
 Local Open Scope string_scope.
 Local Open Scope list.
 Import naive_C_Rules.
-Require Import SimpleC.EE.QCP_demos_LLM.kmp_rel_lib.
+From MonadLib Require Export MonadLib.
+From MonadLib.MonadErr Require Export StateRelMonadErr.
+Export MonadNotation.
 Local Open Scope monad.
 From AUXLib Require Import int_auto Axioms Feq Idents ListLib VMap relations.
 From FP Require Import PartialOrder_Setoid BourbakiWitt.
+Require Import SimpleC.EE.QCP_demos_LLM.kmp_rel_lib.
 Local Open Scope sac.
 
 Lemma proof_of_inner_safety_wit_1 : inner_safety_wit_1.
@@ -123,5 +126,32 @@ Lemma proof_of_match_partial_solve_wit_3 : match_partial_solve_wit_3.
 Proof. Admitted. 
 
 Lemma proof_of_match_partial_solve_wit_4 : match_partial_solve_wit_4.
+Proof. Admitted. 
+
+Lemma proof_of_main_entail_wit_1 : main_entail_wit_1.
+Proof. Admitted. 
+
+Lemma proof_of_main_return_wit_1 : main_return_wit_1.
+Proof. Admitted. 
+
+Lemma proof_of_main_return_wit_2 : main_return_wit_2.
+Proof. Admitted. 
+
+Lemma proof_of_main_partial_solve_wit_1_pure : main_partial_solve_wit_1_pure.
+Proof. Admitted. 
+
+Lemma proof_of_main_partial_solve_wit_1 : main_partial_solve_wit_1.
+Proof. Admitted. 
+
+Lemma proof_of_main_partial_solve_wit_2_pure : main_partial_solve_wit_2_pure.
+Proof. Admitted. 
+
+Lemma proof_of_main_partial_solve_wit_2 : main_partial_solve_wit_2.
+Proof. Admitted. 
+
+Lemma proof_of_main_partial_solve_wit_3 : main_partial_solve_wit_3.
+Proof. Admitted. 
+
+Lemma proof_of_main_partial_solve_wit_4 : main_partial_solve_wit_4.
 Proof. Admitted. 
 

@@ -193,20 +193,7 @@ Proof.
   - simpl.
     Intros z0.
     sep_apply (IHl z0 y x py).
-    rewrite (logic_equiv_sepcon_comm
-      (“ z0 = y ” && “ x = py ” && “ l = [] ” && emp ||
-       EX z : addr,
-         EX l0 : list Z,
-         EX a0 : Z,
-         “ py <> 0 ” && “ l = (l0 ++ [a0])%list ” &&
-         dllseg z0 py x z l0 ** &(py # "list" ->ₛ "data") # Int |-> a0 **
-         &(py # "list" ->ₛ "next") # Ptr |-> y **
-         &(py # "list" ->ₛ "prev") # Ptr |-> z)
-      (&(x # "list" ->ₛ "data") # Int |-> a **
-       (&(x # "list" ->ₛ "next") # Ptr |-> z0 **
-        &(x # "list" ->ₛ "prev") # Ptr |-> px))).
-    rewrite logic_equiv_sepcon_orp_distr.
-    apply derivable1_orp_elim.
+    Split.
     + Right.
       Exists px.
       Exists (@nil Z).

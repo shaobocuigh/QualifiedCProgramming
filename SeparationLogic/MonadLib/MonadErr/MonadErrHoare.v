@@ -155,6 +155,30 @@ Theorem Hoare_conseq {Σ A: Type}:
     Hoare P1 f Q1.
 Proof. firstorder. Qed.
 
+Lemma Hoare_spec_derivation {Σ A L: Type}:
+  forall (P: Σ -> Prop) (c: program Σ A) (Q: A -> Σ -> Prop)
+         (SpecP: L -> Σ -> Prop) (SpecQ: L -> A -> Σ -> Prop),
+    (forall l, Hoare (SpecP l) c (SpecQ l)) ->
+    (forall s, P s -> exists l, SpecP l s) ->
+    (forall s0 a s1,
+        P s0 ->
+        (forall l, SpecP l s0 -> SpecQ l a s1) ->
+        Q a s1) ->
+    Hoare P c Q.
+Proof.
+  unfold Hoare; intros * Hspec Hlive Hderive.
+  split.
+  - intros a s0 s1 HP Hrun.
+    apply Hderive with (s0 := s0); auto.
+    intros l Hpre.
+    destruct (Hspec l) as [Hnrm _].
+    eapply Hnrm; eauto.
+  - intros s HP Herr.
+    destruct (Hlive s HP) as [l Hpre].
+    destruct (Hspec l) as [_ Herr_spec].
+    eapply Herr_spec; eauto.
+Qed.
+
 
 Lemma Hoare_implies {A Σ: Type}:
   forall (P P': Σ -> Prop) (P0: Prop)
@@ -540,7 +564,6 @@ Lemma Hoare_bot {Σ A: Type}:
     Hoare P bot Q.
 Proof. firstorder. Qed.
 
-
 Lemma Hoare_update_bind {Σ A: Type}:
   forall (P: Σ -> Prop) (f: Σ -> Σ -> Prop) (c: program Σ A) (Q: A -> Σ -> Prop),
     (forall s1,  P s1 -> Hoare (fun s2 => f s1 s2) c Q) ->
@@ -834,6 +857,90 @@ Proof.
     destruct Herr as [i Hi].
     specialize (Hiter i a c) as [_ Herr'].
     eapply Herr'; eauto.
+Qed.
+
+Lemma Hoare_whileP {Σ: Type} (cond: Σ -> Prop)
+  (body : program Σ unit) (P: Σ -> Prop):
+  Hoare (fun s => cond s /\ P s) body (fun _ s => P s) ->
+  Hoare P (whileP cond body) (fun _ s => P s /\ ~ cond s).
+Proof.
+  intros.
+  unfold whileP.
+  apply Hoare_BW_fix_prog.
+  intros W HW.
+  unfold whileP_f.
+  eapply Hoare_choice.
+  - apply Hoare_assumeS_bind.
+    eapply Hoare_bind.
+    + eapply Hoare_cons_pre; [| eapply H]. intros; tauto.
+    + intros []. apply HW.
+  - apply Hoare_assumeS_bind.
+    apply Hoare_ret.
+    tauto.
+Qed.
+
+Lemma Hoare_while {Σ: Type}
+  (cond: program Σ bool) (body : program Σ unit) (P: Σ -> Prop):
+  Hoare P cond (fun _ s => P s) ->
+  Hoare P body (fun _ s => P s) ->
+  Hoare P (while cond body) (fun _ s => P s).
+Proof.
+  intros.
+  unfold while.
+  apply Hoare_BW_fix_prog.
+  intros W HW.
+  unfold while_f.
+  eapply Hoare_bind; [eapply H |].
+  intros x.
+  destruct x.
+  - eapply Hoare_bind; [eapply H0 |].
+    intros [].
+    apply HW.
+  - apply Hoare_ret.
+    auto.
+Qed.
+
+Lemma Hoare_whileret {Σ A: Type}
+  (cond: A -> program Σ bool)
+  (body : A -> program Σ A)
+  (P: A -> Σ -> Prop) (a: A):
+  (forall a, Hoare (P a) (cond a) (fun _ s => P a s)) ->
+  (forall a, Hoare (P a) (body a) P) ->
+  Hoare (P a) (whileret cond body a) P.
+Proof.
+  intros.
+  unfold whileret.
+  apply Hoare_BW_fix with (P:= P) (Q:= fun _ => P).
+  intros W HW a0.
+  unfold whileret_f.
+  eapply Hoare_bind; [eapply H |].
+  intros x.
+  destruct x.
+  - eapply Hoare_bind; [eapply H0 |].
+    intros a1.
+    apply HW.
+  - apply Hoare_ret.
+    auto.
+Qed.
+
+Lemma Hoare_whileretP {Σ A: Type}
+  (cond: A -> Σ -> Prop) (body : A -> program Σ A)
+  (P: A -> Σ -> Prop) (a: A):
+  (forall a, Hoare (fun s => cond a s /\ P a s) (body a) P) ->
+  Hoare (P a) (whileretP cond body a) (fun a s => P a s /\ ~ cond a s).
+Proof.
+  intros.
+  unfold whileretP.
+  apply Hoare_BW_fix with (P:= P) (Q:= fun (_:A) (b:A) s => P b s /\ ~ cond b s).
+  intros W HW a0.
+  unfold whileretP_f.
+  eapply Hoare_choice.
+  - apply Hoare_assumeS_bind.
+    eapply Hoare_bind.
+    + eapply Hoare_cons_pre; [| eapply H]. intros; tauto.
+    + intros a1. apply HW.
+  - apply Hoare_assumeS_bind.
+    apply Hoare_ret. tauto.
 Qed.
 
 (* we consider a recursive monadic program (A -> program Σ R) may have multiple specifications *)
@@ -1235,24 +1342,99 @@ Proof.
   lia.
 Qed.
 
-Theorem Hoare_whileP {Σ: Type} (cond: Σ -> Prop) 
-  (body : program Σ unit) (P: Σ -> Prop):
-  Hoare (fun s => P s /\ cond s) body (fun _ s => P s) ->
-  Hoare P (whileP cond body) (fun _ s => P s /\ ~ cond s).
+Lemma Hoare_forset {Σ A}
+  (P: (A -> Prop) -> Σ -> Prop)
+  (universe: A -> Prop)
+  (body: A -> program Σ unit)
+  (ProperP: Proper (Sets.equiv ==> eq ==> iff) P):
+  (forall done a,
+    done ⊆ universe ->
+    Hoare (fun s => P done s /\ a ∈ universe /\ ~ a ∈ done)
+      (body a)
+      (fun _ s => P (done ∪ [a]) s)) ->
+  Hoare (fun s => P ∅ s) (forset universe body) (fun _ s => P universe s).
 Proof.
-  intros Hbody.
-  unfold whileP.
-  apply Hoare_BW_fix_prog.
-  intros W HW.
-  unfold whileP_f.
-  apply Hoare_choice.
-  - eapply Hoare_assumeS_bind.
-    eapply Hoare_bind; [apply Hbody|].
-    intros []; simpl.
-    eapply Hoare_cons_pre; [| apply HW].
-    intros; tauto.
-  - eapply Hoare_assumeS_bind.
-    apply Hoare_ret; intros; tauto.
+  intros.
+  change (Hoare (fun s => P (fun _ : A => False) s)
+            (forset universe body) (fun _ s => P universe s)).
+  assert (Hfix: Hoare
+    (fun s => P (fun a => a ∈ universe /\ ~ a ∈ universe) s /\ universe ⊆ universe)
+    (forset universe body)
+    (fun _ s => P universe s)).
+  2:{
+    eapply Hoare_cons_pre; [| exact Hfix].
+    simpl; intros σ HP.
+    assert (Heq: ((fun a : A => a ∈ universe /\ ~ a ∈ universe) == (fun _ : A => False))%sets)
+      by (sets_unfold; tauto).
+    split.
+    + pose proof (ProperP _ _ Heq σ σ eq_refl) as Hiff.
+      destruct Hiff as [_ Hiff].
+      exact (Hiff HP).
+    + sets_unfold; tauto.
+  }
+  unfold forset.
+  apply Hoare_BW_fix with
+      (P:= fun todo s => P (fun a => a ∈ universe /\ ~ a ∈ todo) s /\ todo ⊆ universe)
+      (Q:= fun _ _ s => P universe s).
+    intros W IH todo.
+    unfold forset_f.
+    eapply Hoare_choice.
+    - apply Hoare_state_intro; intros s0 Hpre.
+      eapply Hoare_bind.
+      + apply Hoare_get.
+      + intros a.
+        simpl.
+        apply Hoare_state_intro; intros s1 [HaTodo Hs]; subst.
+        eapply Hoare_bind.
+        * eapply Hoare_cons_pre.
+          2:{
+            eapply (H (fun a0 => a0 ∈ universe /\ ~ a0 ∈ todo) a).
+            sets_unfold; tauto.
+          }
+          intros σ Hσ; subst.
+          destruct Hpre as [HP Hsub].
+          split; [exact HP|].
+          split; [apply Hsub; auto| sets_unfold; tauto].
+        * intros [].
+          eapply Hoare_cons_pre.
+          2: apply IH.
+          intros σ HPbody; split.
+          -- assert (Heq:
+                ((fun a0 : A => a0 ∈ universe /\ ~ a0 ∈ (fun x : A => x ∈ todo /\ x <> a)) ==
+                 ((fun a0 : A => a0 ∈ universe /\ ~ a0 ∈ todo) ∪ [a]))%sets).
+             {
+               destruct Hpre as [_ Hsub].
+               sets_unfold; intros a0; split; intros.
+               - destruct H0.
+                 assert (~ todo a0 \/ a0 = a) by tauto.
+                 destruct H2; auto.
+               - destruct H0.
+                 + split; tauto.
+                 + subst; split; try tauto.
+                   apply Hsub; auto.
+             }
+             pose proof (ProperP _ _ Heq σ σ eq_refl) as Hiff.
+             destruct Hiff as [_ Hiff].
+             exact (Hiff HPbody).
+          -- destruct Hpre as [_ Hsub].
+             sets_unfold.
+             intros; apply Hsub; tauto.
+    - apply Hoare_assume_bind.
+      intros Hempty.
+      eapply Hoare_cons_pre.
+      2: apply Hoare_ret.
+      intros σ [HP _]; simpl.
+      assert (Heq: ((fun a : A => a ∈ universe /\ ~ a ∈ todo) == universe)%sets).
+      {
+        sets_unfold; intros; split; try tauto.
+        intros; split; auto.
+        change (~ a ∈ todo).
+        rewrite Hempty; tauto.
+      }
+      pose proof (ProperP _ _ Heq σ σ eq_refl) as Hiff.
+      destruct Hiff as [Hiff _].
+      exact (Hiff HP).
+      auto.
 Qed.
 
 

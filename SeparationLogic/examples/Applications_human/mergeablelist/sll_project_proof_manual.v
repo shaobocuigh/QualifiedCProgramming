@@ -69,8 +69,7 @@ Proof.
   Exists (l1_2 ++ (p_data :: nil)) l2_new.
   entailer!.
   - sep_apply sllseg_len1; try easy.
-    rewrite logic_equiv_sepcon_comm.
-    sep_apply sllseg_sllseg.
+    sep_apply (sllseg_sllseg head_pre).
     assert (H_eq: map_mult x_pre (l1_2 ++ p_data :: nil) = map_mult x_pre l1_2 ++ unsigned_last_nbits (x_pre * p_data) 32 :: nil).
     { unfold map_mult. rewrite map_app. simpl. reflexivity. }
     rewrite H_eq. entailer!.
@@ -183,8 +182,7 @@ Proof.
   simpl.
   entailer!.
   sep_apply sllseg_len1.
-  - rewrite logic_equiv_sepcon_comm.
-    sep_apply sllseg_sllseg. entailer!.
+  - sep_apply (sllseg_sllseg head_pre). entailer!.
   - entailer!.
   - rewrite Zlength_app. rewrite Zlength_cons, Zlength_nil.
     rewrite PreH3.
@@ -235,8 +233,7 @@ Proof.
   Exists (l1_2 ++ p_data :: nil) l3.
   entailer!.
   - sep_apply sllseg_len1; try easy.
-    rewrite logic_equiv_sepcon_comm.
-    sep_apply sllseg_sllseg.
+    sep_apply (sllseg_sllseg head_pre).
     entailer!.
   - rewrite Zlength_app, Zlength_cons, Zlength_nil. lia.
   - rewrite PreH3, PreH1. rewrite <- app_assoc. simpl. reflexivity.

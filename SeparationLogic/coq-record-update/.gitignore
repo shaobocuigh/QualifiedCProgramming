@@ -1,0 +1,25 @@
+*.vo
+*.vos
+*.vok
+*.glob
+.*.aux
+# auto-generated
+.coqdeps.d
+.Makefile.coq.d
+Makefile.coq
+Makefile.coq.conf
+.coq-native/
+native_compute_profile_*.data
+
+# generated timing files
+*.timing.diff
+*.after-timing
+*.before-timing
+*.timing
+time-of-build-after.log
+time-of-build-before.log
+time-of-build-both.log
+time-of-build-pretty.log
+
+# Nix-related build artifacts
+result

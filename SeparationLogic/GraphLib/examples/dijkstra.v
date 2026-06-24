@@ -204,6 +204,21 @@ Proof.
       subst f; auto.
 Qed. 
 
+Theorem min_value_weight_epath_exist: 
+  forall u v, exists z, min_value_weight_epath g u v z. 
+Proof.
+  intros.
+  pose proof min_value_weight_epath_in_vset_exist u v (fun x => True) as [z Hz].
+  exists z. 
+  destruct Hz as [[[p [[Hp_valid Hp_min] Hp_eq]] _]|[]].
+  - left; split; [exists p; split; auto|destruct z; simpl; auto].
+    split; [destruct Hp_valid; auto|intros q Hq; apply Hp_min]. 
+    split; [auto|intros; exact I].
+  - right; split; auto.
+    intros p Hp.
+    pose proof H p ltac:(split; [auto|intros; exact I]).
+    auto.
+Qed.
 
 Theorem dijkstra_greedy_choice_correct: 
   forall u S dist, 

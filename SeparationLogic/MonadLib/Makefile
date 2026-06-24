@@ -6,9 +6,9 @@ COQBIN=
 COQC=$(COQBIN)coqc$(SUF)
 COQDEP=$(COQBIN)coqdep$(SUF)
 
-MONAD_FLAG = -R $(SETS_DIR) SetsClass -R $(FIXPOINT_DIR) FP -R $(AUXLIB_DIR) AUXLib -R . MonadLib 
+MONAD_FLAG = -R $(SETS_DIR) SetsClass -R $(FIXPOINT_DIR) FP -R $(LISTLIB_DIR) ListLib -R . MonadLib 
 
-DEP_FLAG = -R $(SETS_DIR) SetsClass -R $(FIXPOINT_DIR) FP -R $(AUXLIB_DIR) AUXLib -R . MonadLib 
+DEP_FLAG = -R $(SETS_DIR) SetsClass -R $(FIXPOINT_DIR) FP -R $(LISTLIB_DIR) ListLib -R . MonadLib 
 
 SetMonad_Files = \
 	SetBasic.v SetHoare.v FixpointLib.v SetMonad.v
@@ -57,9 +57,8 @@ depend: $(FILES)
 	@$(COQDEP) $(DEP_FLAG) $(FILES) > .depend
 
 clean:
-	@rm */*.vo */*.glob */*.vos */*.vok */.*.aux
+	@rm -f */*.vo */*.glob */*.vos */*.vok */.*.aux
 
 .DEFAULT_GOAL := all
 
 -include .depend
-

@@ -191,6 +191,122 @@ Proof.
   refine {|graph_basic.listV:= listV;|}.
   intros; apply finite_vertices; auto.
 Defined.
+
+#[export]Instance Rootedtree_forest {V E: Type}:
+  Forest (RootedTreeType V E) V E.
+Proof.
+  split.
+  - intros g x1 x2 e1 e2 y HH H1 H2.
+    destruct H1 as [_ _ H1 _].
+    destruct H2 as [_ _ H2 _].
+    rewrite H1 in H2. 
+    inversion H2; auto. 
+  - intros g x y HH Hxy Hyx.
+    assert (Hfather_vunique: forall x1 x2 y,
+      step g x1 y -> step g x2 y -> x1 = x2).
+    {
+      intros x1 x2 y0 H1 H2.
+      destruct H1 as [e1 H1].
+      destruct H2 as [e2 H2].
+      destruct H1 as [_ _ _ Hparent1].
+      destruct H2 as [_ _ _ Hparent2].
+      rewrite <- Hparent1, <- Hparent2; auto.
+    }
+    assert (Hroot_is_root: forall x0,
+      vvalid g x0 -> reachable g (g.(root)) x0).
+    {
+      intros x0 Hvalid.
+      apply path_exist in Hvalid as H0; auto.
+      revert Hvalid; rename H0 into Hpath.
+      remember g.(root) as r.
+      induction_n1 Hpath.
+      - reflexivity.
+      - destruct (classic (x0 = r)).
+        + subst x0; reflexivity.
+        + eapply parent_valid in Hvalid as Hparent_valid; eauto.
+          rewrite H in Hparent_valid.
+          apply IHrt in Hparent_valid as Hreach; auto.
+          etransitivity; eauto.
+          unfold reachable.
+          apply step_rt.
+          apply edge_some in Hvalid as Hedge; auto.
+          destruct Hedge as [e Hedge].
+          exists e; repeat split; auto.
+          subst r; auto.
+    }
+    assert (Hroot_no_father: forall x0, ~ step g x0 g.(root)).
+    {
+      intros x0 Hstep.
+      destruct Hstep as [e Hstep].
+      destruct Hstep as [_ _ Hedge _].
+      erewrite root_no_edge in Hedge; eauto.
+      inversion Hedge.
+    }
+    assert (Hone_reachable_down_up: forall x0 y0 z,
+      reachable g x0 z -> step g y0 z -> x0 <> z -> reachable g x0 y0).
+    {
+      intros x0 y0 z Hreach Hstep Hneq.
+      unfold reachable in Hreach.
+      induction_n1 Hreach.
+      - exfalso; apply Hneq; trivial.
+      - match goal with
+        | Hlast : step g ?p z |- _ =>
+            assert (p = y0) as Heq
+              by (eapply Hfather_vunique; [exact Hlast | exact Hstep]);
+            subst p;
+            unfold reachable; exact Hreach
+        end.
+    }
+    assert (Hpartial_order: forall x0 y0,
+      reachable g x0 y0 -> reachable g y0 x0 -> x0 = y0).
+    {
+      intros x0 y0 Hxy0 Hyx0.
+      destruct (classic (x0 = y0)); auto.
+      pose proof Hxy0 as Hxy0_valid.
+      eapply reachable_vvalid in Hxy0_valid as [Hxvalid _]; eauto.
+      apply Hroot_is_root in Hxvalid as Hroot_path; auto.
+      clear Hxvalid H.
+      revert y0 Hxy0 Hyx0.
+      unfold reachable in Hroot_path.
+      remember g.(root) as r.
+      induction_n1 Hroot_path; intros; auto.
+      - unfold reachable in Hyx0.
+        induction_n1 Hyx0; subst; auto.
+        exfalso.
+        eapply Hroot_no_father; eauto.
+      - destruct (classic (x0 = y0)).
+        + subst; auto.
+        + eapply Hone_reachable_down_up in Hyx0 as Hup; eauto.
+          eapply step_reachable_reachable in H as Hdown; eauto.
+          eapply IHrt in Hup; eauto.
+          subst r0. symmetry.
+          eapply IHrt; eauto.
+    }
+    assert (Hno_edge_refl: forall x0 y0,
+      step g x0 y0 -> ~ step g y0 x0).
+    {
+      intros x0 y0 Hstep Hback.
+      pose proof Hstep as Hstep_valid.
+      destruct Hstep_valid as [e Hstep_aux].
+      eapply step_vvalid1 in Hstep_aux as Hxvalid; eauto.
+      apply Hroot_is_root in Hxvalid as Hroot_path; auto.
+      clear e Hstep_aux Hxvalid.
+      revert y0 Hstep Hback.
+      unfold reachable in Hroot_path.
+      remember g.(root) as r.
+      induction_n1 Hroot_path; intros.
+      - eapply Hroot_no_father; eauto.
+      - eapply Hfather_vunique in H; eauto.
+        subst y0.
+        eapply IHrt; eauto.
+    }
+    destruct (classic (x = y)).
+    + subst y.
+      eapply Hno_edge_refl; eauto.
+    + apply H.
+      eapply Hpartial_order; eauto.
+      apply step_rt; auto.
+Qed.
   
 #[export]Instance Rootedtree_prop {V E: Type} :
   RootedTree (RootedTreeType V E) V E.
@@ -216,18 +332,6 @@ Proof.
   exists e; repeat split; auto.
   subst r; auto.
   auto. 
-  - intros g x HH. 
-  unfold not; intros.
-  destruct H as [e ?].
-  destruct H.
-  erewrite root_no_edge in ve0; eauto.
-  inversion ve0.
-  - intros g ? ? ? ? ? HH ? ?.  
-  destruct H.
-  destruct H0.
-  rewrite ve0 in ve1.
-  inversion ve1; subst e2.
-  reflexivity.
 Defined.
 
 
@@ -477,7 +581,7 @@ Proof.
   intros low_valid.
   unfold is_low.
   pose proof @rooted_tree_induction_bottom_up 
-  (RootedTreeType V E) V E _ _ _ _ _ dfstree tree_valid _
+  (RootedTreeType V E) V E _ _ _ _ _ dfstree tree_valid _ _
   (fun v => vvalid dfstree v -> is_low_v v (fun_low v)).
   apply H.
   intros.

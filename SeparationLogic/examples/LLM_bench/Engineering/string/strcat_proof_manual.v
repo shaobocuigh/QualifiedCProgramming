@@ -400,47 +400,23 @@ Proof.
       (rewrite app_Znth1 by lia;
        rewrite helper_sublist_snoc_Z with (d := 0) by lia;
        repeat rewrite app_assoc; reflexivity).
-    apply derivable1_trans with
-      (y :=
-        CharArray.full dest_pre (Zlength dst_str + (j + 1))
-          (sublist 0 (Zlength dst_str + (j + 1))
-             ((dst_str ++ sublist 0 (j + 1) src_str) ++ 0 :: nil)) **
-        CharArray.full (dest_pre + (Zlength dst_str + (j + 1)) * sizeof ( CHAR ))
-          (Zlength dst_str + j + 1 + 1 - (Zlength dst_str + (j + 1)))
-          (sublist (Zlength dst_str + (j + 1)) (Zlength dst_str + j + 1 + 1)
-             ((dst_str ++ sublist 0 (j + 1) src_str) ++ 0 :: nil))).
-    + exact (CharArray.full_split_to_full dest_pre (Zlength dst_str + (j + 1))
-        (Zlength dst_str + j + 1 + 1)
-        ((dst_str ++ sublist 0 (j + 1) src_str) ++ 0 :: nil)
-        ltac:(lia)).
-    + replace (sublist 0 (Zlength dst_str + (j + 1))
-        ((dst_str ++ sublist 0 (j + 1) src_str) ++ 0 :: nil))
-        with (dst_str ++ sublist 0 (j + 1) src_str).
-      2: {
-        replace (Zlength dst_str + (j + 1))
-          with (Zlength (dst_str ++ sublist 0 (j + 1) src_str)) by
+    sep_apply (CharArray.full_split_to_full dest_pre
+                 (Zlength dst_str + (j + 1))
+                 (Zlength dst_str + j + 1 + 1)
+                 ((dst_str ++ sublist 0 (j + 1) src_str) ++ 0 :: nil) ltac:(lia)).
+    replace (Zlength dst_str + j + 1 + 1 - (Zlength dst_str + (j + 1)))
+      with 1 by lia.
+    replace (Zlength dst_str + (j + 1))
+          with (Zlength (dst_str ++ sublist 0 (j + 1) src_str)) at 2 4 by
           (rewrite Zlength_app, Zlength_sublist0; lia).
-        rewrite sublist_app_exact1.
-        reflexivity.
-      }
-      replace (sublist (Zlength dst_str + (j + 1)) (Zlength dst_str + j + 1 + 1)
-        ((dst_str ++ sublist 0 (j + 1) src_str) ++ 0 :: nil))
-        with (0 :: nil).
-      2: {
-        replace (Zlength dst_str + (j + 1))
-          with (Zlength (dst_str ++ sublist 0 (j + 1) src_str)) by
-          (rewrite Zlength_app, Zlength_sublist0; lia).
-        replace (Zlength dst_str + j + 1 + 1)
+    rewrite sublist_app_exact1.
+    cancel.
+    replace (Zlength dst_str + j + 1 + 1)
           with (Zlength (dst_str ++ sublist 0 (j + 1) src_str) + 1) by
           (rewrite Zlength_app, Zlength_sublist0; lia).
-        symmetry.
-        apply helper_sublist_app_last_Z.
-      }
-      replace (Zlength dst_str + j + 1 + 1 - (Zlength dst_str + (j + 1)))
-        with 1 by lia.
-      cancel (CharArray.full dest_pre (Zlength dst_str + (j + 1))
-        (dst_str ++ sublist 0 (j + 1) src_str)).
-      apply helper_chararray_full_single_point.
+    rewrite helper_sublist_app_last_Z.
+    sep_apply helper_chararray_full_single_point.
+    cancel.
   - unfold string_lib.string_length in *.
     split_pures; dump_pre_spatial; auto; lia.
 Qed. 

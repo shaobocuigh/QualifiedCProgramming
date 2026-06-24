@@ -21,39 +21,6 @@ From SimpleC.EE.QCP_demos_LLM Require Import sll_merge_rel_lib.
 Local Open Scope monad.
 Local Open Scope sac.
 
-Lemma proof_of_split_while_entail_wit_2 : split_while_entail_wit_2.
-Proof.
-	pre_process.
-	Exists qv_2.
-	Exists pv_2.
-	sep_apply_l_atomic (sll_not_zero x l_2).
-	- dump_pre_spatial.
-		unfold NULL.
-		lia.
-	- Intros x_next x_data l1_new.
-		Exists x_next.
-		Exists x_data.
-		Exists l1_new.
-		Exists l_2.
-		Exists l1_2.
-		Exists l2_2.
-		repeat split_pure_spatial.
-		+ cancel (&(x # "list" ->ₛ "data") # Int |-> x_data).
-			cancel (&(x # "list" ->ₛ "next") # Ptr |-> x_next).
-			cancel (sll x_next l1_new).
-			cancel (p_pre # Ptr |-> pv_2).
-			cancel (sll pv_2 l1_2).
-			cancel (q_pre # Ptr |-> qv_2).
-			cancel (sll qv_2 l2_2).
-		+ repeat split_pures.
-			* dump_pre_spatial.
-			  exact PreH2.
-			* dump_pre_spatial.
-			  exact PreH1.
-			* dump_pre_spatial.
-			  assumption.
-Qed.
-
 Lemma proof_of_split_while_entail_wit_3 : split_while_entail_wit_3.
 Proof.
 	pre_process.
@@ -85,46 +52,6 @@ Proof.
 		  exact PreH3.
 		+ dump_pre_spatial.
 		  exact PreH2.
-Qed.
-
-Lemma proof_of_split_while_entail_wit_4 : split_while_entail_wit_4.
-Proof.
-	pre_process.
-	sep_apply_l_atomic (sll_not_zero x l_new).
-	- dump_pre_spatial.
-		unfold NULL.
-		lia.
-	- Intros x_next x_data2 l1_new.
-		Exists qv_2.
-		Exists p_head_2.
-		Exists x_next.
-		Exists x_data2.
-		Exists l1_new.
-		Exists l_new.
-		Exists l2_2.
-		Exists x_data_2.
-		Exists l1_2.
-		repeat split_pure_spatial.
-		+ cancel (&(x # "list" ->ₛ "data") # Int |-> x_data2).
-		  cancel (&(x # "list" ->ₛ "next") # Ptr |-> x_next).
-		  cancel (sll x_next l1_new).
-		  cancel (q_pre # Ptr |-> qv_2).
-		  cancel (sll qv_2 l2_2).
-		  cancel (p_pre # Ptr |-> p_head_2).
-		  simpl sll.
-          Exists p_next.
-		  split_pure_spatial.
-		  * cancel.
-		    cancel.
-          * dump_pre_spatial.
-		    exact PreH4.
-		+ repeat split_pures.
-		  * dump_pre_spatial.
-		    exact PreH2.
-		  * dump_pre_spatial.
-		    exact PreH1.
-		  * dump_pre_spatial.
-		    assumption.
 Qed.
 
 Lemma proof_of_split_while_entail_wit_5 : split_while_entail_wit_5.
