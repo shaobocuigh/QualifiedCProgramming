@@ -60,7 +60,7 @@ python3 scripts/collect_and_analyze.py
 
 ### What the global ratio does — and doesn't — tell you
 
-The **global** ≈ 2.5–3 : 1 split is solid: it's a direct count over the whole shipped corpus. The **per-category** breakdown is weaker evidence — medium confidence, estimated from how categories of code behave, not reproduced by a single command. State it as a tendency, and label it as such:
+The **global** ≈ 2.5–3 : 1 split is solid: it's a direct count over the whole shipped corpus. It is also corroborated externally: the QCP paper (arXiv 2505.12878 v3, Table 1) reports **74.3% of VCs auto-discharged (1964 auto / 679 manual over 155 functions)** — closely matching this corpus's implied auto rate (the absolute counts differ because the shipped corpus has grown beyond the paper's 155-function benchmark, and the paper counts VCs while the rows above count proof-effort lemma proxies). The **per-category** breakdown is weaker evidence — medium confidence, estimated from how categories of code behave, not reproduced by a single command. State it as a tendency, and label it as such:
 
 - **Cheaper** (less manual): array, string, list, and algorithmic code that **reuses shipped predicates** (`IntArray::full/seg/undef`, `store_string`, `sll`, …). The library already carries the lemmas; the solver closes most VCs. A shard-aware count finds roughly **1 in 9** measured cases hits **zero** manual `Qed` lemmas — these ride entirely on shipped automation. *Denominator and counting scope:* one "case" per umbrella `*_proof_manual.v` (≈ 120 of them at this snapshot); a case counts as zero-manual when its umbrella **plus any shard part-files** carry no `Qed`. At baseline that was **≈ 13 / 120 ≈ 1 in 9** — re-measure, the tree regenerates:
 
@@ -72,7 +72,7 @@ The **global** ≈ 2.5–3 : 1 split is solid: it's a direct count over the whol
     [ "$(grep -rh Qed "$d" --include="${stem}_proof_manual*.v" | wc -l)" -eq 0 ] && z=$((z+1))
   done; echo "$z / $t"
   ```
-- **Pricier** (more manual): arithmetic / number-theory code and OS / **STS** — state-transition-system — state-machine code, where the properties are novel and there's no off-the-shelf predicate to lean on.
+- **Pricier** (more manual): arithmetic / number-theory code and OS / **STS** — state-transition-system — state-machine code, where the properties are novel and there's no off-the-shelf predicate to lean on. (The QCP paper gives this skew a measured anchor: its LiteOS kernel subset automates only **60.3%** of VCs against the **74.3%** corpus headline — i.e. the OS/STS subset is measurably more manual.)
 
 > **Honest limit:** the global ratio is a count; the per-category skew is a qualitative estimate. Plan with the global ≈ a-quarter-to-a-third figure; treat "arrays are cheaper than bignum" as a useful rule of thumb, not a measured guarantee.
 
@@ -143,7 +143,7 @@ The shipped corpus is the concrete evidence of what QCP scales to. Five subtrees
 
 | Subtree | `.c` | What it shows about scale |
 |---|---:|---|
-| `Applications_human/` | 26 | Production scale: `minigmp` bignum, `LiteOS` (17 RTOS kernel ops), `cnf_trans` (SAT), `alpha_equiv` (λ-calculus), `typeinfer`, `fme` |
+| `Applications_human/` | 26 | Production scale: `minigmp` bignum, `LiteOS` (17 RTOS kernel ops — the case study behind *Formal Verification of Functional Correctness for the OpenHarmony LiteOS-M Kernel*, FM 2026), `cnf_trans` (SAT), `alpha_equiv` (λ-calculus), `typeinfer`, `fme` |
 | `QCP_demos_human/` | 33 | The teaching set; best-practice hand annotations |
 | `QCP_demos_LLM/` | 38 | The same demos re-annotated for LLM workflows (plus 5 LLM-only cases — `array_cases`, `array_cases_noinv`, `sortArray2`, `sortArray3`, `union_find_err_rel` — hence the spread over `QCP_demos_human`'s 33; `comm -23` the two basename lists to confirm); the agent workflow's canonical reference |
 | `LLM_bench/` | 23 | Benchmark for LLM-generated specs/proofs |

@@ -55,3 +55,18 @@
 ## Reading order
 
 Most readers go **ch 4 → ch 5**, then dip into Part III only when a specific question comes up (what a green check means → ch 10; how to phrase an invariant → ch 7; what a predicate means → R1). Tier-2/3 readers who will read or extend proofs work through Part III in order and then ch 14. None of Part III is a prerequisite for Part II.
+
+## References & related work
+
+The canonical reference for QCP is the tool paper:
+
+- **QCP** — *QCP: A Practical Separation Logic-based C Program Verification Tool*, Xiwei Wu et al. (SJTU + Peking University; Qinxiang Cao's group). arXiv [2505.12878](https://arxiv.org/abs/2505.12878). Authoritative on QCP's intent, annotation terminology, the entailment solver, and the published evaluation. (It has multiple arXiv versions — cite a specific version for version-sensitive details.)
+
+QCP sits in a lineage and is built on / used by several related works:
+
+- **VST-A** — *A Foundationally Sound Annotation Verifier* (same group; "Zhou et al., 2024"). QCP's direct predecessor: the same annotate-in-comments paradigm, but with the program decomposition *formally verified sound in Rocq*. QCP trades that verification for automation (the lineage VST → VST-A → QCP).
+- **Stellis** (the `.strategies` strategy DSL, also covered in [ch 15](ch15-strategy-dsl.md)) — *A Strategy Language for Purifying Separation Logic Entailments*, arXiv [2512.05159](https://arxiv.org/abs/2512.05159). The per-strategy soundness lemma `StrategyCheck` emits is, by design, a user proof obligation (see [ch 14](ch14-extension.md), ch 15).
+- **Relational reasoning** (the `safeExec`/`MonadLib` refinement library) — *Encode the ∀∃ Relational Hoare Logic into Standard Hoare Logic*, Shushu Wu, Xiwei Wu, Qinxiang Cao, OOPSLA 2025, DOI 10.1145/3763138, arXiv [2504.17444](https://arxiv.org/abs/2504.17444).
+- **LiteOS case study** — *Formal Verification of Functional Correctness for the OpenHarmony LiteOS-M Kernel*, FM 2026 — the backing publication for QCP's LiteOS/RTOS examples.
+
+Distinct, easily-confused tools that are **not** QCP: **C\*** (*C\*: Unifying Programming and Verification in C*, arXiv [2504.02246](https://arxiv.org/abs/2504.02246)) is a separate Peking-led tool built on an LCF-style proof kernel, not Rocq. **SESpec** (arXiv [2506.09550](https://arxiv.org/abs/2506.09550)) is an LLM + symbolic-execution spec-generation tool that *uses QCP's symbolic-execution engine* (its v1 called that engine VST-A; v4 renamed it QCP) — related external work, not part of QCP.

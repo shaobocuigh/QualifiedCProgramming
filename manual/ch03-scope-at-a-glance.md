@@ -16,7 +16,7 @@ What QCP can verify, in one table. ✅ = supported; ⚠️ = supported with a re
 
 | Feature | Status | The one caveat |
 |---|---|---|
-| Integers (`char`/`short`/`int`/`int64`, signed + unsigned), pointers | ✅ supported | pointer model is ILP32 (~32-bit); flat byte heap, no provenance; **every `Z` result needs a manual range/overflow bound** |
+| Integers (`char`/`short`/`int`/`int64`, signed + unsigned), pointers; enums, `typedef` | ✅ supported | pointer model is ILP32 (~32-bit); flat byte heap, no provenance; enums are integer-typed and `typedef` is transparent (QCP paper §5.4); **every `Z` result needs a manual range/overflow bound** |
 | Structs (dot/arrow/nested) | ✅ supported | padding/layout not modeled (`struct_padding = emp`); no aliasing by reinterpretation |
 | Arrays | ✅ supported | the **strongest built-in** — typed array library (full/seg/undef views) plus heavy strategy automation; multidimensional = manual nesting |
 | Strings (null-terminated) | ✅ supported | `store_string` over a char array + null; result predicates for `memchr`/`strcmp`/`strncpy`/… |

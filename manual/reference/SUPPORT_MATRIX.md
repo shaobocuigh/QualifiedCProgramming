@@ -10,9 +10,10 @@
 | Feature | Status | Caveat |
 |---|---|---|
 | Integers (char/short/int/int64 + unsigned), pointers | ✅ supported | pointer model is **ILP32** (`sizeof_ptr = 4`), flat byte heap, no provenance; **every `Z` result needs a manual range/overflow bound** |
+| Enums, `typedef` | ✅ supported | enums are integer-typed; `typedef` is transparent. (Per the QCP paper §5.4 supported-types list; not separately exercised by a repo row.) |
 | Structs (dot/arrow/nested) | ✅ supported | padding/layout not modeled (`struct_padding = emp`); no aliasing-by-reinterpretation |
 | Arrays (typed `ArrayLib` modules) | ✅ supported | **strongest built-in**: `IntArray::full/seg/undef/…` + strategy automation; multidim = manual nesting |
-| Strings (null-terminated) | ✅ supported | `store_string` over `CharArray` + null; `mem*`/`str*` result predicates |
+| Strings (null-terminated) | ✅ supported | `store_string` over `CharArray` + null; `mem*`/`str*` result predicates. *Char-array string **buffers** are supported; the QCP paper §5.4 lists raw **string-literal expressions** in C code as unsupported — read-only literals are modeled in the assertion layer via `store_stringLit`/`GlobalStrings` ([R1 bestiary](BESTIARY.md)), not by accepting an arbitrary `"…"` expression in code.* |
 | Recursion | ✅ supported | by-contract self-calls; inductive predicates |
 | `for`/`while`/`switch`/`break`/`continue`/`do-while` | ✅ supported (model) | frontend desugars to an if/while/seq core — *you write ordinary C*. (`continue` is model-supported; not every keyword has a corpus example in a given snapshot.) |
 | Polymorphism / generic predicates | ✅ supported (under-sold) | one list spec reused across any struct/field |
@@ -29,6 +30,13 @@
 evidence (e.g. floats → the proof layer lacks `fp32` theory; `goto` → no `Sgoto` node; shared-mem
 → CSL unwired); the ✅/⚠️ rows rest on FACTS plus live corpus/library evidence. Full per-feature
 citations: FACTS §F2.1.
+
+**Additional unsupported features (per the QCP paper §5.4 — not separately RE-verified here):**
+**bit-fields**, **string-literal expressions**, the **comma operator**, and **compound literals**
+(the paper's "compound operators", e.g. `(int[]){2,4}`). These are minor syntactic/structural
+limits, not among the four hard `❌` rows with distinct failure modes; the paper lists them flatly
+without a failure-mode characterization. (Ordinary **assignment** operators *are* supported — so
+don't read "compound" here as compound *assignment* like `+=`.)
 
 ## Effort cost (command-first; snapshot)
 

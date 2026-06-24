@@ -126,6 +126,13 @@ layouts: **[V]**
 
 ## 5. The separation-logic entailment engine
 
+> **Paper-canonical names.** The QCP paper (arXiv 2505.12878 §2.2/§4.2) calls this whole core the
+> **entailment solver**; its spatial/frame-inference part — the cancellation below plus the
+> `PartialSolveWit` first-class `frame` field (§4) — is the paper's **rule-based abductive reasoning
+> system** ("similar to the one used in VeriFast"), and its pure-proposition backend (§6) is the
+> paper's **SMT solver**. The 4-stage internal structure below is RE-only; the paper does not
+> describe it.
+
 One unified, witness-producing core serves **all** VC categories. `SepLogicEntail` is a **4-stage
 fall-through pipeline**: **[V]**
 
@@ -160,6 +167,15 @@ Two facts about the structure:
 — a **complete, from-scratch CDCL(T) SMT solver**. It *ships* a full proof-producing subsystem too,
 but — verified by call-graph trace — **that subsystem is dead code in the shipped flow** (see the
 "Certification" row and the note below); the live verification path uses the **non-proof** solver: **[V]**
+
+> **Paper framing (arXiv 2505.12878).** The paper's v1 calls this *"a lightweight SMT solver"*; v3
+> §4.2 expands it to disclose **LIA + UF** decision procedures combined via **Nelson-Oppen** — which
+> the RE here corroborates — plus one explicit limitation the RE confirms: *"the solver does not
+> support quantified formulas; such cases require manual user intervention."* (That LIA/UF/Nelson-Oppen
+> detail and the no-quantifiers clause are **new in v3**; v1 said only "lightweight SMT solver.") The
+> paper is **silent** on everything else this section documents — the CDCL SAT core, the
+> Fourier–Motzkin LIA realization, the **fp32/fp64 interval theories**, and the dead
+> proof-producing/Alethe pipeline are all RE-only, neither asserted nor denied by the paper.
 
 | Layer | Symbols (evidence) |
 |---|---|
@@ -213,6 +229,12 @@ QCP's proof automation is **programmable** via a small declarative DSL (`.strate
 grammar** (`dsl_parser/parser.c`; DWARF `yysymbol_kind_t` nonterminals
 `CMD_ID`/`PRIO`/`PRIOS`/`PATTERNS`/`PATTERN`/`CHECK`/`ACTION`). **[V]**
 
+> **Published name.** In the academic literature this DSL is **Stellis** (*A Strategy Language for
+> Purifying Separation Logic Entailments*, arXiv 2512.05159). The QCP paper (arXiv 2505.12878 v1)
+> describes QCP's entailment solver as built upon an abductive reasoning system named **Stellis**,
+> deferring the strategy/solver detail to the Stellis paper. The repo ships the DSL **unnamed**; the
+> RE-derived data model below is Stellis's compilation target. (User-facing treatment: ch 15 + FACTS.md.)
+
 Every rule compiles to a fixed data model: **[V]**
 
 - left/right **separation patterns** — 5 kinds: `StrategyLibPatternType{data_at, undef_data_at, arr,
@@ -253,6 +275,21 @@ it*** — the two-tier trust model extends to user automation. **[V]** (Of the ~
   `_proof_auto` (Admitted) + `_proof_manual` (Qed). The kernel only forces **names/types to line
   up**; the `Admitted` bodies **pass the gate freely**. This is the mechanical form of the "TCB
   circularity" in [FACTS.md F1.2]. **[V]**
+
+> **Paper cross-check (v1→v3 drift) — internal note.** The QCP paper *publishes this exact gate*,
+> and read across versions it both confirms the finding here and shows the paper growing **less**
+> candid. arXiv 2505.12878 **v3 Appendix B** prints `Module Type VC_Correct` with one
+> `Axiom proof_of_<wit> : <wit>` per VC, then `Module VC_Correctness : VC_Correct` including the
+> auto + manual proof modules — so the paper's *own formalism* shows the members are **`Axiom`**-typed
+> and an `Admitted` body satisfies the ascription, exactly as above. Yet v3's prose frames it as
+> "utilizing Rocq to **ensure that every goal has a corresponding proof**," and both v1 and v3
+> describe `proof_auto.v` as "Contains **proof** of all automatically verified VCs" — the words
+> `Admitted`/`admit`/`trusted` appear **nowhere** in either version. Two telling version changes:
+> v1 §6.1 stated "Currently, QCP **lacks formal soundness proofs for its symbolic execution engine**"
+> — a sentence **deleted in v3**; and v1's "lightweight **SMT** solver" became v3's umbrella
+> "**entailment** solver." Net: the published-latest paper is *less* candid about the TCB than v1,
+> while its own Appendix B corroborates the Admitted-passes-the-gate mechanism documented here.
+> (Repo ground truth: **0 `Qed` / 4556 `Admitted`** across 139 `*_proof_auto.v`.)
 - **Seven emitters**, fixed multi-file scaffold (`_goal.v`, `_goal_check.v`, `_proof_auto.v`,
   `_proof_manual.v`, `_lib.v`, `_strategy_*.v`). The output is **married to a specific QCP Coq
   library** (`CoqPrintSacProgHeader`/`GoalHeader`/`ProofHeader` hardcode imports of the `SimpleC`
