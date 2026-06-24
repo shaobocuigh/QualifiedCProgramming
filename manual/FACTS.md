@@ -101,11 +101,16 @@ What you trust when you trust a QCP "✔":
    real decision procedure, but run as a **non-certifying** one (its proof-emitting pipeline is dead
    code, so the result is trusted, not re-checked — F1.3) — plus the **statically-vendored mini-gmp**
    it uses as a bignum-arithmetic oracle.
-5. Residual **`Admitted` strategy rules**: of the **~45** `*_strategy_proof.v` files, only **2**
-   carry `Admitted` — `SeparationLogic/stdlib/string_strategy_proof.v` (×2) and
+5. Residual **`Admitted` strategy rules**: of the **~45 tracked** (`git ls-files`)
+   `*_strategy_proof.v` files, only **2** carry `Admitted` — `SeparationLogic/stdlib/string_strategy_proof.v` (×2) and
    `SeparationLogic/examples/Applications_human/minigmp/gmp_strategy_proof.v` (×4); the other
-   **~43** close with `Qed` and are re-checked. So the strategy layer is *mostly* kernel-checked,
-   with a small named trusted residue (6 admitted lemmas across those 2 files).
+   **~43** close with `Qed` and are re-checked. So the shipped strategy layer is *mostly* kernel-checked,
+   with a small named trusted residue (6 admitted lemmas across those 2 files). ⚠ **Scope caveat:**
+   the count is over the *tracked* tree; **out-of-tree / vendored examples under
+   `SeparationLogic/examples/External/` are NOT included** and carry their own admitted strategy
+   residue (e.g. `External/cJSON/cJSON_core_qcp_strategy_proof.v` is all-`Admitted`). User-facing
+   chapters must scope the "two files" claim to the shipped library and tell readers to audit any
+   library they import.
 6. The **user's annotations** (a wrong spec is faithfully "verified").
 
 **TCB circularity:** `symexec` emits *both* the VC goals and the `goal_check` gate that accepts
@@ -158,6 +163,24 @@ story — use this precise framing:
   `run-example-linux.sh` uses these flags **zero** times. So the auditable artifact is **latent
   and unwired** in the shipped flow (completeness unknown from outside). Don't promise it; do note
   it exists as a future trust lever.
+- **The strategy DSL has a published name and spec: Stellis.** The `.strategies` rule language is
+  formally specified as **Stellis** — *A Strategy Language for Purifying Separation Logic
+  Entailments*, arXiv:2512.05159 (Wang et al.); QCP's entailment solver "builds upon the Stellis
+  framework" (*QCP*, arXiv:2505.12878, §4.2). Stellis names the goal: **purify** an entailment =
+  rewrite until every spatial predicate is cancelled, leaving a pure goal for the SMT side. The
+  paper gives the soundness condition for a rule as `ϕ ≜ A ⊢ C * (D -* B)` (§4.1) and a Reduction
+  Soundness metatheorem (if `ϕ` holds the rewrite is sound) — matching the generated
+  `<name>_strategyN` goal shape `PRE |-- (residual-left) ** (new-right -* old-right)`. Use as
+  *opt-in further reading* in user-facing chapters, not as the spine. Grammar vocabulary
+  (corpus-grounded; cite repo files, not the paper, for syntax): fields `id/priority/left/right/
+  check/action` + `#include`; priority classes `core/local/post/Tagcancel/Pcancel` and the
+  `unfold_<pred>/fold_<pred>` family; **two** checks `absense(P)` (not-present guard) and
+  `infer(P)` (must-derive); actions `left_erase/right_erase`, `left_add/right_add`,
+  `left_exist_add/right_exist_add`, `instantiate(x -> t)` (the forms the shipped files use — the
+  binary recognizes more, e.g. `substitute`, but they do not appear in the corpus, so don't
+  document them). Matching is greedy with no backtracking; `absense`+marker-`add` is the
+  one-shot/termination idiom. (DSL name + semantics: the two arXiv papers; grammar set: exhaustive
+  read of `QCP_examples/**/*.strategies`.)
 
 ### F1.4 Trust-TONE guidance (don't over-dramatize the auto fraction)
 

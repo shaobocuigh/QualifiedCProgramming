@@ -168,14 +168,16 @@ cell, e.g. `store(&(q -> tail), ...)`. It is the dominant storage form in the wo
 is a user-authored rewrite/cancellation rule (in a `.strategies` file) the solver uses to
 discharge routine VCs automatically; the shipped strategy library is what drives the auto
 fraction (for a snapshot count of the soundness-proof files, `ls SeparationLogic/examples/**/*_strategy_proof.v`).
+The rule language is formally specified as **Stellis** (arXiv:2512.05159).
 **`StrategyCheck`** is the binary that emits Rocq soundness obligations for those
 rules — most close with `Qed` and are re-checked, a small named residue is `Admitted`. See
-[ch 14](../ch14-extension.md) and [R3](INVOCATION.md).
+[ch 15 — the strategy DSL](../ch15-strategy-dsl.md) (grammar + semantics), [ch 14](../ch14-extension.md) (workflow), and [R3](INVOCATION.md).
 
 **symbolic execution / `symexec`** — running the program over **symbolic** (abstract) values,
 carrying a separation-logic assertion as the program state, to derive the VCs. `symexec` is the
-binary that does this and writes the four generated files. See
-[ch 9](../ch09-goals-symexec-and-proof.md) and [R3](INVOCATION.md).
+binary that does this and writes the four generated files. (The QCP paper calls this component the
+*symbolic executor*, and the lowered IR it runs over *partial statements*; arXiv 2505.12878 §4.1.)
+See [ch 9](../ch09-goals-symexec-and-proof.md) and [R3](INVOCATION.md).
 
 ## T
 
@@ -201,7 +203,7 @@ is kernel-checked when, and only when, it ends in `Qed`. See
 
 ## V
 
-**verification condition (VC)** — a proof obligation emitted by symbolic execution, in the form
+**verification condition (VC)** {#vc} — a proof obligation emitted by symbolic execution, in the form
 of an [entailment](#entailment) `P |-- Q`. Discharging all of a function's emitted VCs establishes
 the function against its *written spec* — relative to QCP's [TCB](#trusted-computing-base-tcb),
 the emitted VCs themselves, and the two-tier [auto/manual](#auto-manual) split (see

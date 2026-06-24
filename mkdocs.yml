@@ -80,6 +80,7 @@ nav:
       - Scope & scaling in depth: ch12-scope-and-scaling.md
       - Honest limits & maturity: ch13-honest-limits.md
       - Extension — predicates & strategies: ch14-extension.md
+      - The strategy DSL: ch15-strategy-dsl.md
   - Reference:
       - R1 — Bestiary: reference/BESTIARY.md
       - R2 — Support matrix: reference/SUPPORT_MATRIX.md
