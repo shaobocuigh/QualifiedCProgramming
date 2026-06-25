@@ -226,7 +226,8 @@ solve_res* thm_apply(term* thm, var_sub_list* lis, term* goal)
   /*@ store_solve_res(res, SRBool(0))
       which implies
       res->type == 0 &&
-      res->d.ans == 0
+      res->d.ans == 0 &&
+      res->d.list == 0
   */
   if (thm_ins == (void*)0) {
     res->type = bool_res;
@@ -246,10 +247,6 @@ solve_res* thm_apply(term* thm, var_sub_list* lis, term* goal)
       res->d.ans = 1;
     } else {
       res->type = termlist;
-      /*@ res->d.ans == 0
-          which implies
-          res->d.list == 0
-      */
      term* thm_ins_c = copy_term(thm_ins);
       /*@ exists pq st,
           term_alpha_eqn(st, g) == 0 &&

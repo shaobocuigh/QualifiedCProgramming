@@ -407,23 +407,24 @@ Definition restypeID (sr : solve_res) : Z :=
 Definition store_solve_res (x: addr) (sr: solve_res): Assertion :=
   “ x <> NULL ” && &(x # "solve_res" ->ₛ "type") # Int |-> restypeID sr **
   match sr with
-    | SRBool ans => &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> ans
+    | SRBool ans => &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> ans **
+                    &(x # "solve_res" ->ₛ "d" .ₛ "list") # Ptr |-> 0
     | SRTList l => EX y: addr,
+                   &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> 0 **
                    &(x # "solve_res" ->ₛ "d" .ₛ "list") # Ptr |-> y **
                    sll_term_list y l
   end.
 
 Definition store_solve_res' (x: addr) (sr: solve_res): Assertion :=
   match sr with
-    | SRBool ans => “ x <> NULL ” && &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> ans
+    | SRBool ans => “ x <> NULL ” &&
+                    &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> ans **
+                    &(x # "solve_res" ->ₛ "d" .ₛ "list") # Ptr |-> 0
     | SRTList l => “ x <> NULL ” && EX y: addr,
+                   &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> 0 **
                    &(x # "solve_res" ->ₛ "d" .ₛ "list") # Ptr |-> y **
                    sll_term_list y l
   end.
-
-Axiom store_solve_res'_equiv : forall x v, 
-  &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> v --||-- 
-  &(x # "solve_res" ->ₛ "d" .ₛ "list") # Ptr |-> v.
 
 Lemma store_solve_res_unfold: forall x sr,
   store_solve_res x sr |--
@@ -449,7 +450,8 @@ Lemma store_solve_res'_Bool: forall x sr,
   restypeID sr = 0%Z ->
   store_solve_res' x sr |--
   EX ans, “ sr = SRBool ans ” && “ x <> NULL ” &&
-  &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> ans.
+  &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> ans **
+  &(x # "solve_res" ->ₛ "d" .ₛ "list") # Ptr |-> 0.
 Proof.
   intros.
   unfold store_solve_res'.
@@ -464,6 +466,7 @@ Lemma store_solve_res'_List: forall x sr,
   store_solve_res' x sr |--
   EX l, “ sr = SRTList l ” && “ x <> NULL ” &&
   EX y: addr,
+    &(x # "solve_res" ->ₛ "d" .ₛ "ans") # Int |-> 0 **
     &(x # "solve_res" ->ₛ "d" .ₛ "list") # Ptr |-> y **
     sll_term_list y l.
 Proof.
@@ -993,3 +996,83 @@ Proof.
   entailer!.
 Qed.
 
+Lemma sllbseg_seg: forall x y z l1 l2,
+  sllbseg_term_list x y l1 **
+  sllbseg_term_list y z l2 |--
+  sllbseg_term_list x z (l1 ++ l2)%list.
+Proof.
+  intros.
+  revert x; induction l1; simpl; intros.
+  + entailer!.
+  subst x.
+  entailer!.
+  + Intros u.
+  Exists u.
+  entailer!.
+Qed.
+
+Lemma sllbseg_one_app: forall a l x y z retval,
+  retval <> NULL ->
+  sllbseg_term_list x y l **
+  y # Ptr |-> retval **
+  &(retval # "term_list" ->ₛ "element") # Ptr |-> z **
+  store_term z a |--
+  sllbseg_term_list x &(retval # "term_list" ->ₛ "next") (l ++ (a :: nil))%list.
+Proof.
+  intros.
+  sep_apply (store_term_cell_fold retval z a); [ | auto].
+  sep_apply sllbseg_one; [ | auto].
+  sep_apply (sllbseg_seg x y &( retval # "term_list" ->ₛ "next") l (a :: nil)).
+  entailer!.
+Qed.
+
+Lemma partial_quant_not_zero : forall z retval p st,
+  store_partial_quant z retval p ** store_term retval st |-- “ z <> 0 ”.
+Proof.
+  intros.
+  induction p ; simpl in *.
+  - Intros. subst.
+    destruct st ; simpl in *.
+    + Intros x. entailer!.
+    + entailer!.
+    + Intros y z. entailer!.
+    + Intros y z. entailer!.
+  - Intros y z0. entailer!.
+Qed.
+
+Lemma partial_quant_combine: forall t l pq st retval thm_pre,
+  thm_pre <> 0 ->
+  thm_subst_allres t l = Some (pq, st) ->
+      store_term retval st ** store_partial_quant thm_pre retval pq
+      |-- store_term thm_pre (thm_subst' t l).
+Proof.
+  intros. revert H H0. revert t pq st thm_pre.
+  induction l ; intros ; simpl in *.
+  + inversion H0.
+    subst. simpl. Intros. subst. entailer!.
+  + destruct a.
+    destruct t ; simpl in * ; try congruence.
+    destruct (thm_subst_allres (term_subst_t t0 name t) l) eqn:Heq; [ | congruence].
+    destruct p.
+    inversion H0; subst. simpl.
+    Intros y z; Exists y z.
+    entailer!.
+    prop_apply partial_quant_not_zero.
+    Intros. sep_apply IHl ; try auto.
+    entailer!.
+    auto.
+Qed.
+
+Lemma store_sub_thm_res_zero: forall thm_pre t_2 l,
+  store_sub_thm_res thm_pre 0 t_2 l |-- “ thm_subst_allres t_2 l = None ” && store_term thm_pre (thm_subst' t_2 l).
+Proof.
+  intros.
+  unfold store_sub_thm_res.
+  destruct thm_subst_allres eqn:Heq.
+  + destruct p.
+  sep_apply (store_null_right t (store_partial_quant thm_pre 0 p)
+      (“ Some (p, t) = None ” && store_term thm_pre (thm_subst' t_2 l))
+  ).
+  entailer!.
+  + entailer!.
+Qed.

@@ -25,36 +25,6 @@ From SimpleC.EE.Applications_human Require Import malloc.
 From SimpleC.EE.Applications_human Require Import super_poly_sll2.
 Local Open Scope sac.
 
-Lemma sllbseg_seg: forall x y z l1 l2,
-  sllbseg_term_list x y l1 **
-  sllbseg_term_list y z l2 |--
-  sllbseg_term_list x z (l1++l2).
-Proof.
-  intros.
-  revert x; induction l1; simpl; intros.
-  + entailer!.
-  subst x.
-  entailer!.
-  + Intros u.
-  Exists u.
-  entailer!.
-Qed.
-
-Lemma sllbseg_one_app: forall a l x y z retval,
-  retval <> NULL ->
-  sllbseg_term_list x y l **
-  y # Ptr |-> retval **
-  &(retval # "term_list" ->ₛ "element") # Ptr |-> z **
-  store_term z a |--
-  sllbseg_term_list x &(retval # "term_list" ->ₛ "next") (l++(a::nil)).
-Proof.
-  intros.
-  sep_apply (store_term_cell_fold retval z a); [ | auto].
-  sep_apply sllbseg_one; [ | auto].
-  sep_apply (sllbseg_seg x y &( retval # "term_list" ->ₛ "next") l (a :: nil)).
-  entailer!.
-Qed.
-
 Lemma proof_of_sub_thm_return_wit_3 : sub_thm_return_wit_3.
 Proof.
   pre_process.
@@ -435,57 +405,6 @@ Proof.
   Intros c; Exists c; entailer!.
 Qed.
 
-Lemma partial_quant_not_zero : forall z retval p st, 
-  store_partial_quant z retval p ** store_term retval st |-- “ z <> 0 ”.
-Proof.
-  intros.
-  induction p ; simpl in *.
-  - Intros. subst.
-    destruct st ; simpl in *.
-    + Intros x. entailer!.
-    + entailer!.
-    + Intros y z. entailer!.
-    + Intros y z. entailer!.
-  - Intros y z0. entailer!.
-Qed.
-
-Lemma partial_quant_combine: forall t l pq st retval thm_pre,
-  thm_pre <> 0 ->
-  thm_subst_allres t l = Some (pq, st) ->
-      store_term retval st ** store_partial_quant thm_pre retval pq
-      |-- store_term thm_pre (thm_subst' t l).
-Proof.
-  intros. revert H H0. revert t pq st thm_pre.
-  induction l ; intros ; simpl in *.
-  + inversion H0.
-    subst. simpl. Intros. subst. entailer!.
-  + destruct a.  
-    destruct t ; simpl in * ; try congruence.
-    destruct (thm_subst_allres (term_subst_t t0 name t) l) eqn:Heq; [ | congruence].
-    destruct p.
-    inversion H0; subst. simpl.
-    Intros y z; Exists y z.
-    entailer!.
-    prop_apply partial_quant_not_zero.
-    Intros. sep_apply IHl ; try auto. 
-    entailer!.
-    auto.
-Qed.
-
-Lemma store_sub_thm_res_zero: forall thm_pre t_2 l,
-  store_sub_thm_res thm_pre 0 t_2 l |-- “ thm_subst_allres t_2 l = None ” && store_term thm_pre (thm_subst' t_2 l).
-Proof.
-  intros.
-  unfold store_sub_thm_res.
-  destruct thm_subst_allres eqn:Heq.
-  + destruct p.
-  sep_apply (store_null_right t (store_partial_quant thm_pre 0 p)
-      (“ Some (p, t) = None ” && store_term thm_pre (thm_subst' t_2 l))
-  ).
-  entailer!.
-  + entailer!.
-Qed. 
-
 Lemma proof_of_thm_apply_return_wit_3 : thm_apply_return_wit_3.
 Proof. 
   pre_process.
@@ -496,6 +415,7 @@ Proof.
   unfold restypeID.
   entailer!.
   + sep_apply (partial_quant_combine t_2 l pq st); [entailer! | auto | auto].
+    rewrite PreH7. entailer!.
 Qed.
 
 Lemma proof_of_thm_apply_return_wit_2 : thm_apply_return_wit_2.
@@ -506,26 +426,13 @@ Proof.
   unfold thm_subst_allres_rel in PreH2.
   entailer!.
   + sep_apply (partial_quant_combine t_2 l pq st); [entailer! | auto | auto].
-  + unfold thm_app_rel, thm_app in PreH8.
-  rewrite PreH2 in PreH8.
-  unfold term_alpha_eqn in PreH1.
-  destruct term_alpha_eq eqn:Heq; [ | congruence].
-  auto.
+    rewrite PreH6. entailer!.
+  + unfold thm_app_rel, thm_app in PreH9.
+    rewrite PreH2 in PreH9.
+    unfold term_alpha_eqn in PreH1.
+    destruct term_alpha_eq eqn:Heq; [ | congruence].
+    auto.
 Qed.
-
-Lemma store_sub_thm_res_zero_late_unused: forall thm_pre t_2 l,
-  store_sub_thm_res thm_pre 0 t_2 l |-- “ thm_subst_allres t_2 l = None ” && store_term thm_pre (thm_subst' t_2 l).
-Proof.
-  intros.
-  unfold store_sub_thm_res.
-  destruct thm_subst_allres eqn:Heq.
-  + destruct p.
-  sep_apply (store_null_right t (store_partial_quant thm_pre 0 p)
-      (“ Some (p, t) = None ” && store_term thm_pre (thm_subst' t_2 l))
-  ).
-  entailer!.
-  + entailer!.
-Qed. 
 
 Lemma proof_of_thm_apply_return_wit_1 : thm_apply_return_wit_1.
 Proof.
@@ -535,22 +442,22 @@ Proof.
   sep_apply (store_sub_thm_res_zero thm_pre t_2 l).
   unfold store_solve_res, restypeID.
   entailer!.
-  unfold thm_app_rel, thm_app in PreH6.
-  rewrite H in PreH6.
+  unfold thm_app_rel, thm_app in PreH7.
+  rewrite H in PreH7.
   auto.
 Qed.
 
-Lemma proof_of_thm_apply_partial_solve_wit_8_pure : thm_apply_partial_solve_wit_8_pure.
+Lemma proof_of_thm_apply_partial_solve_wit_7_pure : thm_apply_partial_solve_wit_7_pure.
 Proof.
   pre_process.
 Qed.
-
 
 Lemma proof_of_thm_apply_which_implies_wit_1 : thm_apply_which_implies_wit_1.
 Proof. 
   pre_process.
   unfold store_solve_res.
   Exists 0 0.
+  Exists 0.
   entailer!.
 Qed.
 
@@ -565,15 +472,6 @@ Proof.
 Qed.
 
 Lemma proof_of_thm_apply_which_implies_wit_3 : thm_apply_which_implies_wit_3.
-Proof.
-  pre_process.
-  Exists 0; subst.
-  entailer!.
-  rewrite store_solve_res'_equiv.
-  entailer!.
-Qed.
-
-Lemma proof_of_thm_apply_which_implies_wit_4 : thm_apply_which_implies_wit_4.
 Proof.
   pre_process.
   entailer!.

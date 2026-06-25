@@ -313,4 +313,3 @@ solve_res* thm_apply(term* thm, var_sub_list* lis, term* goal)
             store_solve_res(__return, thm_app(t, l, g))
   */
   ;
-  
