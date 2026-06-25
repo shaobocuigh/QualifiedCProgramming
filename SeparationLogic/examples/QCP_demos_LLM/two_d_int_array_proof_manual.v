@@ -20,11 +20,6 @@ Local Open Scope list.
 Import naive_C_Rules.
 Local Open Scope sac.
 
-Lemma proof_of_max_fill_array2_safety_wit_6_split_goal_1 : max_fill_array2_safety_wit_6_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_safety_wit_6_split_goal_2 : max_fill_array2_safety_wit_6_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_safety_wit_6 : max_fill_array2_safety_wit_6.
 Proof.
@@ -58,11 +53,6 @@ Proof.
   end;
   try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_array2_safety_wit_7_split_goal_1 : max_fill_array2_safety_wit_7_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_safety_wit_7_split_goal_2 : max_fill_array2_safety_wit_7_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_safety_wit_7 : max_fill_array2_safety_wit_7.
 Proof.
@@ -96,11 +86,6 @@ Proof.
   end;
   try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_array2_safety_wit_9_split_goal_1 : max_fill_array2_safety_wit_9_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_safety_wit_9_split_goal_2 : max_fill_array2_safety_wit_9_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_safety_wit_9 : max_fill_array2_safety_wit_9.
 Proof.
@@ -134,11 +119,6 @@ Proof.
   end;
   try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_array2_safety_wit_10_split_goal_1 : max_fill_array2_safety_wit_10_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_safety_wit_10_split_goal_2 : max_fill_array2_safety_wit_10_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_safety_wit_10 : max_fill_array2_safety_wit_10.
 Proof.
@@ -172,9 +152,6 @@ Proof.
   end;
   try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_array2_entail_wit_1_split_goal_1 : max_fill_array2_entail_wit_1_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_max_fill_array2_entail_wit_1 : max_fill_array2_entail_wit_1.
 Proof.
   pre_process_default; try entailer!;
@@ -207,11 +184,6 @@ Proof.
   end;
   try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_array2_entail_wit_2_split_goal_1 : max_fill_array2_entail_wit_2_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_entail_wit_2_split_goal_2 : max_fill_array2_entail_wit_2_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_entail_wit_2 : max_fill_array2_entail_wit_2.
 Proof.
@@ -245,14 +217,7 @@ Proof.
   end;
   try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_array2_entail_wit_3_split_goal_1 : max_fill_array2_entail_wit_3_split_goal_1.
-Proof. Abort.
 
-Lemma proof_of_max_fill_array2_entail_wit_3_split_goal_2 : max_fill_array2_entail_wit_3_split_goal_2.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_entail_wit_3_split_goal_spatial : max_fill_array2_entail_wit_3_split_goal_spatial.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_entail_wit_3 : max_fill_array2_entail_wit_3.
 Proof.
@@ -273,14 +238,7 @@ Proof.
   - pose proof (PreH12 i j ltac:(repeat split; lia)); lia.
   - pose proof (PreH12 i j ltac:(repeat split; lia)); lia.
 Qed.
-Lemma proof_of_max_fill_array2_entail_wit_4_1_split_goal_1 : max_fill_array2_entail_wit_4_1_split_goal_1.
-Proof. Abort.
 
-Lemma proof_of_max_fill_array2_entail_wit_4_1_split_goal_2 : max_fill_array2_entail_wit_4_1_split_goal_2.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_entail_wit_4_1_split_goal_3 : max_fill_array2_entail_wit_4_1_split_goal_3.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_entail_wit_4_1 : max_fill_array2_entail_wit_4_1.
 Proof.
@@ -314,11 +272,6 @@ Proof.
   end;
   try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_array2_entail_wit_4_2_split_goal_1 : max_fill_array2_entail_wit_4_2_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_array2_entail_wit_4_2_split_goal_2 : max_fill_array2_entail_wit_4_2_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_array2_entail_wit_4_2 : max_fill_array2_entail_wit_4_2.
 Proof.

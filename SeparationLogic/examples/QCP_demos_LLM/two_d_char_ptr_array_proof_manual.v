@@ -20,11 +20,6 @@ Local Open Scope list.
 Import naive_C_Rules.
 Local Open Scope sac.
 
-Lemma proof_of_check_dict_case_safety_wit_39_split_goal_1 : check_dict_case_safety_wit_39_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_check_dict_case_safety_wit_39_split_goal_2 : check_dict_case_safety_wit_39_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_check_dict_case_safety_wit_39 : check_dict_case_safety_wit_39.
 Proof.
@@ -55,11 +50,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_safety_wit_40_split_goal_1 : check_dict_case_safety_wit_40_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_check_dict_case_safety_wit_40_split_goal_2 : check_dict_case_safety_wit_40_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_check_dict_case_safety_wit_40 : check_dict_case_safety_wit_40.
 Proof.
@@ -90,9 +80,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_1_split_goal_1 : check_dict_case_entail_wit_1_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_entail_wit_1 : check_dict_case_entail_wit_1.
 Proof.
   pre_process_default; try entailer!.
@@ -122,11 +109,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_2_split_goal_1 : check_dict_case_entail_wit_2_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_check_dict_case_entail_wit_2_split_goal_spatial : check_dict_case_entail_wit_2_split_goal_spatial.
-Proof. Abort.
 
 Lemma proof_of_check_dict_case_entail_wit_2 : check_dict_case_entail_wit_2.
 Proof.
@@ -150,9 +132,6 @@ Proof.
         Hr : 0 <= ?r < ?n |- _ => destruct (H r Hr); lia
       end.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_3_split_goal_1 : check_dict_case_entail_wit_3_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_entail_wit_3 : check_dict_case_entail_wit_3.
 Proof.
   pre_process_default; try entailer!.
@@ -182,11 +161,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_4_split_goal_1 : check_dict_case_entail_wit_4_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_check_dict_case_entail_wit_4_split_goal_2 : check_dict_case_entail_wit_4_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_check_dict_case_entail_wit_4 : check_dict_case_entail_wit_4.
 Proof.
@@ -217,9 +191,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_5_1_split_goal_1 : check_dict_case_entail_wit_5_1_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_entail_wit_5_1 : check_dict_case_entail_wit_5_1.
 Proof.
   pre_process_default; try entailer!.
@@ -249,9 +220,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_5_2_split_goal_1 : check_dict_case_entail_wit_5_2_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_entail_wit_5_2 : check_dict_case_entail_wit_5_2.
 Proof.
   pre_process_default; try entailer!.
@@ -281,11 +249,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_6_split_goal_1 : check_dict_case_entail_wit_6_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_check_dict_case_entail_wit_6_split_goal_spatial : check_dict_case_entail_wit_6_split_goal_spatial.
-Proof. Abort.
 
 Lemma proof_of_check_dict_case_entail_wit_6 : check_dict_case_entail_wit_6.
 Proof.
@@ -302,9 +265,6 @@ Proof.
   rewrite replace_Znth_Znth by lia.
   entailer!.
 Qed.
-Lemma proof_of_check_dict_case_entail_wit_7_split_goal_1 : check_dict_case_entail_wit_7_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_entail_wit_7 : check_dict_case_entail_wit_7.
 Proof.
   pre_process_default; try entailer!.
@@ -334,9 +294,6 @@ Proof.
       lia
   end.  all: try lia; try nia.
 Qed.
-Lemma proof_of_check_dict_case_return_wit_2_split_goal_spatial : check_dict_case_return_wit_2_split_goal_spatial.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_return_wit_2 : check_dict_case_return_wit_2.
 Proof.
   pre_process_default.
@@ -352,9 +309,6 @@ Proof.
   rewrite replace_Znth_Znth by lia.
   entailer!.
 Qed.
-Lemma proof_of_check_dict_case_return_wit_3_split_goal_spatial : check_dict_case_return_wit_3_split_goal_spatial.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_return_wit_3 : check_dict_case_return_wit_3.
 Proof.
   pre_process_default.
@@ -370,9 +324,6 @@ Proof.
   rewrite replace_Znth_Znth by lia.
   entailer!.
 Qed.
-Lemma proof_of_check_dict_case_return_wit_4_split_goal_spatial : check_dict_case_return_wit_4_split_goal_spatial.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_return_wit_4 : check_dict_case_return_wit_4.
 Proof.
   pre_process_default.
@@ -388,9 +339,6 @@ Proof.
   rewrite replace_Znth_Znth by lia.
   entailer!.
 Qed.
-Lemma proof_of_check_dict_case_return_wit_5_split_goal_spatial : check_dict_case_return_wit_5_split_goal_spatial.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_return_wit_5 : check_dict_case_return_wit_5.
 Proof.
   pre_process_default.
@@ -406,9 +354,6 @@ Proof.
   rewrite replace_Znth_Znth by lia.
   entailer!.
 Qed.
-Lemma proof_of_check_dict_case_return_wit_6_split_goal_spatial : check_dict_case_return_wit_6_split_goal_spatial.
-Proof. Abort.
-
 Lemma proof_of_check_dict_case_return_wit_6 : check_dict_case_return_wit_6.
 Proof.
   pre_process_default.

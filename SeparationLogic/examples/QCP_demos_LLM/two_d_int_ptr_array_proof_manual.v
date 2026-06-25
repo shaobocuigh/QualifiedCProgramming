@@ -20,11 +20,6 @@ Local Open Scope list.
 Import naive_C_Rules.
 Local Open Scope sac.
 
-Lemma proof_of_max_fill_safety_wit_6_split_goal_1 : max_fill_safety_wit_6_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_safety_wit_6_split_goal_2 : max_fill_safety_wit_6_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_safety_wit_6 : max_fill_safety_wit_6.
 Proof.
@@ -51,11 +46,6 @@ Proof.
   end.
   all: try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_safety_wit_8_split_goal_1 : max_fill_safety_wit_8_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_safety_wit_8_split_goal_2 : max_fill_safety_wit_8_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_safety_wit_8 : max_fill_safety_wit_8.
 Proof.
@@ -82,11 +72,6 @@ Proof.
   end.
   all: try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_safety_wit_9_split_goal_1 : max_fill_safety_wit_9_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_safety_wit_9_split_goal_2 : max_fill_safety_wit_9_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_safety_wit_9 : max_fill_safety_wit_9.
 Proof.
@@ -113,9 +98,6 @@ Proof.
   end.
   all: try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_entail_wit_1_split_goal_1 : max_fill_entail_wit_1_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_max_fill_entail_wit_1 : max_fill_entail_wit_1.
 Proof.
   pre_process_default; try entailer!.
@@ -141,14 +123,7 @@ Proof.
   end.
   all: try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_entail_wit_2_split_goal_1 : max_fill_entail_wit_2_split_goal_1.
-Proof. Abort.
 
-Lemma proof_of_max_fill_entail_wit_2_split_goal_2 : max_fill_entail_wit_2_split_goal_2.
-Proof. Abort.
-
-Lemma proof_of_max_fill_entail_wit_2_split_goal_spatial : max_fill_entail_wit_2_split_goal_spatial.
-Proof. Abort.
 
 Lemma proof_of_max_fill_entail_wit_2 : max_fill_entail_wit_2.
 Proof.
@@ -170,26 +145,14 @@ Proof.
     rewrite sizeof_ptr.
     cancel.
 Qed.
-Lemma proof_of_max_fill_entail_wit_3_split_goal_1 : max_fill_entail_wit_3_split_goal_1.
-Proof. Abort.
-
 Lemma proof_of_max_fill_entail_wit_3 : max_fill_entail_wit_3.
 Proof.
   pre_process_default.
   Exists row_ptr_2.
   entailer!.
 Qed.
-Lemma proof_of_max_fill_entail_wit_4_split_goal_1 : max_fill_entail_wit_4_split_goal_1.
-Proof. Abort.
 
-Lemma proof_of_max_fill_entail_wit_4_split_goal_2 : max_fill_entail_wit_4_split_goal_2.
-Proof. Abort.
 
-Lemma proof_of_max_fill_entail_wit_4_split_goal_3 : max_fill_entail_wit_4_split_goal_3.
-Proof. Abort.
-
-Lemma proof_of_max_fill_entail_wit_4_split_goal_4 : max_fill_entail_wit_4_split_goal_4.
-Proof. Abort.
 
 Lemma proof_of_max_fill_entail_wit_4 : max_fill_entail_wit_4.
 Proof.
@@ -199,11 +162,6 @@ Proof.
   Exists row_ptr_2.
   entailer!.
 Qed.
-Lemma proof_of_max_fill_entail_wit_5_split_goal_1 : max_fill_entail_wit_5_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_entail_wit_5_split_goal_spatial : max_fill_entail_wit_5_split_goal_spatial.
-Proof. Abort.
 
 Lemma proof_of_max_fill_entail_wit_5 : max_fill_entail_wit_5.
 Proof.
@@ -223,14 +181,7 @@ Proof.
   rewrite replace_Znth_Znth by lia.
   entailer!.
 Qed.
-Lemma proof_of_max_fill_entail_wit_6_1_split_goal_1 : max_fill_entail_wit_6_1_split_goal_1.
-Proof. Abort.
 
-Lemma proof_of_max_fill_entail_wit_6_1_split_goal_2 : max_fill_entail_wit_6_1_split_goal_2.
-Proof. Abort.
-
-Lemma proof_of_max_fill_entail_wit_6_1_split_goal_3 : max_fill_entail_wit_6_1_split_goal_3.
-Proof. Abort.
 
 Lemma proof_of_max_fill_entail_wit_6_1 : max_fill_entail_wit_6_1.
 Proof.
@@ -257,11 +208,6 @@ Proof.
   end.
   all: try lia; try nia.
 Qed.
-Lemma proof_of_max_fill_entail_wit_6_2_split_goal_1 : max_fill_entail_wit_6_2_split_goal_1.
-Proof. Abort.
-
-Lemma proof_of_max_fill_entail_wit_6_2_split_goal_2 : max_fill_entail_wit_6_2_split_goal_2.
-Proof. Abort.
 
 Lemma proof_of_max_fill_entail_wit_6_2 : max_fill_entail_wit_6_2.
 Proof.
