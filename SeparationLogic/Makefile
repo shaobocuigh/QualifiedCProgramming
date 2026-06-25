@@ -214,7 +214,7 @@ QCP_DEMO_Example_Lib_FILES = \
 LLM_FRIENDLY_CASES_Lib_FILES = \
 	poly_sll_lib.v sll_lib.v sll_insert_sort_lib.v functional_queue_lib.v dll_queue_lib.v sll_queue_lib.v simple_arith/Apos_lib.v simple_arith/PDiv_lib.v bst_lib.v bst_fp_lib.v swap_lib.v eval_lib.v avl_shape.v sll_shape_lib.v dll_shape_lib.v \
 	sll_merge_rel_lib.v kmp_lib.v kmp_rel_lib.v int_array_merge_rel_lib.v \
-	majorityElement_lib.v sortArray_lib.v zephyr_slist_lib.v union_find_err_rel_lib.v \
+	majorityElement_lib.v sortArray_lib.v zephyr_slist_lib.v union_find_err_rel_lib.v two_d_functional_spec_lib.v \
 
 LLM_BENCH_Lib_FILES = \
 	Algorithms/coin_change/coin_change_lib.v \

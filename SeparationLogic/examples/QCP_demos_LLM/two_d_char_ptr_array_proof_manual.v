@@ -18,101 +18,37 @@ Local Open Scope sets.
 Local Open Scope string_scope.
 Local Open Scope list.
 Import naive_C_Rules.
+Require Import SimpleC.EE.QCP_demos_LLM.two_d_functional_spec_lib.
 Local Open Scope sac.
-
 
 Lemma proof_of_check_dict_case_safety_wit_39 : check_dict_case_safety_wit_39.
 Proof.
-  pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
+  pre_process_default; try entailer!;
+  try match goal with
+  | Hrow : forall r : Z, _ -> _ |- _ =>
+      pose proof (Hrow k ltac:(lia)) as Hk_row
+  end;
+  try lia.
 Qed.
 
 Lemma proof_of_check_dict_case_safety_wit_40 : check_dict_case_safety_wit_40.
 Proof.
-  pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
+  pre_process_default; try entailer!;
+  try match goal with
+  | Hrow : forall r : Z, _ -> _ |- _ =>
+      pose proof (Hrow k ltac:(lia)) as Hk_row
+  end;
+  try lia.
 Qed.
+
 Lemma proof_of_check_dict_case_entail_wit_1 : check_dict_case_entail_wit_1.
 Proof.
   pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
+  apply dict_case_prefix_zero; lia.
 Qed.
 
 Lemma proof_of_check_dict_case_entail_wit_2 : check_dict_case_entail_wit_2.
 Proof.
-  left.
   pre_process_default.
   sep_apply_l_atomic (CharPtrArray2.full_split_to_missing_i
     keys_pre k dict_size_pre rows).
@@ -123,252 +59,200 @@ Proof.
     rewrite sizeof_ptr.
     change (CharPtrArray2.ElemArray.full row_ptr
       (Zlength (Znth k rows nil)) (Znth k rows nil)) with
-      (CharArray.full row_ptr (Zlength (Znth k rows nil))
-        (Znth k rows nil)).
-    entailer!;
-      try match goal with
-      | H : forall r : Z, 0 <= r < ?n ->
-            0 < Zlength (Znth r ?rows nil) <= 100 /\ _,
-        Hr : 0 <= ?r < ?n |- _ => destruct (H r Hr); lia
-      end.
+      (CharArray.full row_ptr
+        (Zlength (Znth k rows nil)) (Znth k rows nil)).
+    entailer!.
 Qed.
+
 Lemma proof_of_check_dict_case_entail_wit_3 : check_dict_case_entail_wit_3.
 Proof.
   pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
 Qed.
 
 Lemma proof_of_check_dict_case_entail_wit_4 : check_dict_case_entail_wit_4.
 Proof.
   pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
+  - apply dict_case_prefix_to_scan_zero; try lia; assumption.
+  - pose proof (PreH7 k ltac:(lia)) as Hrow; lia.
 Qed.
+
 Lemma proof_of_check_dict_case_entail_wit_5_1 : check_dict_case_entail_wit_5_1.
 Proof.
   pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
+  - apply (dict_case_scan_step_lower
+      rows dict_size_pre k i islower isupper); try assumption; try lia.
+    + split; [lia | eapply dict_case_nonzero_before_terminator;
+        try eassumption; try lia].
+    + unfold is_lower_char; lia.
+  - assert (Hcontent : i < key_content_len (Znth k rows nil)) by
+      (eapply dict_case_nonzero_before_terminator; try eassumption; try lia).
+    unfold key_content_len in Hcontent; lia.
 Qed.
+
 Lemma proof_of_check_dict_case_entail_wit_5_2 : check_dict_case_entail_wit_5_2.
 Proof.
   pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
+  - apply (dict_case_scan_step_upper
+      rows dict_size_pre k i islower isupper); try assumption; try lia.
+    + split; [lia | eapply dict_case_nonzero_before_terminator;
+        try eassumption; try lia].
+    + unfold is_upper_char; lia.
+  - assert (Hcontent : i < key_content_len (Znth k rows nil)) by
+      (eapply dict_case_nonzero_before_terminator; try eassumption; try lia).
+    unfold key_content_len in Hcontent; lia.
 Qed.
 
 Lemma proof_of_check_dict_case_entail_wit_6 : check_dict_case_entail_wit_6.
 Proof.
-  pre_process_default.
+  pre_process_default; try entailer!.
+  rewrite sizeof_ptr.
   pose proof (CharPtrArray2.missing_i_merge_to_full
     keys_pre k dict_size_pre row_ptr rows (Znth k rows nil)) as Hmerge.
   unfold StorePtrAsElement.storeA in Hmerge.
-  rewrite sizeof_ptr.
   change (CharPtrArray2.ElemArray.full row_ptr
     (Zlength (Znth k rows nil)) (Znth k rows nil)) with
-    (CharArray.full row_ptr (Zlength (Znth k rows nil))
-      (Znth k rows nil)) in Hmerge.
+    (CharArray.full row_ptr
+      (Zlength (Znth k rows nil)) (Znth k rows nil)) in Hmerge.
   sep_apply Hmerge; try lia.
   rewrite replace_Znth_Znth by lia.
   entailer!.
+  apply (dict_case_scan_finish_prefix
+    rows dict_size_pre k i islower isupper); try assumption; try lia.
 Qed.
+
 Lemma proof_of_check_dict_case_entail_wit_7 : check_dict_case_entail_wit_7.
 Proof.
   pre_process_default; try entailer!.
-  all: try match goal with
-  | Hlast : forall r : Z, _ -> _
-    |- context[Zlength (Znth ?k ?rows nil)] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hlast : forall r : Z, _ -> _
-    |- context[Znth (Zlength (Znth ?k ?rows nil) - 1) (Znth ?k ?rows nil) 0] =>
-      pose proof (Hlast k ltac:(repeat split; lia))
-  | Hnz : forall r i : Z, _ -> _
-    |- context[Znth ?i (Znth ?k ?rows nil) 0] =>
-      pose proof (Hnz k i ltac:(repeat split; lia))
-  end.
-  all: try match goal with
-  | H : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\ _
-    |- _ => pose proof (H k ltac:(lia))
-  end.
-  all: try match goal with
-  | Hlast : forall r : Z, 0 <= r < ?n -> 0 < Zlength (Znth r ?rows nil) <= 100 /\
-              Znth (Zlength (Znth r ?rows nil) - 1) (Znth r ?rows nil) 0 = 0,
-    Hnz : Znth ?i (Znth ?k ?rows nil) 0 <> 0
-    |- ?i + 1 < Zlength (Znth ?k ?rows nil) =>
-      let Hshape := fresh "Hshape" in
-      destruct (Hlast k ltac:(lia)) as [Hshape HlastEq];
-      assert (i <> Zlength (Znth k rows nil) - 1) by congruence;
-      lia
-  end.  all: try lia; try nia.
 Qed.
+
+Lemma proof_of_check_dict_case_return_wit_1 : check_dict_case_return_wit_1.
+Proof.
+  pre_process_default; try entailer!.
+  unfold CheckDictCaseResult.
+  left; split; [reflexivity |].
+  apply (dict_case_prefix_complete_ok
+    rows dict_size_pre k islower isupper); try assumption; lia.
+Qed.
+
 Lemma proof_of_check_dict_case_return_wit_2 : check_dict_case_return_wit_2.
 Proof.
-  pre_process_default.
+  pre_process_default; try entailer!.
+  rewrite sizeof_ptr.
   pose proof (CharPtrArray2.missing_i_merge_to_full
     keys_pre k dict_size_pre row_ptr rows (Znth k rows nil)) as Hmerge.
   unfold StorePtrAsElement.storeA in Hmerge.
-  rewrite sizeof_ptr.
   change (CharPtrArray2.ElemArray.full row_ptr
     (Zlength (Znth k rows nil)) (Znth k rows nil)) with
-    (CharArray.full row_ptr (Zlength (Znth k rows nil))
-      (Znth k rows nil)) in Hmerge.
+    (CharArray.full row_ptr
+      (Zlength (Znth k rows nil)) (Znth k rows nil)) in Hmerge.
   sep_apply Hmerge; try lia.
   rewrite replace_Znth_Znth by lia.
   entailer!.
+  unfold CheckDictCaseResult.
+  right; split; [reflexivity |].
+  apply (dict_case_scan_lower_conflict_not_ok
+    rows dict_size_pre k i islower isupper); try assumption; try lia.
+  - split; [lia | eapply dict_case_nonzero_before_terminator;
+      try eassumption; try lia].
+  - unfold is_lower_char; lia.
 Qed.
+
 Lemma proof_of_check_dict_case_return_wit_3 : check_dict_case_return_wit_3.
 Proof.
-  pre_process_default.
+  pre_process_default; try entailer!.
+  rewrite sizeof_ptr.
   pose proof (CharPtrArray2.missing_i_merge_to_full
     keys_pre k dict_size_pre row_ptr rows (Znth k rows nil)) as Hmerge.
   unfold StorePtrAsElement.storeA in Hmerge.
-  rewrite sizeof_ptr.
   change (CharPtrArray2.ElemArray.full row_ptr
     (Zlength (Znth k rows nil)) (Znth k rows nil)) with
-    (CharArray.full row_ptr (Zlength (Znth k rows nil))
-      (Znth k rows nil)) in Hmerge.
+    (CharArray.full row_ptr
+      (Zlength (Znth k rows nil)) (Znth k rows nil)) in Hmerge.
   sep_apply Hmerge; try lia.
   rewrite replace_Znth_Znth by lia.
   entailer!.
+  unfold CheckDictCaseResult.
+  right; split; [reflexivity |].
+  apply (dict_case_scan_upper_conflict_not_ok
+    rows dict_size_pre k i islower isupper); try assumption; try lia.
+  - split; [lia | eapply dict_case_nonzero_before_terminator;
+      try eassumption; try lia].
+  - unfold is_upper_char; lia.
 Qed.
+
 Lemma proof_of_check_dict_case_return_wit_4 : check_dict_case_return_wit_4.
 Proof.
-  pre_process_default.
+  pre_process_default; try entailer!.
+  rewrite sizeof_ptr.
   pose proof (CharPtrArray2.missing_i_merge_to_full
     keys_pre k dict_size_pre row_ptr rows (Znth k rows nil)) as Hmerge.
   unfold StorePtrAsElement.storeA in Hmerge.
-  rewrite sizeof_ptr.
   change (CharPtrArray2.ElemArray.full row_ptr
     (Zlength (Znth k rows nil)) (Znth k rows nil)) with
-    (CharArray.full row_ptr (Zlength (Znth k rows nil))
-      (Znth k rows nil)) in Hmerge.
+    (CharArray.full row_ptr
+      (Zlength (Znth k rows nil)) (Znth k rows nil)) in Hmerge.
   sep_apply Hmerge; try lia.
   rewrite replace_Znth_Znth by lia.
   entailer!.
+  unfold CheckDictCaseResult.
+  right; split; [reflexivity |].
+  apply (dict_case_bad_char_not_ok
+    rows dict_size_pre k i islower isupper); try assumption; try lia.
+  - split; [lia | eapply dict_case_nonzero_before_terminator;
+      try eassumption; try lia].
+  - unfold is_alpha_char, is_upper_char, is_lower_char; lia.
 Qed.
+
 Lemma proof_of_check_dict_case_return_wit_5 : check_dict_case_return_wit_5.
 Proof.
-  pre_process_default.
+  pre_process_default; try entailer!.
+  rewrite sizeof_ptr.
   pose proof (CharPtrArray2.missing_i_merge_to_full
     keys_pre k dict_size_pre row_ptr rows (Znth k rows nil)) as Hmerge.
   unfold StorePtrAsElement.storeA in Hmerge.
-  rewrite sizeof_ptr.
   change (CharPtrArray2.ElemArray.full row_ptr
     (Zlength (Znth k rows nil)) (Znth k rows nil)) with
-    (CharArray.full row_ptr (Zlength (Znth k rows nil))
-      (Znth k rows nil)) in Hmerge.
+    (CharArray.full row_ptr
+      (Zlength (Znth k rows nil)) (Znth k rows nil)) in Hmerge.
   sep_apply Hmerge; try lia.
   rewrite replace_Znth_Znth by lia.
   entailer!.
+  unfold CheckDictCaseResult.
+  right; split; [reflexivity |].
+  apply (dict_case_bad_char_not_ok
+    rows dict_size_pre k i islower isupper); try assumption; try lia.
+  - split; [lia | eapply dict_case_nonzero_before_terminator;
+      try eassumption; try lia].
+  - unfold is_alpha_char, is_upper_char, is_lower_char; lia.
 Qed.
+
 Lemma proof_of_check_dict_case_return_wit_6 : check_dict_case_return_wit_6.
 Proof.
-  pre_process_default.
+  pre_process_default; try entailer!.
+  rewrite sizeof_ptr.
   pose proof (CharPtrArray2.missing_i_merge_to_full
     keys_pre k dict_size_pre row_ptr rows (Znth k rows nil)) as Hmerge.
   unfold StorePtrAsElement.storeA in Hmerge.
-  rewrite sizeof_ptr.
   change (CharPtrArray2.ElemArray.full row_ptr
     (Zlength (Znth k rows nil)) (Znth k rows nil)) with
-    (CharArray.full row_ptr (Zlength (Znth k rows nil))
-      (Znth k rows nil)) in Hmerge.
+    (CharArray.full row_ptr
+      (Zlength (Znth k rows nil)) (Znth k rows nil)) in Hmerge.
   sep_apply Hmerge; try lia.
   rewrite replace_Znth_Znth by lia.
   entailer!.
+  unfold CheckDictCaseResult.
+  right; split; [reflexivity |].
+  apply (dict_case_bad_char_not_ok
+    rows dict_size_pre k i islower isupper); try assumption; try lia.
+  - split; [lia | eapply dict_case_nonzero_before_terminator;
+      try eassumption; try lia].
+  - unfold is_alpha_char, is_upper_char, is_lower_char; lia.
 Qed.
 
-
-
+Lemma proof_of_check_dict_case_return_wit_7 : check_dict_case_return_wit_7.
+Proof.
+  pre_process_default; try entailer!.
+  unfold CheckDictCaseResult.
+  right; split; [reflexivity |].
+  subst; apply dict_case_zero_size_not_ok.
+Qed.

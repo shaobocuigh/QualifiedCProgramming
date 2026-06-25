@@ -34,6 +34,12 @@ Constraints:
 
 #include "int_ptr_array2_def.h"
 
+/*@ Import Coq Require Import SimpleC.EE.QCP_demos_LLM.two_d_functional_spec_lib */
+/*@ Extern Coq (BucketRowsCount : list (list Z) -> Z -> Z)
+               (BucketRowsPrefixCount : list (list Z) -> Z -> Z -> Z -> Prop)
+               (RowPrefixSum : list Z -> Z -> Z -> Prop)
+*/
+
 int max_fill(int** grid, int grid_rows, int grid_cols, int capacity)
 /*@ With rows
     Require 0 <= grid_rows && grid_rows <= 100 &&
@@ -43,7 +49,8 @@ int max_fill(int** grid, int grid_rows, int grid_cols, int capacity)
             (forall (i: Z), (0 <= i && i < grid_rows) => (Zlength(rows[i]) == grid_cols)) &&
             (forall (i: Z) (j: Z), (0 <= i && i < grid_rows && 0 <= j && j < grid_cols) => (0 <= rows[i][j] && rows[i][j] <= 1)) &&
             IntPtrArray2::full(grid, grid_rows, rows)
-    Ensure IntPtrArray2::full(grid, grid_rows, rows)
+    Ensure __return == BucketRowsCount(rows, capacity) &&
+           IntPtrArray2::full(grid, grid_rows, rows)
 */
 {
     int out=0;
@@ -59,6 +66,7 @@ int max_fill(int** grid, int grid_rows, int grid_cols, int capacity)
         (forall (r: Z), (0 <= r && r < grid_rows@pre) => (Zlength(rows[r]) == grid_cols@pre)) &&
         (forall (r: Z) (c: Z), (0 <= r && r < grid_rows@pre && 0 <= c && c < grid_cols@pre) => (0 <= rows[r][c] && rows[r][c] <= 1)) &&
         0 <= out && out <= i * grid_cols@pre &&
+        BucketRowsPrefixCount(rows, capacity@pre, i, out) &&
         IntPtrArray2::full(grid@pre, grid_rows@pre, rows)
     */
     for (int i=0;i<grid_rows;i++)
@@ -80,8 +88,10 @@ int max_fill(int** grid, int grid_rows, int grid_cols, int capacity)
             (forall (r: Z), (0 <= r && r < grid_rows@pre) => (Zlength(rows[r]) == grid_cols@pre)) &&
             (forall (r: Z) (c: Z), (0 <= r && r < grid_rows@pre && 0 <= c && c < grid_cols@pre) => (0 <= rows[r][c] && rows[r][c] <= 1)) &&
             Zlength(Znth(i, rows, nil)) == grid_cols@pre &&
+            BucketRowsPrefixCount(rows, capacity@pre, i, out) &&
             0 <= out && out <= i * grid_cols@pre &&
             sum == 0 &&
+            RowPrefixSum(Znth(i, rows, nil), 0, sum) &&
             IntPtrArray2::missing_i(grid@pre, grid_rows@pre, i, row_ptr, rows) *
             data_at(grid@pre + (i * sizeof(int *)), int *, row_ptr) *
             IntArray::full(row_ptr, Zlength(Znth(i, rows, nil)), Znth(i, rows, nil))
@@ -104,6 +114,8 @@ int max_fill(int** grid, int grid_rows, int grid_cols, int capacity)
             Zlength(Znth(i, rows, nil)) == grid_cols@pre &&
             0 <= i && i < grid_rows@pre &&
             0 <= sum && sum <= j &&
+            RowPrefixSum(Znth(i, rows, nil), j, sum) &&
+            BucketRowsPrefixCount(rows, capacity@pre, i, out) &&
             0 <= out && out <= i * grid_cols@pre &&
             IntPtrArray2::missing_i(grid@pre, grid_rows@pre, i, row_ptr, rows) *
             data_at(grid@pre + (i * sizeof(int *)), int *, row_ptr) *
@@ -112,9 +124,6 @@ int max_fill(int** grid, int grid_rows, int grid_cols, int capacity)
         for (int j=0;j<grid_cols;j++)
             sum+=grid[i][j];
         /*@ Assert
-            i == i &&
-            sum == sum &&
-            out == out &&
             0 <= grid_rows@pre && grid_rows@pre <= 100 &&
             0 <= grid_cols@pre && grid_cols@pre <= 100 &&
             1 <= capacity@pre && capacity@pre <= 10 &&
@@ -127,6 +136,9 @@ int max_fill(int** grid, int grid_rows, int grid_cols, int capacity)
             Zlength(rows) == grid_rows@pre &&
             (forall (r: Z), (0 <= r && r < grid_rows@pre) => (Zlength(rows[r]) == grid_cols@pre)) &&
             (forall (r: Z) (c: Z), (0 <= r && r < grid_rows@pre && 0 <= c && c < grid_cols@pre) => (0 <= rows[r][c] && rows[r][c] <= 1)) &&
+            Zlength(Znth(i, rows, nil)) == grid_cols@pre &&
+            RowPrefixSum(Znth(i, rows, nil), grid_cols@pre, sum) &&
+            BucketRowsPrefixCount(rows, capacity@pre, i, out) &&
             IntPtrArray2::full(grid@pre, grid_rows@pre, rows)
         */
         if (sum>0)  out+=(sum-1)/capacity+1;

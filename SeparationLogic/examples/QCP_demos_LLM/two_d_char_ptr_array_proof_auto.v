@@ -17,6 +17,7 @@ Local Open Scope sets.
 Local Open Scope string_scope.
 Local Open Scope list.
 Import naive_C_Rules.
+Require Import SimpleC.EE.QCP_demos_LLM.two_d_functional_spec_lib.
 Local Open Scope sac.
 
 Lemma proof_of_check_dict_case_safety_wit_1 : check_dict_case_safety_wit_1.
@@ -137,12 +138,6 @@ Lemma proof_of_check_dict_case_safety_wit_41 : check_dict_case_safety_wit_41.
 Proof. Admitted. 
 
 Lemma proof_of_check_dict_case_safety_wit_42 : check_dict_case_safety_wit_42.
-Proof. Admitted. 
-
-Lemma proof_of_check_dict_case_return_wit_1 : check_dict_case_return_wit_1.
-Proof. Admitted. 
-
-Lemma proof_of_check_dict_case_return_wit_7 : check_dict_case_return_wit_7.
 Proof. Admitted. 
 
 Lemma proof_of_check_dict_case_partial_solve_wit_1 : check_dict_case_partial_solve_wit_1.

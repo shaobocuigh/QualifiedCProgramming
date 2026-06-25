@@ -12,6 +12,7 @@ Require Import SetsClass.SetsClass. Import SetsNotation.
 From SimpleC.SL Require Import Mem SeparationLogic.
 From SimpleC.EE.QCP_demos_LLM Require Import two_d_int_ptr_array_goal.
 From SimpleC.EE.QCP_demos_LLM Require Import two_d_int_ptr_array_proof_auto.
+Require Import SimpleC.EE.QCP_demos_LLM.two_d_functional_spec_lib.
 Require Import Logic.LogicGenerator.demo932.Interface.
 Local Open Scope Z_scope.
 Local Open Scope sets.
@@ -161,6 +162,12 @@ Proof.
   pose proof (PreH18 i j ltac:(repeat split; lia)).
   Exists row_ptr_2.
   entailer!.
+  all: try rewrite (Znth_indep rows i __default__List_Z nil) by lia.
+  all: try match goal with
+  | |- RowPrefixSum _ _ _ =>
+      apply RowPrefixSum_step; try lia; exact PreH24
+  end.
+  all: try (pose proof (PreH18 i j ltac:(repeat split; lia)); lia).
 Qed.
 
 Lemma proof_of_max_fill_entail_wit_5 : max_fill_entail_wit_5.
@@ -180,6 +187,9 @@ Proof.
   sep_apply Hmerge; try lia.
   rewrite replace_Znth_Znth by lia.
   entailer!.
+  rewrite (Znth_indep rows i __default__List_Z nil) by lia.
+  replace grid_cols_pre with j by lia.
+  exact PreH24.
 Qed.
 
 
@@ -207,6 +217,9 @@ Proof.
         (split; [apply Z.quot_pos; lia | apply Z.quot_le_upper_bound; nia])
   end.
   all: try lia; try nia.
+  apply BucketRowsPrefixCount_step_pos; try lia.
+  - rewrite PreH17. exact PreH18.
+  - exact PreH19.
 Qed.
 
 Lemma proof_of_max_fill_entail_wit_6_2 : max_fill_entail_wit_6_2.
@@ -233,4 +246,17 @@ Proof.
         (split; [apply Z.quot_pos; lia | apply Z.quot_le_upper_bound; nia])
   end.
   all: try lia; try nia.
+  apply BucketRowsPrefixCount_step_zero with (row_sum := sum); try lia.
+  - rewrite PreH17. exact PreH18.
+  - exact PreH19.
+Qed.
+
+Lemma proof_of_max_fill_return_wit_1 : max_fill_return_wit_1.
+Proof.
+  pre_process_default; try entailer!.
+  all: try match goal with
+  | Hprefix : BucketRowsPrefixCount ?rs ?cap ?idx ?acc
+    |- ?acc = BucketRowsCount ?rs ?cap =>
+      apply BucketRowsPrefixCount_complete with (i := idx); try lia; exact Hprefix
+  end.
 Qed.
